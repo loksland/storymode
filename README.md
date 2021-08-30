@@ -94,5 +94,7 @@ createApp(utils.e('game'), true, 1.0, 0x000000, () => {
 
 ### Release History 
 
+Hello world
+
 - [CHANGELOG.md](CHANGELOG.md)
 
