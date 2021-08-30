@@ -44,9 +44,6 @@ for (let _filter of _filters) {
   filters[_filter.id] = _filter.default;
 }
 
-//let stageW = 0; // Stage dims 
-//let stageH = 0; // Stage dims 
-
 export function createApp(_htmlEle, fullScreen = false, bgAlpha = 1.0, bgColor = 0x000000, onLoadCallback = null) {
   
     htmlEle = _htmlEle;
@@ -89,10 +86,9 @@ function setup(bgAlpha){
   // Attach canvas to the DOM 
   htmlEle.appendChild(pixiApp.view);
 
-  //app.view.style.pointerEvents = 'auto';
-  //htmlEle.style.pointerEvents = 'none';
-  // gsap.set(pixiApp.view, {opacity:0.999})
-  
+  // app.view.style.pointerEvents = 'auto';
+  // htmlEle.style.pointerEvents = 'none';
+
   // Attach core display objects 
   nav.setupStage(pixiApp.stage, bgAlpha);
   
@@ -120,7 +116,7 @@ function setup(bgAlpha){
   }
   
   // pixiApp.resizeTo = window;
-  //pixiApp.resizeTo(window)
+  // pixiApp.resizeTo(window)
   
 }
 
