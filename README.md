@@ -31,7 +31,7 @@ const { createApp, utils, scaler, nav, ui, Btn } = require(`storymode`);
 // Nav
 
 import Home from './scenes/home.js';
-import Play from './scenes/play.js';
+import Play from './scenes/play.js'; 
 
 const scenes = {
   
