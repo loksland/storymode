@@ -1,0 +1,31 @@
+{
+  "name": "storymode",
+  "version": "1.1.5",
+  "description": "Under Development. Layout and transition system based around PixiJS",
+  "main": "storymode.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/loksland/storymode.git"
+  },
+  "keywords": [
+    "webgl",
+    "pixi",
+    "game",
+    "engine",
+    "layout",
+    "transition"
+  ],
+  "author": "loksland",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/loksland/storymode/issues"
+  },
+  "homepage": "https://github.com/loksland/storymode#readme",
+  "dependencies": {
+    "fscreen": "^1.2.0",
+    "object-assign-deep": "^0.4.0"
+  }
+}
