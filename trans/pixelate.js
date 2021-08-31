@@ -62,10 +62,10 @@ export default class PixelateTrans {
     // Remove all filters used in the transition
     
     if (this.scenePrev){
-      this.scenePrev.filters = [];
+      this.scenePrev.filters = null;
       this.scenePrev.visible = false; // Hide incase is modal for performance
     }
-    this.scene.filters = [];
+    this.scene.filters = null;
     
     onInCallback();    
     
@@ -81,8 +81,8 @@ export default class PixelateTrans {
     
     // Remove all filters used in the transition
     
-    this.scenePrev.filters = [];
-    this.scene.filters = [];
+    this.scenePrev.filters = null;
+    this.scene.filters = null;
     
     onOutCallback();    
     

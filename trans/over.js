@@ -46,13 +46,13 @@ export default class OverTrans {
   
   onIn(onInCallback){
     
-    this.scene.filters = [];
+    this.scene.filters = null;
     
     this.scene.position.set(0.0, 0.0)
     this.scene.pivot.set(0.0, 0.0)
     
     if (this.scenePrev && !this.isModal){
-        this.scenePrev.filters = [];
+        this.scenePrev.filters = null;
     }
     
     onInCallback();    
@@ -85,8 +85,8 @@ export default class OverTrans {
     this.scene.position.set(0.0, 0.0)
     this.scene.pivot.set(0.0, 0.0)
     
-    this.scene.filters = [];
-    this.scenePrev.filters = [];
+    this.scene.filters = null;
+    this.scenePrev.filters = null;
     
     onOutCallback();    
     

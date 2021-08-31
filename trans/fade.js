@@ -46,11 +46,11 @@ export default class FadeTrans {
     // Remove all filters used in the transition
     
     if (this.scenePrev){
-      this.scenePrev.filters = [];
+      this.scenePrev.filters = null;
       this.scenePrev.visible = false; // Hide incase is modal for performance
     }
     
-    this.scene.filters = [];
+    this.scene.filters = null;
     
     onInCallback();    
     
@@ -66,9 +66,9 @@ export default class FadeTrans {
     
     // Remove all filters used in the transition
     
-    this.scene.filters = [];
+    this.scene.filters = null;
     this.scene.visible = false;
-    this.scenePrev.filters = [];
+    this.scenePrev.filters = null;
     
     onOutCallback();    
     

@@ -1,5 +1,6 @@
 # Changelog
 
+- v1.1.12 - (31-08-2021) Reseting filters to null rather than empty array
 - v1.1.11 - (31-08-2021) De-reference filters and mask on scene disposal
 - v1.1.10 - (31-08-2021) Fixed stage alpha bug. Was boolean, should be float.
 - v1.1.9 - (30-08-2021) Testing publishing scripts
