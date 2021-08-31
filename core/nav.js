@@ -34,6 +34,7 @@ function setScenes(_scenes){
 
 function setupStage(stage, bgAlpha){
   
+
   
   //ticker.add(function(time) {
   //  gsap.set(pixiApp.view, {opacity:1.0});
@@ -46,7 +47,7 @@ function setupStage(stage, bgAlpha){
   bg.tint = 0x000000; // Set in the index css
   stage.addChild(bg);
   gsap.fromTo(bg, 0.6, {pixi:{alpha:0.0}},{pixi:{alpha:bgAlpha}, ease:Linear.easeNone})
-  
+
   // Create a container for scenes
   sceneHolder = new Container();  
   

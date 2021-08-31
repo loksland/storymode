@@ -54,7 +54,7 @@ export function createApp(_htmlEle, fullScreen = false, bgAlpha = 1.0, bgColor =
         // height: window.innerHeight,                       
         autoDensity: true, //  Adjusts the canvas using css pixels so it will scale properly (it was the default behavior in v4)
         antialias: window.devicePixelRatio == 1, //(), 
-        backgroundAlpha: bgAlpha < 1.0,
+        backgroundAlpha: bgAlpha < 1.0 ? 0.0 : 1.0,
         resolution: window.devicePixelRatio, // Resolution controls scaling of content (sprites, etc.) 
         resizeTo: fullScreen ? window : htmlEle,
         backgroundColor: bgColor,
