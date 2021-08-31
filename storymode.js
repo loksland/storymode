@@ -49,9 +49,7 @@ export function createApp(_htmlEle, fullScreen = false, bgAlpha = 1.0, bgColor =
     htmlEle = _htmlEle;
     
     // Docs: http://pixijs.download/release/docs/PIXI.Application.html#Application
-    pixiApp = new PIXI.Application({
-        // width: window.innerWidth, 
-        // height: window.innerHeight,                       
+    pixiApp = new PIXI.Application({                   
         autoDensity: true, //  Adjusts the canvas using css pixels so it will scale properly (it was the default behavior in v4)
         antialias: window.devicePixelRatio == 1, //(), 
         backgroundAlpha: bgAlpha < 1.0 ? 0.0 : 1.0,
@@ -76,18 +74,13 @@ export function createApp(_htmlEle, fullScreen = false, bgAlpha = 1.0, bgColor =
       sfx.preload(); // Call preload incase it was not called in app.js
       
     })
-    
 }
-
 
 // All assets are loaded by this point and the stage is empty
 function setup(bgAlpha){ 
   
   // Attach canvas to the DOM 
   htmlEle.appendChild(pixiApp.view);
-
-  // app.view.style.pointerEvents = 'auto';
-  // htmlEle.style.pointerEvents = 'none';
 
   // Attach core display objects 
   nav.setupStage(pixiApp.stage, bgAlpha);
@@ -114,9 +107,6 @@ function setup(bgAlpha){
   if (!nav.openDefaultScene()){
     throw new Error('Default scene not found.')
   }
-  
-  // pixiApp.resizeTo = window;
-  // pixiApp.resizeTo(window)
   
 }
 

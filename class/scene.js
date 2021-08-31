@@ -99,6 +99,9 @@ export default class Scene extends PIXI.Container {
     
     this.bgScreen = null;
     
+    // Removes filters and mask references from scene and all children recursively 
+    this.destroyFiltersAndMasks()
+    
     // Once removed from stage, destroy and use no more.
     this.destroy({children:true});  // Keep textures though destroys children
     

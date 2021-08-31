@@ -416,8 +416,19 @@ PIXI.ObservablePoint.prototype.translateToCoordSpace = function(oldParent, newPa
   
 }
 
-
-
+// Removes filters and masks to display object and all children recursively 
+// Called by scene on exit
+PIXI.DisplayObject.prototype.destroyFiltersAndMasks = function(){
+  
+  this.mask = null;
+  this.filters = null;
+  
+  for (let i = 0; i < this.children.length; i++){
+    this.children[i].destroyFiltersAndMasks();
+  }
+  
+  
+}
 
 
 
