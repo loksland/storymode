@@ -1,5 +1,6 @@
 # Changelog
 
+- v1.1.14 - (01-09-2021) Updating SFX for backwards compatibility
 - v1.1.13 - (01-09-2021) Removing object-assign-deep, causing es5 errors
 - v1.1.12 - (31-08-2021) Reseting filters to null rather than empty array
 - v1.1.11 - (31-08-2021) De-reference filters and mask on scene disposal

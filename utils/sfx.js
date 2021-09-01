@@ -132,9 +132,11 @@ export default class SFX extends PIXI.utils.EventEmitter {
     // Check if any resources are loaded 
     if ((globalSfxResources && Object.keys(globalSfxResources).length > 0) || this.anySfxResources()){
       // Wait for interaction then load sound
-      document.addEventListener('pointerup', () => {
+      let cb = () => {
+        document.removeEventListener('pointerup', cb);
         utils.loadScript('js/pixi-sound.js', this.onScriptLoaded.bind(this))
-      }, { once: true });
+      }
+      document.addEventListener('pointerup', cb);
     }
     
   }
