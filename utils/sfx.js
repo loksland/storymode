@@ -45,6 +45,9 @@ export default class SFX extends PIXI.utils.EventEmitter {
     this.resources = {};
     this.bgLoopSlug = null;
     
+    
+    console.log('sfx: construct()',this._sfxVolume,this._bgLoopVolume,this._volume)
+    
   }
   
   get ready(){
@@ -132,11 +135,11 @@ export default class SFX extends PIXI.utils.EventEmitter {
     // Check if any resources are loaded 
     if ((globalSfxResources && Object.keys(globalSfxResources).length > 0) || this.anySfxResources()){
       // Wait for interaction then load sound
-      let cb = () => {
-        document.removeEventListener('pointerup', cb);
+      let pointerupFn = () => {
+        document.removeEventListener('pointerup', pointerupFn);
         utils.loadScript('js/pixi-sound.js', this.onScriptLoaded.bind(this))
       }
-      document.addEventListener('pointerup', cb);
+      document.addEventListener('pointerup', pointerupFn);
     }
     
   }
@@ -162,6 +165,7 @@ export default class SFX extends PIXI.utils.EventEmitter {
     
     // Set global volume
     // PIXI.sound.volumeAll = 0.1;
+    console.log('sfx:onScriptLoaded()',this._sfxVolume,this._bgLoopVolume,this._volume)
     console.log('PIXI.sound.volumeAll', PIXI.sound.volumeAll)
     
     // Load all resources registered with static scene method: `getSfxResources()`
@@ -188,25 +192,33 @@ export default class SFX extends PIXI.utils.EventEmitter {
       _loader.add(_rprop, _resources[_rprop]); 
     }
     
-    _loader.load((loader, resources) => {
-        this.resources = resources;
-        this._ready = true;
-        this._globalSfxResources = null;
-        if (this._preloadCallback){
-          const cb = this._preloadCallback;
-          cb();
-        }
-        this._preloadCallback = null;
-        if (this._pendingBgLoopSlug){
-          const tmpPendingBgLoopSlug = this._pendingBgLoopSlug;
-          this._pendingBgLoopSlug = null;
-          this.setBgLoop(tmpPendingBgLoopSlug);
-        }
-        this.emit('ready');
-    });
+    console.log(_resources);
+    
+    _loader.load(this.onResourcesLoaded.bind(this));
   
   }
   
+  onResourcesLoaded(loader, resources){
+    
+    console.log('sfx:onResourcesLoaded()',this._sfxVolume,this._bgLoopVolume,this._volume)
+    
+    this.resources = resources;
+    this._ready = true;
+    this._globalSfxResources = null;
+    if (this._preloadCallback){
+      const cb = this._preloadCallback;
+      cb();
+    }
+    this._preloadCallback = null;
+    if (this._pendingBgLoopSlug){
+      const tmpPendingBgLoopSlug = this._pendingBgLoopSlug;
+      this._pendingBgLoopSlug = null;
+      this.setBgLoop(tmpPendingBgLoopSlug);
+    }
+    this.emit('ready');
+    
+  }
+    
   stopAll(){
     if (!this._ready){
       return;
