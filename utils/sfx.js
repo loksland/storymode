@@ -170,7 +170,7 @@ export default class SFX extends PIXI.utils.EventEmitter {
     
     // Load all resources registered with static scene method: `getSfxResources()`
     
-    const _loader = new PIXI.Loader();
+    this._loader = new PIXI.Loader();
   
     let _resources = this._globalSfxResources ? this._globalSfxResources : {};
     for (let _sceneid in nav.scenes){
@@ -189,17 +189,17 @@ export default class SFX extends PIXI.utils.EventEmitter {
     }
     
     for (let _rprop in _resources){
-      _loader.add(_rprop, _resources[_rprop]); 
+      this._loader.add(_rprop, _resources[_rprop]); 
     }
     
     console.log(_resources);
     
-    _loader.load(this.onResourcesLoaded.bind(this));
+    this._loader.load(this.onResourcesLoaded.bind(this));
   
   }
   
   onResourcesLoaded(loader, resources){
-    
+    this._loader = null;
     console.log('sfx:onResourcesLoaded()',this._sfxVolume,this._bgLoopVolume,this._volume)
     
     this.resources = resources;

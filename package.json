@@ -1,6 +1,6 @@
 {
   "name": "storymode",
-  "version": "1.1.15",
+  "version": "1.1.16",
   "description": "Under Development. Layout and transition system based around PixiJS",
   "main": "storymode.js",
   "scripts": {
