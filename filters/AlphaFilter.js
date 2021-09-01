@@ -1,5 +1,8 @@
 
 // Source: https://github.com/pixijs/pixi.js/issues/4334
+
+// Applies alpha to entire scene rather than individual displayobjects
+
 var frag = `
 varying vec2 vTextureCoord;
 

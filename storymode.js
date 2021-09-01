@@ -10,7 +10,8 @@ window.loader = PIXI.Loader.shared; //PIXI.Loader.shared; //.  new PIXI.Loader()
 window.resources = loader.resources;
 window.ticker = PIXI.Ticker.shared;
 
-import * as _ext from './utils/extensions.js'
+import * as _ext from './utils/extensions.js';
+//import * as _polyfill from './utils/polyfill.js';
 import * as utils from './utils/utils.js';
 
 import Scene from './class/scene.js';

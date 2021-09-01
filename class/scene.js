@@ -42,13 +42,19 @@ export default class Scene extends PIXI.Container {
     
   }
   
-  shouldReloadOnStageResize(stageW, stageH){
+  // Called by `nav`
+  _shouldReloadOnStageResize(stageW, stageH){
     
     this.bgScreen.width = stageW
     this.bgScreen.height = stageH
     
-    return true;
+    return this.shouldReloadOnStageResize(stageW, stageH);
     
+  }
+  
+  // Overwrite to customise, no need to call super.shouldReloadOnStageResize()
+  shouldReloadOnStageResize(stageW, stageH){
+    return true 
   }
   
   // Overwrite to customise Mario transitions.

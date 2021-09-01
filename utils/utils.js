@@ -1,5 +1,6 @@
-const objectAssignDeep = require(`object-assign-deep`);
-export { objectAssignDeep}
+
+import objectAssignDeep from './objectAssignDeep.js';
+export {objectAssignDeep}
 
 export function fontWeightStrToNum(fontWeightStr){
 

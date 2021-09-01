@@ -284,14 +284,14 @@ function reloadSceneStack(){
   // If scene is presented modally over other scenes 
   // Hide them until they can reload themselved when next presented. 
   for (let i = 0; i < transStack.length -1; i++){    
-    if (transStack[i].scene.shouldReloadOnStageResize(scaler.stageW, scaler.stageH)){
+    if (transStack[i].scene._shouldReloadOnStageResize(scaler.stageW, scaler.stageH)){
       transStack[i].scene.visible = false; // Optional
       transStack[i].reloadOnNextArrive = true;
     }
   }
   
   let _scene = transStack[transStack.length-1].scene;
-  if (_scene.shouldReloadOnStageResize(scaler.stageW, scaler.stageH)){
+  if (_scene._shouldReloadOnStageResize(scaler.stageW, scaler.stageH)){
     
     let sceneID = _scene.sceneData.sceneID;
     let sceneData = utils.cloneObj(_scene.sceneData);
