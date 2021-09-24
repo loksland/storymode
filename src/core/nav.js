@@ -26,15 +26,9 @@ for (let transMod of _trans) {
 
 function setScenes(_scenes){
   scenes = _scenes;
-  
-  
-  
-  
 }
 
 function setupStage(stage, bgAlpha){
-  
-
   
   //ticker.add(function(time) {
   //  gsap.set(pixiApp.view, {opacity:1.0});
@@ -301,7 +295,6 @@ function reloadSceneStack(){
   }
     
 }
-
 
 function debugTransStack(){
   

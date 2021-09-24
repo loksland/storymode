@@ -1,4 +1,4 @@
-import { scaler,nav,config } from './../../storymode/storymode.js';
+import { scaler,nav,config } from './../storymode.js';
 
 export const id = 'mario';
 

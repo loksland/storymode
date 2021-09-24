@@ -1,4 +1,4 @@
-import { nav } from './../../storymode/storymode.js';
+import { nav } from './../storymode.js';
 
 export const id = 'pixelate';
 

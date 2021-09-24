@@ -167,12 +167,8 @@ class JRender {
     this.links = {};
     this.subRenders = [];
     
-    
-    
   }
   
-
-    
   addCircle(dispo, options = null){
     
     return this._addBody('circle', dispo, options);

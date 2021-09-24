@@ -46,8 +46,6 @@ export default class SFX extends PIXI.utils.EventEmitter {
     this.bgLoopSlug = null;
     
     
-    console.log('sfx: construct()',this._sfxVolume,this._bgLoopVolume,this._volume)
-    
   }
   
   get ready(){
@@ -165,8 +163,8 @@ export default class SFX extends PIXI.utils.EventEmitter {
     
     // Set global volume
     // PIXI.sound.volumeAll = 0.1;
-    console.log('sfx:onScriptLoaded()',this._sfxVolume,this._bgLoopVolume,this._volume)
-    console.log('PIXI.sound.volumeAll', PIXI.sound.volumeAll)
+    
+    // console.log('PIXI.sound.volumeAll', PIXI.sound.volumeAll)
     
     // Load all resources registered with static scene method: `getSfxResources()`
     
@@ -192,16 +190,13 @@ export default class SFX extends PIXI.utils.EventEmitter {
       this._loader.add(_rprop, _resources[_rprop]); 
     }
     
-    console.log(_resources);
-    
     this._loader.load(this.onResourcesLoaded.bind(this));
   
   }
   
   onResourcesLoaded(loader, resources){
     this._loader = null;
-    console.log('sfx:onResourcesLoaded()',this._sfxVolume,this._bgLoopVolume,this._volume)
-    
+  
     this.resources = resources;
     this._ready = true;
     this._globalSfxResources = null;
@@ -215,6 +210,7 @@ export default class SFX extends PIXI.utils.EventEmitter {
       this._pendingBgLoopSlug = null;
       this.setBgLoop(tmpPendingBgLoopSlug);
     }
+    
     this.emit('ready');
     
   }
@@ -231,7 +227,7 @@ export default class SFX extends PIXI.utils.EventEmitter {
       return;
     }
     if (this.resources[slug]){
-      this.resources[slug].sound.play({loop: false, singleInstance: true, volume: this._sfxVolume*this._volume});
+      this.resources[slug].sound.play({loop: false, singleInstance: false, volume: this._sfxVolume*this._volume});
     } else {
       console.log('SFX resource not found `'+slug+'`')
     }
@@ -285,9 +281,6 @@ export default class SFX extends PIXI.utils.EventEmitter {
     }
     
   }
-  
-  
-  
   
 }
     

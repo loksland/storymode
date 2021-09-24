@@ -1,5 +1,6 @@
 # Changelog
 
+- v1.1.17 - (24-09-2021) Rearranging file location
 - v1.1.16 - (01-09-2021) Debugging sfx loader
 - v1.1.15 - (01-09-2021) Debugging sfx on IE11
 - v1.1.14 - (01-09-2021) Updating SFX for backwards compatibility

@@ -1,4 +1,4 @@
-import { nav,scaler } from './../../storymode/storymode.js';
+import { nav,scaler } from './../storymode.js';
 
 export const id = 'over';
 

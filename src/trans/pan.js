@@ -1,4 +1,4 @@
-import { scaler,nav } from './../../storymode/storymode.js';
+import { scaler,nav } from './../storymode.js';
 
 export const id = ['pan','parallax'];
 
