@@ -109,7 +109,11 @@ export default class Scene extends PIXI.Container {
     this.destroyFiltersAndMasks()
     
     // Once removed from stage, destroy and use no more.
-    this.destroy({children:true});  // Keep textures though destroys children
+    this.destroy({children:true});  
+    // Keep textures though destroys children
+    // > Destroying PIXI.Texture does not free memory, it just makes texture not valid and removes it from image cache, so other sprites wont be able to use it. I really dont know cases when you have to call it
+    // > Destroying PIXI.BaseTexture frees WebGL objects that are bound to it. Call it for dynamic texture that you use or some statics that arent needed anymore.
+    // Source: https://www.html5gamedevs.com/topic/19874-difference-between-texture-and-basetexture/
     
   }
   

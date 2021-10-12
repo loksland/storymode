@@ -6,6 +6,7 @@ window.Rectangle = PIXI.Rectangle;
 window.Text = PIXI.Text
 window.Graphics = PIXI.Graphics
 window.Container = PIXI.Container;
+window.Texture = PIXI.Texture;
 window.loader = PIXI.Loader.shared; //PIXI.Loader.shared; //.  new PIXI.Loader(); // Using shared was causing bug with hot reload.
 window.resources = loader.resources;
 window.ticker = PIXI.Ticker.shared;

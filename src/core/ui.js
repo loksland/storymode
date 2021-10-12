@@ -86,9 +86,29 @@ function onLoadComplete(){
   }
 }
 
-PIXI.DisplayObject.fromTx = function(txPath, addChildren = true){
+PIXI.Texture.fromTx = function(txPath, frame = null){
   
   if (!txInfo[txPath]){
+    throw new Error('Texture info not found `'+txPath+'`')
+  }
+  
+  return new PIXI.Texture(resources[txPath].texture, frame);
+  
+}
+
+PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
+  
+  //const isSprite = (this == Sprite || (this.prototype instanceof Sprite));
+  //let tx = null;
+  //if (txPath instanceof Texture){
+  //  tx = txPath
+  //  if (!isSprite){
+  //    throw new Error('Only Sprites can be initiated from texture instances');
+  //  }
+  //} else 
+  
+  
+  if (!txInfo[txPath]){    
     throw new Error('Texture info not found `'+txPath+'`')
   }
   
@@ -125,14 +145,21 @@ PIXI.DisplayObject.fromTx = function(txPath, addChildren = true){
     if (!resources[txPath]){
       throw new Error('Sprite texture not found `'+txPath+'`')
     }
-    dispo = new this(resources[txPath].texture);
+    
+    if (frame){ // Create a clipped frame
+      // Create a new texture with frmae defined.
+      // dispo.applyProj(); will take this frame into account
+      let tx = new PIXI.Texture(resources[txPath].texture.baseTexture, frame); 
+      dispo = new this(tx);
+    } else {    
+      dispo = new this(resources[txPath].texture);
+    }
   
   } else if (this == Container || (this.prototype instanceof Container)){ // Custom container class
     
     dispo = new this();
     
   } else {
-
     throw new Error('Unable to initialize from texture `'+txPath+'`')
   }
   
@@ -155,6 +182,7 @@ PIXI.DisplayObject.fromTx = function(txPath, addChildren = true){
   return dispo;
   
 }
+
 
 // gfxParams
 // - line
@@ -219,6 +247,19 @@ PIXI.DisplayObject.prototype.applyProj = function(){
   this.txInfo._proj.width = scaler.proj[projID].scale * this.txInfo.width;
   this.txInfo._proj.height = scaler.proj[projID].scale * this.txInfo.height;
   
+  // Take into account frame (clipping) applied to this sprite's texture
+  if (this.isSprite && !(this instanceof Text) && (this.texture.frame.x != 0.0 || this.texture.frame.y != 0.0 || this.texture.frame.width !== this.texture.baseTexture.width || this.texture.frame.height !== this.texture.baseTexture.height)){ 
+    
+    if (this.texture.frame.x != 0.0 || this.texture.frame.y != 0.0){
+      this.txInfo._proj.x += this.texture.frame.x*scaler.proj[projID].pxScale; // Convert tx px offset to screen pixel * artboard scale 
+      this.txInfo._proj.y += this.texture.frame.y*scaler.proj[projID].pxScale; // Convert tx px offset to screen pixel * artboard scale 
+    }
+
+    this.txInfo._proj.width *= (this.texture.frame.width/this.texture.baseTexture.width)
+    this.txInfo._proj.height *= (this.texture.frame.height/this.texture.baseTexture.height)
+    
+  }
+  
   // Add bounds 
   this.txInfo._proj.tlX = this.txInfo._proj.x - this.txInfo._proj.width*this.txInfo.regPercX;
   this.txInfo._proj.tlY = this.txInfo._proj.y - this.txInfo._proj.height*this.txInfo.regPercY;
@@ -244,8 +285,9 @@ PIXI.DisplayObject.prototype.applyProj = function(){
   if (this.isSprite && !(this instanceof Text)){ 
     // - Text fields need no limit on dimensions
     // - Containers are positional pins and do not need to be scaled
-    this.width = this.txInfo._proj.width;
-    this.height = this.txInfo._proj.height;
+    // - Take into consideration any frame (clipping) applied to the sprite's texture.    
+    this.width = this.txInfo._proj.width
+    this.height = this.txInfo._proj.height
   }
   
   if (this instanceof Text){
@@ -682,9 +724,5 @@ let txClassLookup = {};
 function registerClassForTx(_class, txPath){
   txClassLookup[txPath] = _class;
 }
-
-
-
-
 
 export { txInfo, registerPsdInfo, registerClassForTx} // Temporary?
