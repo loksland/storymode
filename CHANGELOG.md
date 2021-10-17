@@ -1,5 +1,6 @@
 # Changelog
 
+- v1.1.19 - (18-10-2021) Spritesheet support added
 - v1.1.18 - (13-10-2021) Frame support added to Sprite initiation. Texture from tx path added.
 - v1.1.17 - (24-09-2021) Rearranging file location
 - v1.1.16 - (01-09-2021) Debugging sfx loader

@@ -37,6 +37,12 @@ function registerPsdInfo(_psdInfo){
   }
 }
 
+let spritesheetPath = 'img/'
+const SPRITESHEET_RESOURCE_SUFFIX = '.ss';
+function registerSpritesheetPath(_spritesheetPath){
+  spritesheetPath = _spritesheetPath;
+}
+
 let totLoadsComplete = 0;
 let initialLoadItemCount = 0;
 let loadAssetCallback;
@@ -59,15 +65,21 @@ export function loadAssets(_loadAssetCallback){
   }
   
   // 2) Load all images
-  //for (let p in content.images){
-  //  if (content.images[p]){
-  //    loader.add(p, content.images[p]);  
-  //  }
-  //}
-  
-  for (let txPath in txInfo){
-    if (txInfo[txPath].type == 'img'){
-      loader.add(txPath, txInfo[txPath].src); 
+
+  let queuedSpritesheets = {};
+  for (let psdID in psdInfo){
+    if (psdInfo[psdID].doc.spritesheet){ // Load spritesheets associated with PSD once
+      let spritesheetBaseName = psdInfo[psdID].doc.spritesheet;
+      if (!queuedSpritesheets[spritesheetBaseName]){
+        queuedSpritesheets[spritesheetBaseName] = true;
+        loader.add(spritesheetBaseName + SPRITESHEET_RESOURCE_SUFFIX, spritesheetPath+spritesheetBaseName + '.json'); 
+      }
+    } else {
+      for (let tx of psdInfo[psdID].doc.txs){  // Load individual images
+        if (tx.type == 'img'){ 
+          loader.add(tx.path, tx.src);
+        }
+      }
     }
   }
   
@@ -97,16 +109,6 @@ PIXI.Texture.fromTx = function(txPath, frame = null){
 }
 
 PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
-  
-  //const isSprite = (this == Sprite || (this.prototype instanceof Sprite));
-  //let tx = null;
-  //if (txPath instanceof Texture){
-  //  tx = txPath
-  //  if (!isSprite){
-  //    throw new Error('Only Sprites can be initiated from texture instances');
-  //  }
-  //} else 
-  
   
   if (!txInfo[txPath]){    
     throw new Error('Texture info not found `'+txPath+'`')
@@ -142,31 +144,34 @@ PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
   
   } else if (this == Sprite || this.prototype instanceof Sprite){ // Custom Sprite class
     
-    if (!resources[txPath]){
-      throw new Error('Sprite texture not found `'+txPath+'`')
-    }
-    
-    if (frame){ // Create a clipped frame
+    if (!txInfo[txPath].src){      
+      let spritesheetBaseName = psdInfo[txInfo[txPath].psdID].doc.spritesheet 
+      let spritesheet = resources[spritesheetBaseName + SPRITESHEET_RESOURCE_SUFFIX];
+      if (spritesheet){
+        dispo = new this(spritesheet.textures[txPath]);
+      } else {
+        throw new Error('Sprite sheet not found `'+spritesheetBaseName+'` (via `'+txInfo[txPath].psdID+'`)')
+      }
+    } else if (frame){ // Create a clipped frame - not compatible with spritesheet assets      
       // Create a new texture with frmae defined.
       // dispo.applyProj(); will take this frame into account
       let tx = new PIXI.Texture(resources[txPath].texture.baseTexture, frame); 
       dispo = new this(tx);
-    } else {    
+      dispo._hasFrame = true; // Extra prop to indicate sprite has been cropped to frame. Spritesheet sprites will not have this property
+    } else {
       dispo = new this(resources[txPath].texture);
     }
-  
   } else if (this == Container || (this.prototype instanceof Container)){ // Custom container class
-    
     dispo = new this();
-    
   } else {
     throw new Error('Unable to initialize from texture `'+txPath+'`')
   }
   
   // Extra prop that art aware display objects posess.
-  dispo.txInfo = txInfo[txPath];  
+  dispo.txInfo = txInfo[txPath];    
+  
   dispo.name = dispo.txInfo.name; // Optional, for convenience
-
+  
   dispo.applyProj();
   
   if (addChildren){
@@ -182,7 +187,6 @@ PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
   return dispo;
   
 }
-
 
 // gfxParams
 // - line
@@ -248,7 +252,7 @@ PIXI.DisplayObject.prototype.applyProj = function(){
   this.txInfo._proj.height = scaler.proj[projID].scale * this.txInfo.height;
   
   // Take into account frame (clipping) applied to this sprite's texture
-  if (this.isSprite && !(this instanceof Text) && (this.texture.frame.x != 0.0 || this.texture.frame.y != 0.0 || this.texture.frame.width !== this.texture.baseTexture.width || this.texture.frame.height !== this.texture.baseTexture.height)){ 
+  if (this._hasFrame){ 
     
     if (this.texture.frame.x != 0.0 || this.texture.frame.y != 0.0){
       this.txInfo._proj.x += this.texture.frame.x*scaler.proj[projID].pxScale; // Convert tx px offset to screen pixel * artboard scale 
@@ -725,4 +729,4 @@ function registerClassForTx(_class, txPath){
   txClassLookup[txPath] = _class;
 }
 
-export { txInfo, registerPsdInfo, registerClassForTx} // Temporary?
+export { txInfo, registerPsdInfo, registerClassForTx, registerSpritesheetPath} // Temporary?
