@@ -100,6 +100,13 @@ export default class Scene extends PIXI.Container {
   
   dispose(){
     
+    if (this.art){
+      for (let p in this.art){
+        this.art[p] = null;
+      }
+      this.art = null;
+    }
+    
     this.off('removed',  this.dispose);
     this.killTweens();
     

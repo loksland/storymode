@@ -38,9 +38,7 @@ PIXI.Sprite.prototype.getLocalCornerPos = function(hozAlign, vertAlign, pt = nul
   pt.x = this.localWidth*0.5 + hozAlign*this.localWidth*0.5  - this.anchor.x * this.localWidth;
   pt.y = this.localHeight*0.5 + vertAlign*this.localHeight*0.5  -this.anchor.y * this.localHeight;
   return pt;
-  
 };
-
 
 PIXI.Sprite.prototype.getLocalCenter = function(pt = null){
   

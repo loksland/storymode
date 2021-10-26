@@ -20,12 +20,26 @@ function registerPsdInfo(_psdInfo){
   for (let psdID in psdInfo){
     for (let i = psdInfo[psdID].doc.txs.length - 1; i >=0 ; i--) {
       
+      if (psdInfo[psdID].doc.txs[i].type == 'div'){
+        if (psdInfo[psdID].doc.txs[i].clone){     
+          psdInfo[psdID].doc.txs[i].type = 'img';
+        
+        } else if (psdInfo[psdID].doc.txs[i].flags.split(',').indexOf('white') != -1){
+          psdInfo[psdID].doc.txs[i].txOverride = 'white';
+          psdInfo[psdID].doc.txs[i].type = 'img';
+        } else if (psdInfo[psdID].doc.txs[i].flags.split(',').indexOf('empty') != -1){
+          psdInfo[psdID].doc.txs[i].txOverride = 'empty';
+          psdInfo[psdID].doc.txs[i].type = 'img';
+        }
+      } 
+      
       psdInfo[psdID].doc.txs[i].psdID = psdID; // Create a ref back to the PSD
-      psdInfo[psdID].doc.txs[i].path = psdID + '/' + psdInfo[psdID].doc.txs[i].name;
+      psdInfo[psdID].doc.txs[i].path = psdID + '/' + (psdInfo[psdID].doc.txs[i].clone ? psdInfo[psdID].doc.txs[i].clone : psdInfo[psdID].doc.txs[i].name);
+      
       psdInfo[psdID].doc.txs[i].index = i; // Save index
       psdInfo[psdID].doc.txs[i].projID = psdInfo[psdID].doc.txs[i].flags.split(',').indexOf('ui') != -1 ? 'ui' : 'default' // Interpret flags as projections
       psdInfo[psdID].doc.txs[i].children = []; // Will be added to in subsequent loops of children
-      
+
       if (psdInfo[psdID].doc.txs[i].tfParams.length > 0){
         psdInfo[psdID].doc.txs[i].tfParams = JSON.parse(psdInfo[psdID].doc.txs[i].tfParams); // Convert from JSON string to obj
       }
@@ -76,7 +90,7 @@ export function loadAssets(_loadAssetCallback){
       }
     } else {
       for (let tx of psdInfo[psdID].doc.txs){  // Load individual images
-        if (tx.type == 'img'){ 
+        if (tx.type == 'img' && !tx.txOverride && !tx.clone){ 
           loader.add(tx.path, tx.src);
         }
       }
@@ -110,7 +124,8 @@ PIXI.Texture.fromTx = function(txPath, frame = null){
 
 PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
   
-  if (!txInfo[txPath]){    
+  let isAnimSprite = this == AnimatedSprite || this.prototype instanceof AnimatedSprite
+  if (!txInfo[txPath] && !isAnimSprite){    
     throw new Error('Texture info not found `'+txPath+'`')
   }
   
@@ -125,7 +140,7 @@ PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
     dispo = new Graphics();
     
   } else if (this == Text){
-    
+  
     let font = fonts[fontClassForPsdFont[txInfo[txPath].tfParams.font]]
     let fontFamilyList = [font.googleFontName].concat(font.fallbacks)
     
@@ -142,24 +157,57 @@ PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
       fontStyle: fontStyle.style
     });
   
+  } else if (isAnimSprite){
+    
+    let psdID = txPath.split('/')[0];
+    
+    let spritesheetBaseName = psdInfo[psdID].doc.spritesheet 
+    let spritesheet = resources[spritesheetBaseName + SPRITESHEET_RESOURCE_SUFFIX];
+    
+    if (spritesheet){
+      
+      if (spritesheet.spritesheet && spritesheet.spritesheet.animations){
+        
+        if (spritesheet.spritesheet.animations[txPath]){
+          dispo = new PIXI.AnimatedSprite(spritesheet.spritesheet.animations[txPath]);
+          txPath = dispo.textures[0].textureCacheIds[0];
+        } 
+        
+      } else {
+        throw new Error('Spritesheet animation not found `'+txPath+'`. Ensure tps auto-detect animations is enabled.')
+      }
+      
+    } else {
+      throw new Error('Spritesheet not found `'+spritesheetBaseName+'` (via `'+psdID+'`)')
+    }
+  
   } else if (this == Sprite || this.prototype instanceof Sprite){ // Custom Sprite class
     
-    if (!txInfo[txPath].src){      
+    if (txInfo[txPath].txOverride){
+      
+      if (txInfo[txPath].txOverride == 'white'){
+        dispo = new this(PIXI.Texture.WHITE);
+      } else if (txInfo[txPath].txOverride == 'empty'){
+        dispo = new this(PIXI.Texture.EMPTY);
+      }
+      
+    } else if (!txInfo[txPath].src){      
+      
       let spritesheetBaseName = psdInfo[txInfo[txPath].psdID].doc.spritesheet 
       let spritesheet = resources[spritesheetBaseName + SPRITESHEET_RESOURCE_SUFFIX];
-      if (spritesheet){
-        dispo = new this(spritesheet.textures[txPath]);
+      if (spritesheet){     
+        dispo = new this(spritesheet.textures[txInfo[txPath].path]);
       } else {
-        throw new Error('Sprite sheet not found `'+spritesheetBaseName+'` (via `'+txInfo[txPath].psdID+'`)')
+        throw new Error('Spritesheet not found `'+spritesheetBaseName+'` (via `'+txInfo[txPath].psdID+'`)')
       }
     } else if (frame){ // Create a clipped frame - not compatible with spritesheet assets      
       // Create a new texture with frmae defined.
       // dispo.applyProj(); will take this frame into account
-      let tx = new PIXI.Texture(resources[txPath].texture.baseTexture, frame); 
+      let tx = new PIXI.Texture(resources[txInfo[txPath].path].texture.baseTexture, frame); 
       dispo = new this(tx);
       dispo._hasFrame = true; // Extra prop to indicate sprite has been cropped to frame. Spritesheet sprites will not have this property
     } else {
-      dispo = new this(resources[txPath].texture);
+      dispo = new this(resources[txInfo[txPath].path].texture);
     }
   } else if (this == Container || (this.prototype instanceof Container)){ // Custom container class
     dispo = new this();
@@ -240,6 +288,24 @@ PIXI.Graphics.prototype.renderRect = function(x = null, y = null, width = null, 
   
 }
 
+
+PIXI.DisplayObject.prototype.syncRelative = function(targetDispo, syncX = true, syncY = true, round = false){
+  
+  if (syncX){
+    let artOffsetX = this.txInfo.x - targetDispo.txInfo.x;
+    let _x = targetDispo.x + artOffsetX*scaler.proj[this.txInfo.projID].scale; 		
+    this.x = round ? Math.round(_x) : _x;
+  }
+  
+  if (syncY){
+    let artOffsetY = this.txInfo.y- targetDispo.txInfo.y;
+    let _y = targetDispo.y + artOffsetY*scaler.proj[this.txInfo.projID].scale; 
+    this.y = round ? Math.round(_y) : _y;
+  }
+  
+  
+}
+
 PIXI.DisplayObject.prototype.applyProj = function(){
   
   const projID = this.txInfo.projID;
@@ -302,7 +368,6 @@ PIXI.DisplayObject.prototype.applyProj = function(){
     }
   }
   
-  
 }
 
 // Scenes can update texture info with dynamic content 
@@ -331,8 +396,11 @@ Scene.prototype.mapTxInfo = function(txInfoMapping, _psdID = null){
 PIXI.DisplayObject.prototype.getArt = function(txNameGlob){
   let args = Array.from(arguments);  
   return this.addArt.apply(this, ['_GETNAMESONLY'].concat(args));
-  
 }
+
+
+
+
 
 // If caller is a scene then all top level items are added 
 // otherwise will add chidren
@@ -633,7 +701,7 @@ function psdFontStyleComponents(psdFontStyle){
 }
 
 function queueWebFonts(){
-  
+
   // Find all non-duplicate font family and styles to load via the webfont API
   
   let googleFonts = {}; // A store of all required google font families, weights & styles
@@ -641,7 +709,7 @@ function queueWebFonts(){
   let classAdditionalsQueued = {};
   
   for (let txPath in txInfo){
-    if (txInfo[txPath].type == 'tf'){
+    if (txInfo[txPath].type == 'tf' || txInfo[txPath].type == 'btn'){
       
       let fontStyle = psdFontStyleComponents(txInfo[txPath].tfParams.fontStyle)
       
@@ -706,11 +774,11 @@ function queueWebFonts(){
         loading: function() { 
         },
         active: function() { 
-          console.log('Loaded fonts: `'+webfontIDs.join('`,`')+'`')
+          //console.log('Loaded fonts: `'+webfontIDs.join('`,`')+'`')
           onLoadComplete(); 
         },
         inactive: function() { 
-          console.log('Failed to load fonts: `'+webfontIDs.join('`,`')+'`')
+          //console.log('Failed to load fonts: `'+webfontIDs.join('`,`')+'`')
           onLoadComplete(); // Failed load will fallback
         }
     });
@@ -728,5 +796,7 @@ let txClassLookup = {};
 function registerClassForTx(_class, txPath){
   txClassLookup[txPath] = _class;
 }
+
+
 
 export { txInfo, registerPsdInfo, registerClassForTx, registerSpritesheetPath} // Temporary?

@@ -1,6 +1,7 @@
 
 // PixiJS convenience aliases 
 window.Sprite = PIXI.Sprite;
+window.AnimatedSprite = PIXI.AnimatedSprite;
 window.Point = PIXI.Point;
 window.Rectangle = PIXI.Rectangle;
 window.Text = PIXI.Text

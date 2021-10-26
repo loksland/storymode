@@ -1,4 +1,4 @@
-import { utils, scaler, pixiApp, htmlEle } from './../storymode.js';
+import { utils, scaler, pixiApp, htmlEle, ui} from './../storymode.js';
 
 let Engine,
     Render,
@@ -183,30 +183,52 @@ class JRender {
   
   _addBody(type, dispo, options = null){
     
-    if (this.links[dispo.name]){
+    let name;
+    let txInfo;
+    let linkType;
+    
+    if (typeof dispo === 'string'){
+      let txPath = dispo;
+      linkType = 'tx';
+      txInfo = ui.txInfo[txPath];
+      if (!txInfo){
+        throw new Error('JRender: Texture path not found `'+txPath+'`');
+      }
+      name = txInfo.name;
+    } else {
+      linkType = 'dispo';
+      name = dispo.name;
+      txInfo = dispo.txInfo;
+    }
+      
+    if (this.links[name]){
       throw new Error('JRender: Duplicate display object name encountered.')
     }
     
     options = !options ? {} : options;
     if (!options.label){
-      options.label = dispo.name;
+      options.label = name;
     }
     
-    let tlX = dispo.txInfo.x - dispo.txInfo.width*dispo.txInfo.regPercX;
-    let tlY = dispo.txInfo.y - dispo.txInfo.height*dispo.txInfo.regPercY;
+    let tlX = txInfo.x - txInfo.width*txInfo.regPercX;
+    let tlY = txInfo.y - txInfo.height*txInfo.regPercY;
     
-    let cX = tlX + dispo.txInfo.width*0.5;
-    let cY = tlY + dispo.txInfo.height*0.5;
+    let cX = tlX + txInfo.width*0.5;
+    let cY = tlY + txInfo.height*0.5;
     
     let body;
     
     if (type == 'circle'){    
-      body = Bodies.circle(this.ptm*(cX), this.ptm*(cY), this.ptm*(Math.max(dispo.txInfo.width, dispo.txInfo.height)*0.5), options);  // {restitution:0.9, friction: 0.7, label:dispo.name}
+      body = Bodies.circle(this.ptm*(cX), this.ptm*(cY), this.ptm*(Math.max(txInfo.width, txInfo.height)*0.5), options);  // {restitution:0.9, friction: 0.7, label:dispo.name}
     } else if (type == 'rect'){
-      body = Bodies.rectangle(this.ptm*(cX), this.ptm*(cY), this.ptm*(dispo.txInfo.width), this.ptm*(dispo.txInfo.height), options)
+      body = Bodies.rectangle(this.ptm*(cX), this.ptm*(cY), this.ptm*(txInfo.width), this.ptm*(txInfo.height), options)
     }
     
-    this.links[dispo.name] = new JLink(dispo, body, this.ptm, this.mtp);
+    if (linkType == 'dispo'){
+      this.links[name] = new JLink(dispo, body, this.ptm, this.mtp);
+    }// else if (linkType == 'tx'){
+    //  this.links[name] = {linkType:linkType, txInfo:txInfo}
+    //} 
     
     return body;
     
@@ -217,9 +239,9 @@ class JRender {
     if (typeof nameDispoOrBody == 'string'){
       return this.links[nameDispoOrBody]
     } else if (dispoOrBody instanceof PIXI.DisplayObject){
-      return this.links[nameDispoOrBody.name]
+      return this.links[nameDispoOrBody.name]; 
     }
-    return this.links[nameDispoOrBody.label]
+    return this.links[nameDispoOrBody.label]; // Physics body
     
   }
   
@@ -243,13 +265,11 @@ class JRender {
   }
   
   dispose(){
-    
     for (let label in this.links){
       this.links[label].dispose();
       this.links[label] = null
     }    
     this.links = null;
-    
   }
   
 }
@@ -279,9 +299,7 @@ class JLink {
   sync(){
     
     if (this.autoSync){
-      
       this.syncToBody();
-      
     }
     
   }
