@@ -6,8 +6,16 @@ let proj; // Artboard projections
 
 let stageW = 0;
 let stageH = 0;
-let scaleFactor;
-let uiScaleFactor;
+
+let prev; // Stores previous proj, stageW, stageH
+
+let scale; // Alias of scaler.proj.default.scale
+let scaleUI; // Alias of scaler.proj.ui.scale
+
+//let ats; // Screen to art factor - for dimension or relative position.  Refers to **default** proj.
+//let sta; // Art to screen factor - for dimension or relative position. Refers to **default** proj.
+//let atsUI; // Screen to art factor - for dimension or relative position. Alias of uiScaleFactor. Refers to **ui** proj.
+//let staUI; // Art to screen factor - for dimension or relative position. Refers to **ui** proj. 
 
 // Defaults
 export let artboardDims = {width: Math.round(756.0*0.5), height:Math.round(1334.0*0.5)}; // PSD dimensions
@@ -120,17 +128,17 @@ class ArtboardProjection {
       if (alignment.x == -1){
         this.topLeft.x = 0.0;
       } else if (alignment.x == 0){
-        this.topLeft.x = utils.rnd(stageW*0.5-this.scale*artboardDims.width*0.5);
+        this.topLeft.x = Math.round(stageW*0.5-this.scale*artboardDims.width*0.5);
       } else if (alignment.x == 1){
-        this.topLeft.x = utils.rnd(stageW-this.scale*artboardDims.width);
+        this.topLeft.x = Math.round(stageW-this.scale*artboardDims.width);
       } 
       
       if (alignment.y == -1){
         this.topLeft.y = 0.0;
       } else if (alignment.y == 0){
-        this.topLeft.y = utils.rnd(stageH*0.5-this.scale*artboardDims.height*0.5);
+        this.topLeft.y = Math.round(stageH*0.5-this.scale*artboardDims.height*0.5);
       } else if (alignment.y == 1){
-        this.topLeft.y = utils.rnd(stageH-this.scale*artboardDims.height);
+        this.topLeft.y = Math.round(stageH-this.scale*artboardDims.height);
       } 
       
     } else if (pinToProj){
@@ -143,6 +151,9 @@ class ArtboardProjection {
       this.positionScale = proj[pinToProj].positionScale;
       
     }
+    
+    this.sta = this.scale; // Screen to art factor - for dimension or relative position. Alias of scale.
+    this.ats = 1.0/this.scale; // Art to screen factor - for dimension or relative position 
     
   }
   
@@ -203,8 +214,6 @@ class ArtboardProjection {
   }
   
   
-  
-  
 }
 
 // Resize listener
@@ -240,17 +249,33 @@ function onResizeThrottled(){
   if (_stageW == stageW && _stageH == stageH){
     return;
   }
+  
+  // Save previous 
+  if (proj){
+    if (prev && prev.proj){
+      for (let projID in prev.proj){
+        prev.proj[projID] = null;
+        delete prev.proj[projID];
+      }
+    }
+    prev = {};
+    prev.proj = proj;
+    prev.stageW = stageW;
+    prev.stageW = stageH;
+    prev.scale = scale; 
+    prev.scaleUI = scaleUI;
+  }
+  
+  
   stageW = _stageW;
   stageH = _stageH;
-  
   proj = {};
   for (let projectionSlug in artboardProjectionParams){
     let params = artboardProjectionParams[projectionSlug];    
     proj[projectionSlug] = new ArtboardProjection(params.alignment, params.scaleFn, params.scaleToFit, params.matchProjScale, params.pinToProj, params.stretchPosMode, params.minDensity, params.minScale, params.maxScale);   
   }
-
-  scaleFactor = proj.default.scale; 
-  uiScaleFactor = proj.ui.scale;
+  scale = proj.default.scale; 
+  scaleUI = proj.ui.scale;
   
   emitter.emit('resize', stageW, stageH);
   
@@ -376,4 +401,5 @@ function toggleFullScreen(ele = null, forceState = null){
 }
 // export {pixiApp}
 export {toggleFullScreen, isFullScreen, supportsFullScreen}
-export {setup, proj, stageW, stageH, on, off, resizeThrottleDelay, scaleFactor, uiScaleFactor }
+export {scale, scaleUI, prev, artboardScaleFactor}
+export {setup, proj, stageW, stageH, on, off, resizeThrottleDelay}
