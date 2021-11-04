@@ -74,7 +74,7 @@ export function createApp(_htmlEle, fullScreen = false, bgAlpha = 1.0, bgColor =
         onLoadCallback(pixiApp);
       }
       
-      sfx.preload(); // Call preload incase it was not called in app.js
+      sfx._enableLoad(); 
       
     })
 }

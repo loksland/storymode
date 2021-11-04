@@ -10,13 +10,13 @@ import { utils, nav, store } from './../storymode.js';
 // USAGE:
 /*
 if (!sfx.ready){
-  sfx.on('ready', this.onSfxReady, this)
+  sfx.on('ready', this.onready, this)
 } else {
-  onSfxReady();
+  onready();
 }
 // ...
-onSfxReady(){
-  sfx.off('ready', this.onSfxReady, this)
+onready(){
+  sfx.off('ready', this.onready, this)
 }
 */
 
@@ -26,17 +26,17 @@ export default class SFX extends PIXI.utils.EventEmitter {
     
     super();
     
-    this._ready = false;
-
+    this._sfxready = false;
+    this._bgready = false;
+    
     let _sfxEnabled = store.load('sfx.sfxEnabled')
     this._sfxEnabled = _sfxEnabled === '1';
 
     let _bgLoopEnabled = store.load('sfx.bgLoopEnabled')
     this._bgLoopEnabled = _bgLoopEnabled === '1';
     
-    this._globalSfxResources = null;
-    this._preloadCallback = null;
-    this._preloadCalled = false;
+    this._bgResources = null;
+    this._enableLoadCalled = false;
     
     this._sfxVolume = 1.0;
     this._bgLoopVolume = 1.0;
@@ -44,12 +44,17 @@ export default class SFX extends PIXI.utils.EventEmitter {
     
     this.resources = {};
     this.bgLoopSlug = null;
-    
+  
+    this._waitForInteractionToLoad = true;
     
   }
+
+  get sfxready(){
+    return this._sfxready;
+  }
   
-  get ready(){
-    return this._ready;
+  get bgready(){
+    return this._bgready;
   }
   
   get sfxEnabled(){
@@ -101,6 +106,7 @@ export default class SFX extends PIXI.utils.EventEmitter {
   set sfxVolume(volume){
     this._sfxVolume = volume;
   }
+  
   get bgLoopVolume(){
     return this._bgLoopVolume;
   }
@@ -117,29 +123,49 @@ export default class SFX extends PIXI.utils.EventEmitter {
     this.updateBgLoopVolume();
   }
   
-  
-  // May be called multiple times, 
-  // subsequent calls will be ignored
-  preload(globalSfxResources, callback){
+  // Load global, low priority sounds.
+  // It's assumed these are larger files - they will be loaded last and will not 
+  // prevent sound effects from being loaded and played in the meantime
+  // Must be called before or during storymode.createApp callback
+  enqueueBgResources(bgResources, callback){
     
-    if (this._preloadCalled){
+    this._bgResources = bgResources;
+    
+  }
+  
+  // If `false` then will load immediately when able, rather than waiting for user to interact with the DOM
+  // Must be caled before or during storymode.createApp callback
+  set waitForInteractionToLoad(_waitForInteractionToLoad){
+    this._waitForInteractionToLoad = _waitForInteractionToLoad;
+  }
+  
+  get  waitForInteractionToLoad(){
+    return this._waitForInteractionToLoad
+  }
+  
+  // Called after primary load by app.js
+  _enableLoad(){
+    
+    // Only call once
+    if (this._enableLoadCalled){
       return;
     }
-    this._preloadCalled = true;
-    
-    this._globalSfxResources = globalSfxResources
-    this._preloadCallback = callback;
+    this._enableLoadCalled = true;
     
     // Check if any resources are loaded 
-    if ((globalSfxResources && Object.keys(globalSfxResources).length > 0) || this.anySfxResources()){
-      // Wait for interaction then load sound
-      let pointerupFn = () => {
-        document.removeEventListener('pointerup', pointerupFn);
-        utils.loadScript('js/pixi-sound.js', this.onScriptLoaded.bind(this))
+    if ((this._bgResources && Object.keys(this._bgResources).length > 0) || this.anySfxResources()){
+      
+      if (this._waitForInteractionToLoad){
+        // Wait for interaction then load sound
+        let pointerupFn = () => {
+          document.removeEventListener('pointerup', pointerupFn);
+          this.beginLoad();
+        }
+        document.addEventListener('pointerup', pointerupFn);
+      } else {
+        this.beginLoad();
       }
-      document.addEventListener('pointerup', pointerupFn);
     }
-    
   }
   
   anySfxResources(){
@@ -157,9 +183,17 @@ export default class SFX extends PIXI.utils.EventEmitter {
     
   }
   
+  beginLoad(){
+    if (PIXI.sound){
+      this.onScriptLoaded();
+    } else {
+      utils.loadScript('js/pixi-sound.js', this.onScriptLoaded.bind(this))
+    }
+  }
+  
   onScriptLoaded(){
 
-    //PIXI.sound.Sound.volumeAll(0.5);
+    // PIXI.sound.Sound.volumeAll(0.5);
     
     // Set global volume
     // PIXI.sound.volumeAll = 0.1;
@@ -170,7 +204,8 @@ export default class SFX extends PIXI.utils.EventEmitter {
     
     this._loader = new PIXI.Loader();
   
-    let _resources = this._globalSfxResources ? this._globalSfxResources : {};
+    let _resources = {};
+    
     for (let _sceneid in nav.scenes){
       let _r = nav.scenes[_sceneid].class.getSfxResources();
       if (_r){
@@ -186,47 +221,90 @@ export default class SFX extends PIXI.utils.EventEmitter {
       }
     }
     
+    // this._bgResources ? this._bgResources : 
+    let anySfx = false;
     for (let _rprop in _resources){
+      anySfx = true;
       this._loader.add(_rprop, _resources[_rprop]); 
     }
     
-    this._loader.load(this.onResourcesLoaded.bind(this));
+    if (anySfx){
+      this._loader.load(this.onResourcesLoaded.bind(this));
+    } else {
+      this.onResourcesLoaded(this._loader, {});
+    }
   
   }
   
   onResourcesLoaded(loader, resources){
+    
     this._loader = null;
-  
     this.resources = resources;
-    this._ready = true;
-    this._globalSfxResources = null;
-    if (this._preloadCallback){
-      const cb = this._preloadCallback;
-      cb();
+    this._sfxready = true;
+    this.emit('sfxready');
+    
+    if (this._bgResources){
+      
+      this._loader = new PIXI.Loader();
+      
+      for (let _rprop in this._bgResources){
+        this._loader.add(_rprop, this._bgResources[_rprop]); 
+      }
+      
+      this._loader.load(this.onBgResourcesLoaded.bind(this));
+      
     }
-    this._preloadCallback = null;
+    
+  }
+  
+  onBgResourcesLoaded(loader, resources){
+    
+    this._loader = null;
+    this.resources = utils.extend(this.resources, resources); 
+    this._bgready = true;
+    
+    this.emit('bgready');
+    
+    this._bgResources = null;
+
     if (this._pendingBgLoopSlug){
       const tmpPendingBgLoopSlug = this._pendingBgLoopSlug;
       this._pendingBgLoopSlug = null;
       this.setBgLoop(tmpPendingBgLoopSlug);
     }
     
-    this.emit('ready');
-    
   }
     
   stopAll(){
-    if (!this._ready){
+    
+    if (!this._sfxready){
       return;
     }
+    
     PIXI.sound.stopAll();
+    
   }
   
-  playSFX(slug){
-    if (!this._ready || !this._sfxEnabled){
+  playSFX(slug, options = null){
+    
+    if (!this._sfxready || !this._sfxEnabled){
       return;
     }
+    
+    let defaults = {
+      pan: 0.0
+      // wireframeEnabled: false
+    };
+    
+    options = utils.extend(defaults, options);
+    
     if (this.resources[slug]){
+      if (options && options.pan != 0.0){
+        const stereo = new PIXI.sound.filters.StereoFilter()
+        stereo.pan = options.pan; // from -1 to 1
+        this.resources[slug].sound.filters = [stereo];
+        // true to disallow playing multiple layered instances at once.
+      }
       this.resources[slug].sound.play({loop: false, singleInstance: false, volume: this._sfxVolume*this._volume});
     } else {
       console.log('SFX resource not found `'+slug+'`')
@@ -235,7 +313,8 @@ export default class SFX extends PIXI.utils.EventEmitter {
   
   setBgLoop(slug){
     
-    if (!this._ready){
+    // Hold on to for later
+    if (!this._bgready){
       this._pendingBgLoopSlug = slug
       return;
     }
@@ -270,16 +349,15 @@ export default class SFX extends PIXI.utils.EventEmitter {
   
   _resumeBgLoop(){
     if (this._bgLoopEnabled && this.bgLoopSlug){
+      console.log('bg loop this.resources[this.bgLoopSlug].sound.play()')
       this.resources[this.bgLoopSlug].sound.play({loop: true, singleInstance: true, volume: this._bgLoopVolume*this._volume});
     }
   }
   
   updateBgLoopVolume(){
-    
     if (this.resources && this.bgLoopSlug && this.resources[this.bgLoopSlug].sound){
       this.resources[this.bgLoopSlug].sound.volume = this._bgLoopVolume*this._volume
     }
-    
   }
   
 }
