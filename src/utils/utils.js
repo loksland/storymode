@@ -75,10 +75,6 @@ export function e(id){
   return id ? document.getElementById(id) : null;
 }
 
-export function rnd(num){
-  return Math.round(num);
-}
-
 // Shallow clone only
 export function cloneObj(obj){
   return Object.assign({}, obj);
@@ -854,5 +850,8 @@ export function extend(obj, deep) {
   return obj;
   
 };
+
+
+// Maths
 
 
