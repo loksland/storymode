@@ -28,6 +28,10 @@ if (typeof window['Matter'] !== 'undefined'){
 
 // Overview:
 // Integrates between between matter.js to storymode.
+// 
+// - When there is syncing, PIXI display objects sync to the engine bodies.
+// - Modifiers and tweens involving physics bodies are always in physics coords
+// - Bodies and their synced dispos have center registrations
 
 // Requires:
 /*
@@ -148,7 +152,7 @@ class JRunner { // } extends PIXI.utils.EventEmitter {
 // -------
 
 // Integrates between storymode / Pixi sprites and Matter physics objects / engine
-// - Utilizes a JLink class to represent this relationship
+// - As a rule PIXI always syncs to matter.js, rather than the other way around
 
 class JRender {
   
@@ -164,93 +168,115 @@ class JRender {
     this.ptm = options.ptsPerMeterFactor; // points to meter: Multiply by this to translate (art) pt to matter.js units (in meters)
     this.mtp = 1.0/options.ptsPerMeterFactor; // meters to points: Multiply by this to translate matter.js units (in meters) to (art) pts
     
+    this.valueModifiers = {x:0.0,y:0.0}; // This only affects links
+    
     this.links = {};
-    this.subRenders = [];
     
   }
   
-  addCircle(dispo, options = null){
+  // Tools 
+  
+  artPtsToPhysMtrs(artPts){
+    return this.ptm*artPts;
+  }
+  
+  physMtrsToArtPts(physMtrs){
+    return this.mtp*physMtrs;
+  }
+  
+  screenXToPhysMtrs(screenX){
+    return scaler.proj.default.transScreenX(screenX)*this.ptm;
+  }
+  
+  screenYToPhysMtrs(screenY){
+    return scaler.proj.default.transScreenY(screenY)*this.ptm;
+  }
+  
+  screenPtsToPhysMtrs(screenPts){
+    return screenPts*(1.0/scaler.scale)*this.ptm;
+  }
+  
+  physMtrsToScreenPts(physMtrs){
+    return physMtrs*this.mtp*scaler.scale
+  }
+  
+  // ---
+  
+  dispoToBodyDef(dispo){
     
-    return this._addBody('circle', dispo, options);
+    let def = {};
+    
+    def.width = this.screenPtsToPhysMtrs(dispo.width);
+    def.height = this.screenPtsToPhysMtrs(dispo.height);
+    
+    if (dispo.txInfo){ // Consider reg perc      
+      def.cx = ((this.screenXToPhysMtrs(dispo.x) - def.width*dispo.txInfo.regPercX) + def.width*0.5) 
+      def.cy = ((this.screenYToPhysMtrs(dispo.y) - def.height*dispo.txInfo.regPercY) + def.height*0.5) 
+    } else { // Assume center reg
+      def.cx = this.screenXToPhysMtrs(dispo.x);
+      def.cy = this.screenYToPhysMtrs(dispo.y);
+    }
+    
+    return def;    
     
   }
   
-  addRect(dispo, options = null){
+  // |txInfo| can be a txPath (eg `myart.psd/mysprite`)
+  txInfoToBodyDef(txInfo){
     
-    return this._addBody('rect', dispo, options);
-    
-  }
-  
-  _addBody(type, dispo, options = null){
-    
-    let name;
-    let txInfo;
-    let linkType;
-    
-    if (typeof dispo === 'string'){
-      let txPath = dispo;
-      linkType = 'tx';
-      txInfo = ui.txInfo[txPath];
+    if (typeof txInfo === 'string'){
+      txInfo = ui.txInfo[txInfo];
       if (!txInfo){
-        throw new Error('JRender: Texture path not found `'+txPath+'`');
+        throw new Error('JRender: Texture path not found `'+txInfo+'`');
       }
-      name = txInfo.name;
-    } else {
-      linkType = 'dispo';
-      name = dispo.name;
-      txInfo = dispo.txInfo;
     }
-      
-    if (this.links[name]){
-      throw new Error('JRender: Duplicate display object name encountered.')
-    }
-    
-    options = !options ? {} : options;
-    if (!options.label){
-      options.label = name;
-    }
-    
-    let tlX = txInfo.x - txInfo.width*txInfo.regPercX;
-    let tlY = txInfo.y - txInfo.height*txInfo.regPercY;
-    
-    let cX = tlX + txInfo.width*0.5;
-    let cY = tlY + txInfo.height*0.5;
-    
-    let body;
-    
-    if (type == 'circle'){    
-      body = Bodies.circle(this.ptm*(cX), this.ptm*(cY), this.ptm*(Math.max(txInfo.width, txInfo.height)*0.5), options);  // {restitution:0.9, friction: 0.7, label:dispo.name}
-    } else if (type == 'rect'){
-      body = Bodies.rectangle(this.ptm*(cX), this.ptm*(cY), this.ptm*(txInfo.width), this.ptm*(txInfo.height), options)
-    }
-    
-    if (linkType == 'dispo'){
-      this.links[name] = new JLink(dispo, body, this.ptm, this.mtp);
-    }// else if (linkType == 'tx'){
-    //  this.links[name] = {linkType:linkType, txInfo:txInfo}
-    //} 
-    
-    return body;
+  
+    let def = {};
+    def.cx = ((txInfo.x - txInfo.width*txInfo.regPercX) + txInfo.width*0.5) * this.ptm;
+    def.cy = ((txInfo.y - txInfo.height*txInfo.regPercY) + txInfo.height*0.5) * this.ptm;
+    def.width = txInfo.width * this.ptm;
+    def.height = txInfo.height * this.ptm;
+  
+    return def;
     
   }
   
-  linkFor(nameDispoOrBody){
-    
-    if (typeof nameDispoOrBody == 'string'){
-      return this.links[nameDispoOrBody]
-    } else if (dispoOrBody instanceof PIXI.DisplayObject){
-      return this.links[nameDispoOrBody.name]; 
-    }
-    return this.links[nameDispoOrBody.label]; // Physics body
-    
+  rectToBodyDef(rect){
+    let def = {};
+    def.width = this.screenPtsToPhysMtrs(rect.width);
+    def.height = this.screenPtsToPhysMtrs(rect.height);
+    def.cx = this.screenXToPhysMtrs(rect.x) + def.width*0.5;
+    def.cy = this.screenYToPhysMtrs(rect.y) + def.width*0.5;
+    return def;
   }
   
   drawRender(world){
     
+    let link;
+    let pxScale = 1.0/scaler.artboardScaleFactor
+
     for (let label in this.links){
-      this.links[label].sync();
+      link = this.links[label];
+      
+      if (link.syncProps.x){
+        // Assumes dispo reg is 0.5,0.5
+        link.to.x = scaler.proj.default.transArtX(this.mtp*(link.from.position.x+link.valueModifiers.x + this.valueModifiers.x)) // Convert from matter.js meters to pts
+      }
+      
+      if (link.syncProps.y){
+        // Assumes dispo reg is 0.5,0.5
+        link.to.y = scaler.proj.default.transArtY(this.mtp*(link.from.position.y+link.valueModifiers.y + this.valueModifiers.y)); 
+      }
+      
+      if (link.syncProps.rotation){
+        link.to.rotation = link.from.angle + utils.degToRad(link.valueModifiers.rotation); 
+      }
+      
+      if (link.syncProps.scale){
+        let s = scaler.scale*(1.0/scaler.artboardScaleFactor)*link.from._scale*link.valueModifiers.scale;
+        link.to.scale.set(s,s);
+      }
     }
-    
   }
   
   get mouseElement(){
@@ -258,10 +284,36 @@ class JRender {
   }
   
   adjustMouseToStage(mouse){
+    Mouse.setOffset(mouse, {x:this.ptm*(-scaler.proj.default.topLeft.x*(1.0/scaler.scale)), y:this.ptm*(-scaler.proj.default.topLeft.y*(1.0/scaler.scale))}); //scaler.proj.default.transArtY(0.0)
+    Mouse.setScale(mouse, {x:this.ptm*(1.0/scaler.scale), y:this.ptm*(1.0/scaler.scale)})
+  }
+  
+  // - Sync props: x,y,rotation(in radians),scale
+  addSyncLink(label, from, to, syncProps = null, valueModifiers = null){
     
-    Mouse.setOffset(mouse, {x:this.ptm*(-scaler.proj.default.topLeft.x*(1.0/scaler.scaleFactor)), y:this.ptm*(-scaler.proj.default.topLeft.y*(1.0/scaler.scaleFactor))}); //scaler.proj.default.transArtY(0.0)
-    Mouse.setScale(mouse, {x:this.ptm*(1.0/scaler.scaleFactor), y:this.ptm*(1.0/scaler.scaleFactor)})
+    if (!from.id || !from.type || from.type !== 'body'){
+      throw new Error('Jrender: Target must be a physics body');
+    } 
+    from._scale = typeof from._scale !== 'undefined' ? from._scale : 1.0; // Track scale
     
+    syncProps = syncProps ? syncProps : {};
+    
+    // If all syncProps are false, the remaining are assumed true
+    // If any sync props are true, the remaining are assumed false.
+    // Apart from rotation and scale that are always assumed false
+    let syncPropDefault = true
+    for (let p in syncProps){
+      if (syncProps[p] === true){
+        syncPropDefault = false;
+        break;
+      }
+    }
+    
+    syncProps = utils.extend({x:syncPropDefault,y:syncPropDefault,rotation:false,scale:false}, syncProps);
+    valueModifiers = utils.extend({x:0.0,y:0.0,rotation:0.0, scale:1.0}, valueModifiers); // Note these need to be relative to metter / meters
+    let link = new JSyncLink(from, to, syncProps, valueModifiers);
+    this.links[label] = link;
+    return link;
   }
   
   dispose(){
@@ -278,51 +330,24 @@ class JRender {
 // JLink
 // -----
 
-// Represents a display object and matter object relationship.
+// Represents a link between PIXI and matterjs
+// - Just a light class with refs. Calculations are done on the render.
+class JSyncLink {
+  constructor(from, to, syncProps, valueModifiers) {
+    this.from = from;
+    this.to = to;
+    this.syncEnabled = true;
+    this.syncProps = syncProps;
+    this.valueModifiers = valueModifiers;
+  }
+  dispose(){
+    this.from = null;
+    this.to = null;
+  }
+}
 
-class JLink {
-  
-  constructor(dispo, body, ptm, mtp){
-    
-    this.dispo = dispo; // Pixi dislay object
-    this.body = body; // Matter body
-    
-    this.autoSync = true;
-    
-    this.ptm = ptm;
-    this.mtp = mtp;
-    
-    this.syncProps = {x:true, y:true, rotation:true}; // Usage: jrender.linkFor(mySprite).syncProps.rotation = false;
-    
-  }
-  
-  sync(){
-    
-    if (this.autoSync){
-      this.syncToBody();
-    }
-    
-  }
-  
-  syncToBody(){
-    
-    if (this.syncProps.x){
-      // Assumes dispo reg is 0.5,0.5
-      // was scaler.proj[this.dispo.txInfo.projID]
-      this.dispo.x = scaler.proj.default.transArtX(this.mtp*this.body.position.x); // Convert from matter.js meters to pts
-    }
-    
-    if (this.syncProps.y){
-      // Assumes dispo reg is 0.5,0.5
-      this.dispo.y = scaler.proj.default.transArtY(this.mtp*this.body.position.y); 
-    }
-    
-    if (this.syncProps.rotation){
-      this.dispo.rotation = this.body.angle;
-    }
-    
-  }
-  
+
+  /*
   syncToDispo(){
     
     // https://github.com/liabru/matter-js/blob/master/src/body/Body.js#L180
@@ -348,22 +373,14 @@ class JLink {
       Body.setAngle(this.body, this.dispo.rotation);
     }
     
-  }
-  
-  dispose(){
-    
-    this.dispo = null; // Pixi dislay object
-    this.body = null;
-    
-  }
-  
-}
+
+*/
 
 // JWireframeRender
 // ----------------
 
 // A wireframe renderer for storymode
-
+// - This is intended for development purposes.
 /*
 Usage:
 ```js
@@ -403,7 +420,7 @@ class JWireframeRender extends PIXI.Graphics {
     this._stageW = scaler.stageW;
     this._stageH = scaler.stageH;
 
-    this.scale.set(scaler.scaleFactor*this.mtp);
+    this.scale.set(scaler.scale*this.mtp);
     this.x = scaler.proj.default.topLeft.x; // scaler.proj.default.transArtX(0.0)
     this.y = scaler.proj.default.topLeft.y; // scaler.proj.default.transArtY(0.0)   
     
@@ -580,15 +597,225 @@ class JWireframeRender extends PIXI.Graphics {
   
 }
 
+
+
+
+
 // Extensions
 // ----------
 
-/*
-Mouse.prototype.updateToStageDimensions = function(){
-  Mouse.setOffset(this, {x:-scaler.proj.default.transArtX(0.0)*(1.0/scaler.scaleFactor), y:-scaler.proj.default.transArtY(0.0)*(1.0/scaler.scaleFactor)}); 
-  Mouse.setScale(this, {x:1.0/scaler.scaleFactor, y:1.0/scaler.scaleFactor})
+class Jgsap {
+  
+  constructor(){
+    this.tweens= {};
+  }
+  
+  fromTo(target, dur, twFrom, twTo){
+    return this._tween(target, dur, twFrom, twTo);
+  }
+  
+  from(target, dur, tw){
+    
+    return this._tween(target, dur, tw, null);
+    
+  }
+  
+  to(target, dur, tw){
+    
+    return this._tween(target, dur, null, tw);
+    
+  }
+  
+  _tween(target, dur, twFrom, twTo){
+    
+    if (!target.id || !target.type){
+      throw new Error('jsap: Target must be a physics body');
+    } else if (!(target.type == 'body' || target.type == 'composite')){
+      throw new Error('jsap: Unsupported target');
+    }
+    
+    let cmd = 'fromTo';
+    let tw;
+    if (!twFrom){
+      cmd = 'to'
+      tw = twTo;
+    } else if (!twTo){
+      cmd = 'from'
+      tw = twFrom;
+    }
+    
+    // Create a temporary prop object to tween
+    if (!this.tweens[target.id]){
+      this.tweens[target.id] = {};
+    }
+    
+    //this.tweens[target.id]._targetType = target.type;
+    this.tweens[target.id]._syncProps = {}; // Track which props to update
+    
+    // Assign callbacks
+    let _tw = (cmd === 'fromTo') ? twTo : tw;
+    _tw.onUpdateParams = [target, _tw.onUpdate, _tw.onUpdateParams]
+    _tw.onUpdate = this.onTwUpdate.bind(this);      
+    _tw.onCompleteParams = [target, _tw.onComplete, _tw.onCompleteParams]
+    _tw.onComplete = this.onTwComplete.bind(this);      
+  
+    // Record starting value
+    if (cmd === 'fromTo'){
+      
+      if (target.type == 'composite'){
+        throw new Error('jsap: Composite tweens can only be relative');
+      }
+      
+      // Set starting values
+      
+      if ('x' in twFrom){
+        this.tweens[target.id]._syncProps.x = true;        
+        this.tweens[target.id].x = twFrom.x
+      } 
+      if ('y' in twFrom){
+        this.tweens[target.id]._syncProps.y = true;        
+        this.tweens[target.id].y = twFrom.y
+      } 
+      
+      if ('rotation' in twFrom){
+        this.tweens[target.id]._syncProps.rotation = true;
+        twFrom.rotation = utils.degToRad(twFrom.rotation);
+        twTo.rotation = utils.degToRad(twTo.rotation);      
+        this.tweens[target.id].rotation = twFrom.rotation;
+      }
+      
+      gsap.fromTo(this.tweens[target.id], dur, twFrom, twTo);
+      
+    } else {
+      
+      // Set starting values
+      if ('x' in tw){
+        this.tweens[target.id]._syncProps.x = true;    
+        if (target.type == 'composite'){
+          this.tweens[target.id].x = 0.0
+          this.tweens[target.id]._x = 0.0
+        } else {
+          this.tweens[target.id].x = target.position.x;
+        }
+      } 
+      
+      if ('y' in tw){
+        this.tweens[target.id]._syncProps.y = true;        
+        if (target.type == 'composite'){
+          this.tweens[target.id].y = 0.0
+          this.tweens[target.id]._y = 0.0
+        } else {
+          this.tweens[target.id].y = target.position.y;
+        }
+      } 
+      
+      if ('rotation' in tw){
+        this.tweens[target.id]._syncProps.rotation = true;
+        this.tweens[target.id].rotation = target.angle;
+        tw.rotation = utils.degToRad(tw.rotation); // Convert from degs to radians
+      }
+      
+      if ('scale' in tw){
+        target._scale = typeof target._scale !== 'undefined' ? target._scale : 1.0; // Track scale
+        this.tweens[target.id]._syncProps.scale = true;
+        this.tweens[target.id].scale = target._scale;
+        this.tweens[target.id]._scale = this.tweens[target.id].scale;
+      }
+      
+      gsap[cmd](this.tweens[target.id], dur, tw);
+      
+    }
+  }
+  
+  onTwUpdate(target, _onUpdate = null, _onUpdateParams = null){
+    
+    if (this.tweens[target.id]._syncProps.x || this.tweens[target.id]._syncProps.y){
+      
+      if (target.type == 'composite'){
+        
+        Composite.translate(target, {
+          x: this.tweens[target.id]._syncProps.x ? this.tweens[target.id].x-this.tweens[target.id]._x : 0.0,
+          y: this.tweens[target.id]._syncProps.y ? this.tweens[target.id].y-this.tweens[target.id]._y : 0.0,
+        }, false);
+        
+        // Store previous values;
+        if (this.tweens[target.id]._syncProps.x){
+          this.tweens[target.id]._x = this.tweens[target.id].x;
+        }
+        if (this.tweens[target.id]._syncProps.y){
+          this.tweens[target.id]._y = this.tweens[target.id].y;
+        }
+        
+      } else {
+        
+        let _x = this.tweens[target.id]._syncProps.x ? this.tweens[target.id].x : target.position.x;
+        let _y = this.tweens[target.id]._syncProps.y ? this.tweens[target.id].y : target.position.y;
+        Body.setPosition(target, {x:_x, y:_y});
+        
+      }
+    }
+    
+    if (this.tweens[target.id]._syncProps.rotation){
+      Body.setAngle(target, this.tweens[target.id].rotation);
+    }
+    
+    if (this.tweens[target.id]._syncProps.scale){   
+      let s = this.tweens[target.id].scale / Math.max(0.00001, this.tweens[target.id]._scale);
+      Body.scale(target, s, s); // Apply *relative* scale
+      target._scale = this.tweens[target.id].scale; // Keep this prop up to date
+      this.tweens[target.id]._scale = this.tweens[target.id].scale
+    }
+    
+    if (_onUpdate){
+      _onUpdate.apply(null, _onUpdateParams);
+    }
+    
+  }
+  
+  onTwComplete(target, _onComplete = null, _onCompleteParams = null){
+    
+    if (!target){
+      return;
+    }    
+    let tws = gsap.getTweensOf(this.tweens[target.id]);
+    let anyTweens = false;
+    if (tws.length > 0){
+      for (let tw of tws){ 
+        let p = tw.progress();
+        if (p < 1){
+          anyTweens = true;
+          break;
+        }
+      }
+    }
+    if (!anyTweens){
+      this.killTweensOf(target);
+    }
+    if (_onComplete){
+      _onComplete.apply(null, _onCompleteParams);
+    }
+    
+  }
+  
+  killAll(){
+    for (var id in this.tweens){
+      gsap.killTweensOf(this.tweens[id]);
+    }
+    this.tweens = {};
+  }
+  
+  killTweensOf(target){
+    if (this.tweens[target.id]){
+      gsap.killTweensOf(this.tweens[target.id]);
+    }
+    delete this.tweens[target.id];
+  }
+  
 }
-*/
 
-export default { JRunner, JRender, JWireframeRender }
+let jgsap = new Jgsap();
+
+// Body and Composite - tracking position and scale attributes
+
+export default { JRunner, JRender, JWireframeRender, jgsap}
     
