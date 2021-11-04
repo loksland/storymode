@@ -200,6 +200,7 @@ PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
       } else {
         throw new Error('Spritesheet not found `'+spritesheetBaseName+'` (via `'+txInfo[txPath].psdID+'`)')
       }
+      
     } else if (frame){ // Create a clipped frame - not compatible with spritesheet assets      
       // Create a new texture with frmae defined.
       // dispo.applyProj(); will take this frame into account
@@ -216,7 +217,7 @@ PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
   }
   
   // Extra prop that art aware display objects posess.
-  dispo.txInfo = txInfo[txPath];    
+  dispo.txInfo = utils.cloneObj(txInfo[txPath]); // Clone this prop as individual sprites may have custom x,y,scale
   
   dispo.name = dispo.txInfo.name; // Optional, for convenience
   
@@ -303,10 +304,200 @@ PIXI.DisplayObject.prototype.syncRelative = function(targetDispo, syncX = true, 
     this.y = round ? Math.round(_y) : _y;
   }
   
-  
 }
 
-PIXI.DisplayObject.prototype.applyProj = function(){
+// Updates a dispo's txInfo object to reflect it's current stage position/scale
+// - *syncProps* (various, default=true) - Optional array of props: `width`,`height`,`x`,`y`,'pos','scale',
+// - *usePrevious* Assumes the dispos's current position is relative to scaler.prev (the previous stage dimension info)
+PIXI.DisplayObject.prototype.syncTxInfoToStage = function(syncProps = true, usePrevious = false){
+  
+  let _scaler ;
+  if (usePrevious){
+    if (!scaler.prev){
+      throw new Error('No scaler.prev not found')      
+    } else {
+      _scaler = scaler.prev;
+    }
+  } else {
+    _scaler = scaler;
+  }
+  
+  const syncPos = syncProps === true || syncProps.includes('pos');
+  const syncScale = syncProps === true || syncProps.includes('scale');  
+  const projID = this.txInfo.projID;
+  
+  let txInfoOriginal = {x:this.txInfo.x,y:this.txInfo.y,width:this.txInfo.width,height:this.txInfo.height}
+  
+  if (syncPos || syncProps.includes('x')){
+    this.txInfo.x = _scaler.proj[projID].transScreenX(this.position.x);
+  }
+  if (syncPos || syncProps.includes('y')){
+    //origY = this.txInfo.y
+    this.txInfo.y = _scaler.proj[projID].transScreenY(this.position.y);
+  }
+  
+  if (syncScale || syncProps.includes('width')){
+    this.txInfo.width = (1.0/_scaler.proj[projID].scale) * this.width;
+  }
+  if (syncScale || syncProps.includes('height')){
+    this.txInfo.height = (1.0/_scaler.proj[projID].scale) * this.height;
+  }
+  
+  // Update gsap tweens
+  
+  let tws = gsap.getTweensOf(this);
+  if (tws.length > 0){
+    
+    let posProps = ['x','y'];
+    let dimProps = ['width','height']
+    let scaleProps = ['scale','scaleX','scaleY']
+    let scaleAccessProps = {scale:'x',scaleX:'x',scaleY:'y'};
+    
+    for (let tw of tws){ 
+      let progress = tw.progress();      
+      let requiresInvalidation = false;
+      let requiresRestart = false;
+      if (progress < 1){ // Ignore completed tweens 
+        
+        for (let prop of posProps){
+          if (tw.vars[prop] && (syncPos || syncProps.includes(prop))){
+            let twInfo = getTwInfo(tw.vars[prop]);
+            if (twInfo.isRel){
+              twInfo.val = scaler.proj[projID].positionScale *  (1.0/_scaler.proj[projID].positionScale)*twInfo.val; // Convert val to art via scaler.prev then convert art to screen via new scaler
+              twInfo.val *= progress > 0 ? (1.0-tw.vars.ease(progress)) : 1.0; // Take into account current position / ease & progress
+              if (tw.vars.runBackwards){ 
+                twInfo.val *= -1.0; // This only works for relative - reversing the relative value
+              }
+            } else if (tw.vars.runBackwards){ // gsap.from()              
+            
+              // WARNING: If progress=0 below will skip any pending delay
+              tw.progress(1.0, true) // Jump to end - get the end value
+              twInfo.val = prop == 'x' ? scaler.proj[projID].transArtX(_scaler.proj[projID].transScreenX(this[prop])) : scaler.proj[projID].transArtY(_scaler.proj[projID].transScreenY(this[prop])); // Save target position
+              tw.progress(progress, true) // Jump to end - get the end value
+              if (!(progress > 0)){
+                requiresRestart = true;
+              }
+              
+            } else {
+              twInfo.val = prop === 'x' ? scaler.proj[projID].transArtX(_scaler.proj[projID].transScreenX(twInfo.val)) : scaler.proj[projID].transArtY(_scaler.proj[projID].transScreenY(twInfo.val));  // Convert val to art via scaler.prev then convert art to screen via new scaler                                        
+            }
+            if (tw.vars.startAt && tw.vars.startAt[prop]){ // gsap.fromTo()
+              delete tw.vars.startAt[prop];              
+            }
+            requiresInvalidation = true;
+            tw.vars[prop] = buildTwCmd(twInfo);
+          }
+        }
+        
+        for (let prop of dimProps){
+          if (tw.vars[prop] && (syncScale || syncProps.includes(prop))){
+            let twInfo = getTwInfo(tw.vars[prop]);
+            if (!twInfo.isRel && tw.vars.runBackwards) { // from() absolute
+              // WARNING: If progress=0 below will skip any pending delay
+              tw.progress(1.0, true) // Jump to end - get the end value
+              twInfo.val = scaler.proj[projID].scale * (1.0/_scaler.proj[projID].scale)*this[prop]; // Save target position
+              tw.progress(progress, true) // Reset progress
+            } else {              
+              twInfo.val = scaler.proj[projID].scale * (1.0/_scaler.proj[projID].scale)*twInfo.val;
+              if (twInfo.isRel){
+                twInfo.val *= progress > 0 ? (1.0-tw.vars.ease(progress)) : 1.0; // Take into account current position / ease & progress              
+                if (tw.vars.runBackwards){ // gsap.from()
+                  twInfo.val *= -1.0; // This only works for relative - reversing the relative value
+                }
+              }
+            } 
+            if (tw.vars.startAt && tw.vars.startAt[prop]){ // gsap.fromTo()
+              delete tw.vars.startAt[prop];
+            }
+            requiresInvalidation = true;
+            tw.vars[prop] = buildTwCmd(twInfo);
+          }
+        }
+        
+        if (tw.vars.pixi){
+          for (let prop of scaleProps){
+            if (tw.vars.pixi[prop] && (syncScale || syncProps.includes(prop))){
+              let twInfo = getTwInfo(tw.vars.pixi[prop]);
+              if (!twInfo.isRel && tw.vars.runBackwards) { // from() absolute
+                // Make value target            
+                // WARNING: If progress=0 below will skip any pending delay
+                tw.progress(1.0) // Jump to end - get the end value
+                twInfo.val = scaler.proj[projID].scale * (1.0/_scaler.proj[projID].scale)*this.scale[scaleAccessProps[prop]]; // Save target position                
+                tw.progress(progress) // Reset progress     
+              } else {              
+                twInfo.val = scaler.proj[projID].scale * (1.0/_scaler.proj[projID].scale)*twInfo.val;
+                if (twInfo.isRel){
+                  twInfo.val *= progress > 0 ? (1.0-tw.vars.ease(progress)) : 1.0; // Take into account current position / ease & progress              
+                  if (tw.vars.runBackwards){ // gsap.from()
+                    twInfo.val *= -1.0; // This only works for relative - reversing the relative value
+                  }
+                }
+              } 
+              if (tw.vars.startAt && tw.vars.startAt.pixi && tw.vars.startAt.pixi[prop]){ // gsap.fromTo()
+                delete tw.vars.startAt.pixi[prop];
+              }
+              requiresInvalidation = true;
+              tw.vars.pixi[prop] = buildTwCmd(twInfo);
+            }
+          }
+        }
+      }
+      if (requiresInvalidation){
+        if (tw.vars.runBackwards){ // gsap.from()
+          tw.vars.runBackwards = false;
+        }
+        tw.invalidate();
+      }
+    }
+  }
+}
+
+function isTwRel(twCmd){
+  if (typeof twCmd === 'string'){
+    return twCmd.split('+=').length > 1 || twCmd.split('-=').length > 1;
+  }
+  return false;
+}
+
+// Converts a gsap value command. Eg. '+=23.3' into constituent parts
+function getTwInfo(twCmd){  
+  let info = {}
+  info.isRel = false;
+  info.original = twCmd;
+  if (typeof twCmd === 'string'){
+    let parts = twCmd.split('+=')
+    if (parts.length == 2){
+      info.isRel = true;
+      info.relOp = '+=';
+      info.val = Number(parts[1]);
+      return info;
+    } else {
+      parts = twCmd.split('-=');
+      if (parts.length == 2){
+        info.isRel = true;
+        info.relOp = '-=';
+        info.val = Number(parts[1]);
+        return info;
+      }
+    }
+    twCmd = Number(twCmd)
+  }
+  info.val = twCmd;
+  return info;  
+}
+
+function buildTwCmd(info){  
+  if (info.isRel){
+    return info.relOp + String(info.val);
+  }
+  return info.val;
+}
+
+PIXI.DisplayObject.prototype.applyProj = function(syncProps = false){
+  
+  if (syncProps !== false){
+    this.syncTxInfoToStage(syncProps, true);
+  }
   
   const projID = this.txInfo.projID;
   
@@ -368,6 +559,9 @@ PIXI.DisplayObject.prototype.applyProj = function(){
     }
   }
   
+  
+  
+  
 }
 
 // Scenes can update texture info with dynamic content 
@@ -397,10 +591,6 @@ PIXI.DisplayObject.prototype.getArt = function(txNameGlob){
   let args = Array.from(arguments);  
   return this.addArt.apply(this, ['_GETNAMESONLY'].concat(args));
 }
-
-
-
-
 
 // If caller is a scene then all top level items are added 
 // otherwise will add chidren
