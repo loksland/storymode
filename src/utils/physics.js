@@ -258,23 +258,22 @@ class JRender {
     for (let label in this.links){
       link = this.links[label];
       
-      if (link.syncProps.x){
-        // Assumes dispo reg is 0.5,0.5
-        link.to.x = scaler.proj.default.transArtX(this.mtp*(link.from.position.x+link.valueModifiers.x + this.valueModifiers.x)) // Convert from matter.js meters to pts
-      }
-      
-      if (link.syncProps.y){
-        // Assumes dispo reg is 0.5,0.5
-        link.to.y = scaler.proj.default.transArtY(this.mtp*(link.from.position.y+link.valueModifiers.y + this.valueModifiers.y)); 
-      }
-      
-      if (link.syncProps.rotation){
-        link.to.rotation = link.from.angle + utils.degToRad(link.valueModifiers.rotation); 
-      }
-      
-      if (link.syncProps.scale){
-        let s = scaler.scale*(1.0/scaler.artboardScaleFactor)*link.from._scale*link.valueModifiers.scale;
-        link.to.scale.set(s,s);
+      if (link.syncEnabled){
+        if (link.syncProps.x){
+          // Assumes dispo reg is 0.5,0.5
+          link.to.x = scaler.proj.default.transArtX(this.mtp*(link.from.position.x+link.valueModifiers.x + this.valueModifiers.x)) // Convert from matter.js meters to pts
+        }
+        if (link.syncProps.y){
+          // Assumes dispo reg is 0.5,0.5
+          link.to.y = scaler.proj.default.transArtY(this.mtp*(link.from.position.y+link.valueModifiers.y + this.valueModifiers.y)); 
+        }
+        if (link.syncProps.rotation){
+          link.to.rotation = link.from.angle + utils.degToRad(link.valueModifiers.rotation); 
+        }
+        if (link.syncProps.scale){
+          let s = scaler.scale*(1.0/scaler.artboardScaleFactor)*link.from._scale*link.valueModifiers.scale;
+          link.to.scale.set(s,s);
+        }
       }
     }
   }
@@ -309,7 +308,7 @@ class JRender {
       }
     }
     
-    syncProps = utils.extend({x:syncPropDefault,y:syncPropDefault,rotation:false,scale:false}, syncProps);
+    syncProps = utils.extend({x:syncPropDefault,y:syncPropDefault,rotation:syncPropDefault,scale:syncPropDefault}, syncProps);
     valueModifiers = utils.extend({x:0.0,y:0.0,rotation:0.0, scale:1.0}, valueModifiers); // Note these need to be relative to metter / meters
     let link = new JSyncLink(from, to, syncProps, valueModifiers);
     this.links[label] = link;
@@ -346,35 +345,6 @@ class JSyncLink {
   }
 }
 
-
-  /*
-  syncToDispo(){
-    
-    // https://github.com/liabru/matter-js/blob/master/src/body/Body.js#L180
-    
-    if (this.syncProps.x || this.syncProps.y){
-      let position = {}
-      if (this.syncProps.x){
-        position.x = this.ptm*scaler.proj.default.transScreenX(this.dispo.x)   
-        if (!this.syncProps.y){
-          position.y =  this.body.position.y
-        } 
-      }
-      if (this.syncProps.y){
-        position.y = this.ptm*scaler.proj.default.transScreenY(this.dispo.y)    
-        if (!this.syncProps.x){
-          position.x =  this.body.position.x
-        } 
-      }
-      Body.setPosition(this.body, position);
-    }
-    
-    if (this.syncProps.rotation){
-      Body.setAngle(this.body, this.dispo.rotation);
-    }
-    
-
-*/
 
 // JWireframeRender
 // ----------------
@@ -598,35 +568,58 @@ class JWireframeRender extends PIXI.Graphics {
 }
 
 
-
-
-
 // Extensions
 // ----------
 
 class Jgsap {
   
   constructor(){
-    this.tweens= {};
+    this.c = 0;
+    this.tweens = {};
+    this.delays = {};
+    this._tweenBind = this._tween.bind(this)
   }
   
   fromTo(target, dur, twFrom, twTo){
-    return this._tween(target, dur, twFrom, twTo);
+    this._tween(target, dur, twFrom, twTo);
   }
   
   from(target, dur, tw){
-    
-    return this._tween(target, dur, tw, null);
-    
+    if (tw.delay && tw.delay > 0.0){
+      let delay = tw.delay;
+      tw.delay = 0.0;
+      let delayID = this.generateID();
+      let delayedCall = gsap.delayedCall(delay, this._tweenBind, [target, dur, tw, null, delayID]);
+      if (!this.delays[target.id]){
+        this.delays[target.id] = {};
+      }    
+      this.delays[target.id][delayID] = delayedCall;
+    } else {
+      this._tween(target, dur, tw, null);
+    }
   }
   
   to(target, dur, tw){
-    
-    return this._tween(target, dur, null, tw);
-    
+    if (tw.delay && tw.delay > 0.0){
+      let delay = tw.delay;
+      tw.delay = 0.0;
+      let delayID = this.generateID();
+      let delayedCall = gsap.delayedCall(delay, this._tweenBind, [target, dur, null, tw, delayID]);  
+      if (!this.delays[target.id]){
+        this.delays[target.id] = {};
+      }    
+      this.delays[target.id][delayID] = delayedCall;
+    } else {
+      this._tween(target, dur, null, tw);
+    }
   }
   
-  _tween(target, dur, twFrom, twTo){
+  generateID(){
+    this.c++;
+    return this.c;
+  }
+  
+  _tween(target, dur, twFrom, twTo, delayID = null){
     
     if (!target.id || !target.type){
       throw new Error('jsap: Target must be a physics body');
@@ -644,21 +637,31 @@ class Jgsap {
       tw = twFrom;
     }
     
+    if (delayID){
+      if (this.delays[target.id][delayID]){
+        this.delays[target.id][delayID].kill();
+      }
+      delete this.delays[target.id][delayID];
+    }
+    
     // Create a temporary prop object to tween
     if (!this.tweens[target.id]){
       this.tweens[target.id] = {};
     }
     
-    //this.tweens[target.id]._targetType = target.type;
-    this.tweens[target.id]._syncProps = {}; // Track which props to update
+    let twProps = {};    
+    twProps._syncProps = {}; // Track which props to update
+    
+    let twID = this.generateID();
+    this.tweens[target.id][twID] = twProps
     
     // Assign callbacks
     let _tw = (cmd === 'fromTo') ? twTo : tw;
-    _tw.onUpdateParams = [target, _tw.onUpdate, _tw.onUpdateParams]
+    _tw.onUpdateParams = [target, twID, _tw.onUpdate, _tw.onUpdateParams]
     _tw.onUpdate = this.onTwUpdate.bind(this);      
-    _tw.onCompleteParams = [target, _tw.onComplete, _tw.onCompleteParams]
+    _tw.onCompleteParams = [target, twID, _tw.onComplete, _tw.onCompleteParams]
     _tw.onComplete = this.onTwComplete.bind(this);      
-  
+    
     // Record starting value
     if (cmd === 'fromTo'){
       
@@ -669,101 +672,145 @@ class Jgsap {
       // Set starting values
       
       if ('x' in twFrom){
-        this.tweens[target.id]._syncProps.x = true;        
-        this.tweens[target.id].x = twFrom.x
+        twProps._syncProps.x = true;        
+        twProps.x = twFrom.x
       } 
       if ('y' in twFrom){
-        this.tweens[target.id]._syncProps.y = true;        
-        this.tweens[target.id].y = twFrom.y
+        twProps._syncProps.y = true;        
+        ttwProps.y = twFrom.y
       } 
       
       if ('rotation' in twFrom){
-        this.tweens[target.id]._syncProps.rotation = true;
+        twProps._syncProps.rotation = true;
         twFrom.rotation = utils.degToRad(twFrom.rotation);
         twTo.rotation = utils.degToRad(twTo.rotation);      
-        this.tweens[target.id].rotation = twFrom.rotation;
+        twProps.rotation = twFrom.rotation;
       }
       
-      gsap.fromTo(this.tweens[target.id], dur, twFrom, twTo);
+      gsap.fromTo(twProps, dur, twFrom, twTo);
       
     } else {
       
-      // Set starting values
+      // Set starting values - only when tween starts
       if ('x' in tw){
-        this.tweens[target.id]._syncProps.x = true;    
+        twProps._syncProps.x = true;    
         if (target.type == 'composite'){
-          this.tweens[target.id].x = 0.0
-          this.tweens[target.id]._x = 0.0
+          twProps.x = 0.0
+          twProps._x = 0.0
         } else {
-          this.tweens[target.id].x = target.position.x;
+          twProps.x = target.position.x;
         }
       } 
       
       if ('y' in tw){
-        this.tweens[target.id]._syncProps.y = true;        
+        twProps._syncProps.y = true;   
         if (target.type == 'composite'){
-          this.tweens[target.id].y = 0.0
-          this.tweens[target.id]._y = 0.0
+          twProps.y = 0.0
+          twProps._y = 0.0
         } else {
-          this.tweens[target.id].y = target.position.y;
+          twProps.y = target.position.y;
         }
       } 
       
       if ('rotation' in tw){
-        this.tweens[target.id]._syncProps.rotation = true;
-        this.tweens[target.id].rotation = target.angle;
+        twProps._syncProps.rotation = true;
+        if (target.type == 'composite'){
+          if (tw._rotationOrigin){
+            let _rotationOrigin = tw._rotationOrigin;
+            delete tw._rotationOrigin;
+            twProps._rotationOrigin = _rotationOrigin;
+          } else {
+            twProps._rotationOrigin = {x:0.0,y:0.0}
+          }
+          twProps.rotation = 0.0;
+          twProps._rotation = 0.0; // Previous value
+        } else {
+          twProps.rotation = target.angle;
+        }        
         tw.rotation = utils.degToRad(tw.rotation); // Convert from degs to radians
       }
       
       if ('scale' in tw){
+        
+        twProps._syncProps.scale = true;
         target._scale = typeof target._scale !== 'undefined' ? target._scale : 1.0; // Track scale
-        this.tweens[target.id]._syncProps.scale = true;
-        this.tweens[target.id].scale = target._scale;
-        this.tweens[target.id]._scale = this.tweens[target.id].scale;
+        twProps.scale = target._scale;
+        twProps._scale = twProps.scale;
+        
+        if (target.type == 'composite'){
+          if (tw._scaleOrigin){
+            let _scaleOrigin = tw._scaleOrigin;
+            delete tw._scaleOrigin;
+            twProps._scaleOrigin = _scaleOrigin;
+          } else {
+            twProps._scaleOrigin = {x:0.0,y:0.0}
+          }
+          twProps._compBodies = Matter.Composite.allBodies(target); // Store these bodies
+          for (let b of twProps._compBodies){
+            b._scale = typeof b._scale !== 'undefined' ? b._scale : 1.0; // Track scale
+          }
+        }
+        
+        
       }
       
-      gsap[cmd](this.tweens[target.id], dur, tw);
+      gsap[cmd](twProps, dur, tw);
       
     }
   }
   
-  onTwUpdate(target, _onUpdate = null, _onUpdateParams = null){
+  onTwUpdate(target, twID, _onUpdate = null, _onUpdateParams = null){
     
-    if (this.tweens[target.id]._syncProps.x || this.tweens[target.id]._syncProps.y){
+    let twProps = this.tweens[target.id][twID];
+    
+    if (twProps._syncProps.x || twProps._syncProps.y){
       
       if (target.type == 'composite'){
         
         Composite.translate(target, {
-          x: this.tweens[target.id]._syncProps.x ? this.tweens[target.id].x-this.tweens[target.id]._x : 0.0,
-          y: this.tweens[target.id]._syncProps.y ? this.tweens[target.id].y-this.tweens[target.id]._y : 0.0,
+          x: twProps._syncProps.x ? twProps.x-twProps._x : 0.0,
+          y: twProps._syncProps.y ? twProps.y-twProps._y : 0.0,
         }, false);
         
         // Store previous values;
-        if (this.tweens[target.id]._syncProps.x){
-          this.tweens[target.id]._x = this.tweens[target.id].x;
+        if (twProps._syncProps.x){
+          twProps._x = twProps.x;
         }
-        if (this.tweens[target.id]._syncProps.y){
-          this.tweens[target.id]._y = this.tweens[target.id].y;
+        if (twProps._syncProps.y){
+          twProps._y = twProps.y;
         }
         
       } else {
         
-        let _x = this.tweens[target.id]._syncProps.x ? this.tweens[target.id].x : target.position.x;
-        let _y = this.tweens[target.id]._syncProps.y ? this.tweens[target.id].y : target.position.y;
+        let _x = twProps._syncProps.x ? twProps.x : target.position.x;
+        let _y = twProps._syncProps.y ? twProps.y : target.position.y;
         Body.setPosition(target, {x:_x, y:_y});
         
       }
     }
     
-    if (this.tweens[target.id]._syncProps.rotation){
-      Body.setAngle(target, this.tweens[target.id].rotation);
+    if (twProps._syncProps.rotation){
+      if (target.type == 'composite'){      
+        Matter.Composite.rotate(target, twProps.rotation-twProps._rotation, twProps._scaleOrigin);
+        twProps._rotation = twProps.rotation;
+      } else {
+        Body.setAngle(target, twProps.rotation);
+      }
     }
     
-    if (this.tweens[target.id]._syncProps.scale){   
-      let s = this.tweens[target.id].scale / Math.max(0.00001, this.tweens[target.id]._scale);
-      Body.scale(target, s, s); // Apply *relative* scale
-      target._scale = this.tweens[target.id].scale; // Keep this prop up to date
-      this.tweens[target.id]._scale = this.tweens[target.id].scale
+    if (twProps._syncProps.scale){   
+      let s = twProps.scale / Math.max(0.00001, twProps._scale);
+      if (target.type == 'composite'){ 
+        Matter.Composite.scale(target, s, s, twProps._scaleOrigin);
+        for (let b of twProps._compBodies){
+          b._scale = twProps._scale; // Track scale
+        }
+      } else {
+        Body.scale(target, s, s); // Apply *relative* scale
+      }
+      
+      target._scale = twProps.scale; // Keep this prop up to date
+      twProps._scale = twProps.scale
     }
     
     if (_onUpdate){
@@ -772,25 +819,24 @@ class Jgsap {
     
   }
   
-  onTwComplete(target, _onComplete = null, _onCompleteParams = null){
+  onTwComplete(target, twID, _onComplete = null, _onCompleteParams = null){
     
     if (!target){
       return;
     }    
-    let tws = gsap.getTweensOf(this.tweens[target.id]);
-    let anyTweens = false;
-    if (tws.length > 0){
-      for (let tw of tws){ 
-        let p = tw.progress();
-        if (p < 1){
-          anyTweens = true;
-          break;
-        }
-      }
+    
+    // Remove reference to this tween
+    if (this.tweens[target.id][twID]._compBodies){
+      this.tweens[target.id][twID]._compBodies = null;
+      delete this.tweens[target.id][twID]._compBodies
     }
+    delete this.tweens[target.id][twID];
+    let anyTweens = Object.keys(this.tweens[target.id]).length > 0 || Object.keys(this.delays[target.id]).length > 0;
+  
     if (!anyTweens){
-      this.killTweensOf(target);
+      this.killTweensOf(target); // Kill all associated with physics body
     }
+    
     if (_onComplete){
       _onComplete.apply(null, _onCompleteParams);
     }
@@ -798,15 +844,36 @@ class Jgsap {
   }
   
   killAll(){
-    for (var id in this.tweens){
-      gsap.killTweensOf(this.tweens[id]);
+    gsap.killTweensOf(this._tweenBind); // Removes all pending delayed calls
+    for (var targetID in this.tweens){
+      for (let twID in this.tweens[targetID]){
+        if (this.tweens[targetID][twID]._compBodies){
+          this.tweens[targetID][twID]._compBodies = null;
+          delete this.tweens[targetID][twID]._compBodies
+        }
+        gsap.killTweensOf(this.tweens[targetID][twID]);
+      }
     }
     this.tweens = {};
   }
   
   killTweensOf(target){
+        
+    if (this.delays[target.id]){
+      for (let delayID in this.delays[target.id]){
+        this.delays[target.id][delayID].kill();
+      }
+    }
+    delete this.delays[target.id];
+    
     if (this.tweens[target.id]){
-      gsap.killTweensOf(this.tweens[target.id]);
+      for (let twID in this.tweens[target.id]){
+        if (this.tweens[target.id][twID]._compBodies){
+          this.tweens[target.id][twID]._compBodies = null;
+          delete this.tweens[target.id][twID]._compBodies
+        }
+        gsap.killTweensOf(this.tweens[target.id][twID]);
+      }
     }
     delete this.tweens[target.id];
   }
