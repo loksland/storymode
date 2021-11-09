@@ -66,20 +66,20 @@ class JRunner { // } extends PIXI.utils.EventEmitter {
     
     this.deltaHistory = [];
     this.timeScalePrev = 1;
-    
+    this.ticking = false;
   }
   
   pauseTick(){
-    
+    this.ticking = false;
     ticker.remove(this.tick, this);
-    
   }
 
   resumeTick(){
-    
+    if (this.ticking){
+      return;
+    }
     this.pauseTick();
     ticker.add(this.tick, this);
-    
   }
 
   tick(){
@@ -288,7 +288,7 @@ class JRender {
   }
   
   // - Sync props: x,y,rotation(in radians),scale
-  addSyncLink(label, from, to, syncProps = null, valueModifiers = null){
+  createSyncLink(label, from, to, syncProps = null, valueModifiers = null){
     
     if (!from.id || !from.type || from.type !== 'body'){
       throw new Error('Jrender: Target must be a physics body');
@@ -312,6 +312,25 @@ class JRender {
     valueModifiers = utils.extend({x:0.0,y:0.0,rotation:0.0, scale:1.0}, valueModifiers); // Note these need to be relative to metter / meters
     let link = new JSyncLink(from, to, syncProps, valueModifiers);
     this.links[label] = link;
+    return link;
+    
+  }
+  
+  addSyncLink(label, link){
+    this.links[label] = link;
+    return this.links[label];
+  }
+  
+  removeSyncLink(label, dispose = true){
+    if (!this.links[label]){
+      return null;
+    }    
+    const link = this.links[label]
+    if (dispose){
+      this.links[label].dispose();
+    }
+    this.links[label] = null
+    delete this.links[label];
     return link;
   }
   
@@ -338,8 +357,10 @@ class JSyncLink {
     this.syncEnabled = true;
     this.syncProps = syncProps;
     this.valueModifiers = valueModifiers;
+    this.data = {}
   }
   dispose(){
+    this.data = null;
     this.from = null;
     this.to = null;
   }
@@ -382,7 +403,7 @@ class JWireframeRender extends PIXI.Graphics {
     
     this.onStageDimChange();
     this.on('removed',  this.dispose); // Auto dispose
-    
+  
   }
   
   onStageDimChange(){
@@ -832,7 +853,6 @@ class Jgsap {
     }
     delete this.tweens[target.id][twID];
     let anyTweens = Object.keys(this.tweens[target.id]).length > 0 || Object.keys(this.delays[target.id]).length > 0;
-  
     if (!anyTweens){
       this.killTweensOf(target); // Kill all associated with physics body
     }
