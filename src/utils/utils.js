@@ -589,7 +589,7 @@ export function wait(){
     args[3] = thisArg;
   }
   
-  TweenMax.delayedCall.apply(thisArg, args);
+  return TweenMax.delayedCall.apply(thisArg, args);
   
 }
 
@@ -656,9 +656,7 @@ public static function randomInt(min:int, max:int):int {
   return Math.floor(Math.random() * (1 + max - min)) + min;
 }
     
-public static function random1PlusMinus() {			
-  return (Math.random() * 2) - 1;			
-}
+
 
 // source: https://github.com/DaVikingCode/Citrus-Engine/blob/master/src/citrus/math/MathUtils.as
 public static function getRandomArrayItem(arr:Array):*
@@ -854,4 +852,7 @@ export function extend(obj, deep) {
 
 // Maths
 
+export function random1PlusMinus() {			
+  return Math.random() > 0.5 ? -1.0 : 1.0;
+}
 
