@@ -187,7 +187,7 @@ export default class SFX extends PIXI.utils.EventEmitter {
     if (PIXI.sound){
       this.onScriptLoaded();
     } else {
-      utils.loadScript('js/pixi-sound.js', this.onScriptLoaded.bind(this))
+      utils.loadScript('js/vendor/pixi-sound.js', this.onScriptLoaded.bind(this))
     }
   }
   
