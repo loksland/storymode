@@ -559,9 +559,6 @@ PIXI.DisplayObject.prototype.applyProj = function(syncProps = false){
     }
   }
   
-  
-  
-  
 }
 
 // Scenes can update texture info with dynamic content 

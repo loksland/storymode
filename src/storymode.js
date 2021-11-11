@@ -50,7 +50,7 @@ for (let _filter of _filters) {
 export function createApp(_htmlEle, fullScreen = false, bgAlpha = 1.0, bgColor = 0x000000, onLoadCallback = null) {
   
     htmlEle = _htmlEle;
-    
+
     // Docs: http://pixijs.download/release/docs/PIXI.Application.html#Application
     pixiApp = new PIXI.Application({                   
         autoDensity: true, //  Adjusts the canvas using css pixels so it will scale properly (it was the default behavior in v4)
@@ -79,6 +79,7 @@ export function createApp(_htmlEle, fullScreen = false, bgAlpha = 1.0, bgColor =
     })
 }
 
+let fpsAvg;
 // All assets are loaded by this point and the stage is empty
 function setup(bgAlpha){ 
   
@@ -101,8 +102,10 @@ function setup(bgAlpha){
     debugTf.y = 3.0; //+ 50.0;    
     debugTf.alpha = 0.5;
     pixiApp.stage.addChild(debugTf);
+    fpsAvg = -1;    
     ticker.add(function(time){
-        debugTf.text = PIXI.Ticker.shared.FPS.toFixed(2);
+        fpsAvg = fpsAvg < 0 ? PIXI.Ticker.shared.FPS : fpsAvg*0.8 + PIXI.Ticker.shared.FPS*0.2;
+        debugTf.text = fpsAvg.toFixed(1);
     }); 
   }
   
