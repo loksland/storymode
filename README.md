@@ -15,7 +15,7 @@ Primary features include:
 - Library of 2d maths functions
 - A camera class for panning across a field of play 
 - Input helpers including a button class 
-- Google web font support
+- Google web font support 
 
 ### Getting started 
 
