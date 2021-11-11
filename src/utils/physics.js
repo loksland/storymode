@@ -58,6 +58,10 @@ class JRunner { // } extends PIXI.utils.EventEmitter {
 
     options = utils.extend(defaults, options);
     
+    //if (options.fixedTimestep && PIXI.Ticker.shared.maxFPS === 0){
+    //  console.log('Physics: Limiting PIXI.Ticker.shared.maxFPS to targetFPS is reccomended for fixed time step.')
+    //}
+    
     let targetFPS = 60.0;
     this.targetDelta = 1000.0/targetFPS;
     this.deltaMin = 1000.0/targetFPS;
@@ -67,11 +71,14 @@ class JRunner { // } extends PIXI.utils.EventEmitter {
     this.deltaHistory = [];
     this.timeScalePrev = 1;
     this.ticking = false;
+    this.accumulator = 0;
+    
   }
   
   pauseTick(){
     this.ticking = false;
-    ticker.remove(this.tick, this);
+    ticker.remove(this.tickFixed, this);
+    ticker.remove(this.tickVariable, this);
   }
 
   resumeTick(){
@@ -79,38 +86,57 @@ class JRunner { // } extends PIXI.utils.EventEmitter {
       return;
     }
     this.pauseTick();
-    ticker.add(this.tick, this);
+    ticker.add(this.fixedTimestep ? this.tickFixed : this.tickVariable, this);
+  }
+  
+  
+  // See: https://gafferongames.com/post/fix_your_timestep/
+  tickFixed(){
+    
+    this.accumulator += ticker.elapsedMS; // Time elapsed in milliseconds from last frame to this frame.;
+
+    while ( this.accumulator >= this.targetDelta ){
+        Engine.update(this.engine, this.targetDelta, 1.0);
+        this.accumulator -= this.targetDelta;
+        //t += dt;
+    }
+    
+    // Render
+    
+    for (let i = 0; i < this.renders.length; i++){
+      this.renders[i].drawRender(this.engine.world);
+    }
+    
+    if (this.renderCallback){
+      this.renderCallback(ticker.elapsedMS);
+    }
+    
   }
 
-  tick(){
-    
-    let delta = this.targetDelta;
-    let correction = 1;
-    if (!this.fixedTimestep){
-        
-      // https://pixijs.download/dev/docs/PIXI.Ticker.html
-      // https://brm.io/matter-js/docs/files/src_core_Runner.js.html
 
-      delta = ticker.elapsedMS; // this value is neither capped nor scaled
-      
-      // optimistically filter delta over a few frames, to improve stability
-      this.deltaHistory.push(delta)
-      this.deltaHistory = this.deltaHistory.slice(-60); // Limit sample to 60
-      delta = Math.min.apply(null, this.deltaHistory);    
-      
-      // limit delta
-      delta = delta < this.deltaMin ? this.deltaMin : delta;
-      delta = delta > this.deltaMax ? this.deltaMax : delta;
-                                            
-      // correction = dt // USe this if no filtering and limiting of delta
-      correction = delta/this.targetDelta;
-      
-    }
+  tickVariable(){
+    
+    // https://pixijs.download/dev/docs/PIXI.Ticker.html
+    // https://brm.io/matter-js/docs/files/src_core_Runner.js.html
+
+    let delta = ticker.elapsedMS; // this value is neither capped nor scaled
+    
+    // optimistically filter delta over a few frames, to improve stability
+    this.deltaHistory.push(delta)
+    this.deltaHistory = this.deltaHistory.slice(-60); // Limit sample to 60
+    delta = Math.min.apply(null, this.deltaHistory);    
+    
+    // limit delta
+    delta = delta < this.deltaMin ? this.deltaMin : delta;
+    delta = delta > this.deltaMax ? this.deltaMax : delta;
+                                          
+    // correction = dt // USe this if no filtering and limiting of delta
+    let correction  = delta/this.targetDelta;
     
     // time correction for time scaling
     if (this.timeScalePrev !== 0) {
-      correction *= Math.min(2.0, this.engine.timing.timeScale / this.timeScalePrev);
-      // correction *= engine.timing.timeScale / this.timeScalePrev
+      correction *= Math.min(3.0, this.engine.timing.timeScale / this.timeScalePrev); // Need to throttle 
+      //correction *= this.engine.timing.timeScale / this.timeScalePrev
     }
 
     if (this.engine.timing.timeScale === 0) {
@@ -118,7 +144,7 @@ class JRunner { // } extends PIXI.utils.EventEmitter {
     }
     
     this.timeScalePrev = this.engine.timing.timeScale;
-
+    
     Engine.update(this.engine, delta, correction); // 60 fps 16.666*dt
     
     // this.render.world(this.engine.world);
@@ -127,13 +153,15 @@ class JRunner { // } extends PIXI.utils.EventEmitter {
     }
     
     if (this.renderCallback){
-      this.renderCallback();
+      this.renderCallback(ticker.elapsedMS);
     }
     
   }
   
   // Must be called manually
   dispose(){
+    
+    this.pauseTick();
     
     this.deltaHistory = null;    
     this.engine = null;    
