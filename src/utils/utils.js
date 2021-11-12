@@ -850,6 +850,20 @@ export function extend(obj, deep) {
 };
 
 
+export function deepFreeze(obj){
+  // Retrieve the property names defined on object
+  const propNames = Object.getOwnPropertyNames(obj);
+  // Freeze properties before freezing self
+  for (const name of propNames) {
+    const value = obj[name];
+    if (value && typeof value === "object") {
+      deepFreeze(value);
+    }
+  }
+  return Object.freeze(obj);
+}
+
+
 // Maths
 
 export function random1PlusMinus() {			

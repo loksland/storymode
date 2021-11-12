@@ -1,5 +1,6 @@
 # Changelog
 
+- v1.1.23 - (12-11-2021) Added uitls.deepFreeze()
 - v1.1.22 - (12-11-2021) Enabled nav to force reload
 - v1.1.21 - (11-11-2021) Physics - fixed fps optimisation
 - v1.1.20 - (09-11-2021) Physics updates
