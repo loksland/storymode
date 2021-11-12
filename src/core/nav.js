@@ -267,7 +267,7 @@ function checkForReloadOnNextArrive(){
   }
 }
 
-function reloadSceneStack(){
+function reloadSceneStack(force = false){
   
   // Called during a scene transition, wait for arrival.
   if (locked){
@@ -285,7 +285,7 @@ function reloadSceneStack(){
   }
   
   let _scene = transStack[transStack.length-1].scene;
-  if (_scene._shouldReloadOnStageResize(scaler.stageW, scaler.stageH)){
+  if (force || _scene._shouldReloadOnStageResize(scaler.stageW, scaler.stageH)){
     
     let sceneID = _scene.sceneData.sceneID;
     let sceneData = utils.cloneObj(_scene.sceneData);
