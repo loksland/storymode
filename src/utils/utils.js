@@ -357,8 +357,9 @@ export function globMatch(subject, glob){
       pattern = _glob.toLowerCase();
     } else {
       _glob = asteriskParts.join('__asterisk__');
-      _glob = escapeRegExp(_glob);
+      _glob = escapeRegExp( _glob);
       _glob = _glob.split('__asterisk__').join('.*');
+      _glob = '^' + _glob + '$'; // Start and end of subject
       pattern = new RegExp(_glob, 'i');
     }
     
@@ -370,7 +371,6 @@ export function globMatch(subject, glob){
     pattern = _globMatchCache[glob].pattern
     
   }
-
   const result = typeof pattern === 'string' ? subject.toLowerCase() == pattern : subject.match(pattern);
   return inverseResults ? !result : result;
   
