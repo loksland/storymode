@@ -212,6 +212,8 @@ PIXI.DisplayObject.prototype.makeBtn = function(clickCallback = null, stateChang
         clickCallback(this);
       } else if (typeof this.parent.onBtn === 'function'){
         this.parent.onBtn.bind(this.parent)(this);
+      } else if (typeof this.parent.parent.onBtn === 'function'){
+        this.parent.parent.onBtn.bind(this.parent.parent)(this);
       }
     }, this)
     
