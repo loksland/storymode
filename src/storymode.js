@@ -12,6 +12,8 @@ window.loader = PIXI.Loader.shared; //PIXI.Loader.shared; //.  new PIXI.Loader()
 window.resources = loader.resources;
 window.ticker = PIXI.Ticker.shared;
 
+const appEmitter = new PIXI.utils.EventEmitter();
+
 import * as _ext from './utils/extensions.js';
 //import * as _polyfill from './utils/polyfill.js';
 import * as utils from './utils/utils.js';
@@ -74,6 +76,8 @@ export function createApp(_htmlEle, fullScreen = false, bgAlpha = 1.0, bgColor =
         onLoadCallback(pixiApp);
       }
       
+      appEmitter.emit('ready', pixiApp.stage)
+      
       sfx._enableLoad(); 
       
     })
@@ -116,9 +120,11 @@ function setup(bgAlpha){
   
 }
 
+
 // export {stageW, stageH} from './core/scaler.js'; // Convenience alias
 export {pixiApp, filters, htmlEle}; // Internal access to these properties.
 export {Scene, Camera, Btn}; // Classes
+export {appEmitter}; // Emitter events
 export {kb, sfx, store, physics} // Helpers 
 export {utils, nav, ui, scaler}; // Core 
 
