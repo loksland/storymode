@@ -3,7 +3,7 @@
 
 ```
 UNDER DEVELOPMENT
-```
+``` 
 
 `storymode` is a layout and transition helper for [PixiJS](https://www.pixijs.com/) featuring responsive layout, a scene class with lifecycle methods, a camera, and PSD exporting.
 
