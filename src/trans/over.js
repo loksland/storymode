@@ -1,4 +1,4 @@
-import { nav,scaler } from './../storymode.js';
+import { nav,scaler,utils} from './../storymode.js';
 
 export const id = 'over';
 
@@ -13,6 +13,7 @@ export default class OverTrans {
     this.isModal = isModal;
     this.isTransparent = this.isModal;
     
+    this.blurEnabled = transConfigStr === 'noblur' ? false : true;
     this.maxBlur = 5.0
     
   }
@@ -29,7 +30,9 @@ export default class OverTrans {
         this.scenePrev.filters = [filterOut];
         gsap.to(filterOut, dur, {pixi:{alpha: this.isModal ? 0.5 : 0.0}, ease: Linear.easeNone});      
       }
-      gsap.to(this.scenePrev, dur, {pixi: {blur:this.maxBlur}, ease:Power3.easeIn});
+      if (this.blurEnabled){
+        gsap.to(this.scenePrev, dur, {pixi: {blur:this.maxBlur}, ease:Power3.easeIn});
+      }
       
     }
 
@@ -47,7 +50,7 @@ export default class OverTrans {
     this.scene.pivot.set(scaler.stageW*0.5, scaler.stageH*0.5)
     
     let tw = {scale: 1.3};
-    if (BLUR_FG){
+    if (this.blurEnabled && BLUR_FG){
       tw.blur = this.maxBlur;
     }
     gsap.from(this.scene, dur, {pixi: tw, ease:Power3.easeOut, onComplete:this.onIn.bind(this), onCompleteParams: [onInCallback]});
@@ -72,7 +75,7 @@ export default class OverTrans {
   performOut(onOutCallback){
     
     let dur = 0.3;
-    
+        
     this.scene.position.set(scaler.stageW*0.5, scaler.stageH*0.5)
     this.scene.pivot.set(scaler.stageW*0.5, scaler.stageH*0.5)
     
@@ -80,7 +83,7 @@ export default class OverTrans {
     this.scene.filters = [filterOut];
     gsap.to(filterOut, dur, {pixi:{alpha:0.0}, ease:Linear.easeNone});
     
-    if (BLUR_FG){
+    if (this.blurEnabled && BLUR_FG){
       gsap.to(this.scene, dur, {pixi: {blur:this.maxBlur}, ease:Power3.easeOut});
     }
     gsap.to(this.scene, dur, {pixi: {scale: 0.9}, ease:Sine.easeIn});
@@ -91,7 +94,12 @@ export default class OverTrans {
     if (APPLY_BG_ALPHA){
       gsap.to(this.scenePrev.filters[0], dur, {pixi:{alpha:1.0}, ease:Linear.easeNone, delay:delay});
     }
-    gsap.to(this.scenePrev, dur, {pixi: {blur:0.0}, ease:Power3.easeIn, delay:delay, onComplete:this.onOut.bind(this), onCompleteParams: [onOutCallback]});
+    if (this.blurEnabled){
+      gsap.to(this.scenePrev, dur, {pixi: {blur:0.0}, ease:Power3.easeIn, delay:delay, onComplete:this.onOut.bind(this), onCompleteParams: [onOutCallback]});
+    } else {
+      utils.wait(this, dur+delay, this.onOut, [onOutCallback]);
+    }
+    
     
   }
   
