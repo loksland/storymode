@@ -11,7 +11,7 @@ window.Texture = PIXI.Texture;
 window.loader = PIXI.Loader.shared; //PIXI.Loader.shared; //.  new PIXI.Loader(); // Using shared was causing bug with hot reload.
 window.resources = loader.resources;
 window.ticker = PIXI.Ticker.shared;
-
+ 
 const appEmitter = new PIXI.utils.EventEmitter();
 
 import * as _ext from './utils/extensions.js';
