@@ -122,6 +122,7 @@ PIXI.Texture.fromTx = function(txPath, frame = null){
   
 }
 
+// For calls on Text, the |frame| param defines the text content of the field
 PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
   
   let isAnimSprite = this == AnimatedSprite || this.prototype instanceof AnimatedSprite
@@ -148,7 +149,7 @@ PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
       
     let fontStyle = psdFontStyleComponents(txInfo[txPath].tfParams.fontStyle);
       
-    dispo = new Text(txInfo[txPath].tfParams.text, {
+    dispo = new Text(frame ? frame : txInfo[txPath].tfParams.text, {
       fontFamily: fontFamilyList,
       fontSize: txInfo[txPath].tfParams.fontSize * scaler.proj[txInfo[txPath].projID].scale, // Apply projection scale to font size. 
       fill: txInfo[txPath].tfParams.color,
