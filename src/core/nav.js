@@ -178,6 +178,11 @@ function onSceneReady(scene){
   
 }
 
+function isPresentingModal(){
+  return !(transStack.length < 2 || !transStack[transStack.length-1].isModal || !transStack[transStack.length-1].scenePrev);
+}
+
+
 function dismissScene(){
   
   if (locked){
@@ -186,7 +191,7 @@ function dismissScene(){
   locked = true;
   enableInput(false);
   
-  if (transStack.length < 2 || !transStack[transStack.length-1].isModal || !transStack[transStack.length-1].scenePrev){
+  if (!this.isPresentingModal()){
     throw new Error('Cannot dismiss scene');
   }
   
@@ -305,4 +310,4 @@ function debugTransStack(){
 }
 
 export { scenes }
-export { openDefaultScene,setupStage,isScenePresentedModally,isScenePresentedWithTransparentBg,openScene,dismissScene,bg,inputScreen,sceneHolder,setScenes,reloadSceneStack }
+export { isPresentingModal, openDefaultScene,setupStage,isScenePresentedModally,isScenePresentedWithTransparentBg,openScene,dismissScene,bg,inputScreen,sceneHolder,setScenes,reloadSceneStack }
