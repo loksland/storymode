@@ -2,7 +2,7 @@
 // Local Storage 
 // -------------
 
-export let prefix = 'stm';
+let prefix = 'stm';
 const STORAGE_ENABLED = true;
 
 if(!STORAGE_ENABLED){
@@ -10,6 +10,10 @@ if(!STORAGE_ENABLED){
 }
 
 export const enabled = _localStorageAvailable();
+
+export function setPrefix(_prefix){
+  prefix = _prefix;
+}
 
 export function save(key, val){  
   if (!enabled){
@@ -25,6 +29,7 @@ export function load(key){
     return null;
   }
   key = prefix + '.' + key;
+
   let data = localStorage.getItem(key);
   return data ? data : null;
 }
