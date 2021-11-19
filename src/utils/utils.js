@@ -385,7 +385,7 @@ export function escapeRegExp(string) {
 
 // Returns the intersection point between two infinite length lines,
 // defined by a1 -> a2 and b1 -> b2.
-export function intersectLineLine(a1, a2, b1, b2) {
+export function intersectLineLine(a1, a2, b1, b2, applyToVector = null) {
   
   let res = null;
   const ua_t = (b2.x-b1.x)*(a1.y-b1.y)-(b2.y-b1.y)*(a1.x-b1.x);
@@ -394,6 +394,10 @@ export function intersectLineLine(a1, a2, b1, b2) {
   if (u_b != 0) {
     const ua = ua_t/u_b;
     const ub = ub_t/u_b;
+    if (applyToVector){
+      applyToVector.x = a1.x+ua*(a2.x-a1.x);
+      applyToVector.y =a1.y+ua*(a2.y-a1.y)
+    }
     res = new Point(a1.x+ua*(a2.x-a1.x), a1.y+ua*(a2.y-a1.y));
   } 
   return res;
