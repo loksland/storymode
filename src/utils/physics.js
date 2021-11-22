@@ -113,7 +113,6 @@ class JRunner { // } extends PIXI.utils.EventEmitter {
     
   }
 
-
   tickVariable(){
     
     // https://pixijs.download/dev/docs/PIXI.Ticker.html
@@ -281,30 +280,38 @@ class JRender {
   drawRender(world){
     
     let link;
-    let pxScale = 1.0/scaler.artboardScaleFactor
-
+    let pxScale = 1.0/scaler.artboardScaleFactor;
     for (let label in this.links){
-      link = this.links[label];
-      
-      if (link.syncEnabled){
-        if (link.syncProps.x){
-          // Assumes dispo reg is 0.5,0.5
-          link.to.x = scaler.proj.default.transArtX(this.mtp*(link.from.position.x+link.valueModifiers.x + this.valueModifiers.x)) // Convert from matter.js meters to pts
-        }
-        if (link.syncProps.y){
-          // Assumes dispo reg is 0.5,0.5
-          link.to.y = scaler.proj.default.transArtY(this.mtp*(link.from.position.y+link.valueModifiers.y + this.valueModifiers.y)); 
-        }
-        if (link.syncProps.rotation){
-          link.to.rotation = link.from.angle + utils.degToRad(link.valueModifiers.rotation); 
-        }
-        if (link.syncProps.scale){
-          let s = scaler.scale*(1.0/scaler.artboardScaleFactor)*link.from._scale*link.valueModifiers.scale;
-          link.to.scale.set(s,s);
-        }
+      this.applySync(label);
+    }
+  }
+  
+  applySync(label, force = false){
+    const link = this.links[label];
+    
+    if (link.syncEnabled || force){
+      if (link.syncProps.x){
+        // Assumes dispo reg is 0.5,0.5
+        link.to.x = scaler.proj.default.transArtX(this.mtp*(link.from.position.x+link.valueModifiers.x + this.valueModifiers.x)) // Convert from matter.js meters to pts
+      }
+      if (link.syncProps.y){
+        // Assumes dispo reg is 0.5,0.5
+        link.to.y = scaler.proj.default.transArtY(this.mtp*(link.from.position.y+link.valueModifiers.y + this.valueModifiers.y)); 
+      }
+      if (link.syncProps.rotation){
+        link.to.rotation = link.from.angle + utils.degToRad(link.valueModifiers.rotation); 
+      }
+      if (link.syncProps.scale){
+        let s = scaler.scale*(1.0/scaler.artboardScaleFactor)*link.from._scale*link.valueModifiers.scale;
+        link.to.scale.set(s,s);
+      }
+      if (link.syncCallback){
+        link.syncCallback();
       }
     }
   }
+  
+  
   
   get mouseElement(){
     return pixiApp.resizeTo == window ? htmlEle : pixiApp.resizeTo; //pixiApp.resizeTo; // document.body
@@ -316,7 +323,7 @@ class JRender {
   }
   
   // - Sync props: x,y,rotation(in radians),scale
-  createSyncLink(label, from, to, syncProps = null, valueModifiers = null){
+  createSyncLink(label, from, to, syncProps = null, valueModifiers = null, syncCallback = null){
     
     if (!from.id || !from.type || from.type !== 'body'){
       throw new Error('Jrender: Target must be a physics body');
@@ -338,7 +345,7 @@ class JRender {
     
     syncProps = utils.extend({x:syncPropDefault,y:syncPropDefault,rotation:syncPropDefault,scale:syncPropDefault}, syncProps);
     valueModifiers = utils.extend({x:0.0,y:0.0,rotation:0.0, scale:1.0}, valueModifiers); // Note these need to be relative to metter / meters
-    let link = new JSyncLink(from, to, syncProps, valueModifiers);
+    let link = new JSyncLink(from, to, syncProps, valueModifiers, syncCallback);
     this.links[label] = link;
     return link;
     
@@ -379,18 +386,20 @@ class JRender {
 // Represents a link between PIXI and matterjs
 // - Just a light class with refs. Calculations are done on the render.
 class JSyncLink {
-  constructor(from, to, syncProps, valueModifiers) {
+  constructor(from, to, syncProps, valueModifiers, syncCallback = null) {
     this.from = from;
     this.to = to;
     this.syncEnabled = true;
     this.syncProps = syncProps;
     this.valueModifiers = valueModifiers;
     this.data = {}
+    this.syncCallback = syncCallback;
   }
   dispose(){
     this.data = null;
     this.from = null;
     this.to = null;
+    this.syncCallback = null;
   }
 }
 
@@ -880,7 +889,8 @@ class Jgsap {
       delete this.tweens[target.id][twID]._compBodies
     }
     delete this.tweens[target.id][twID];
-    let anyTweens = Object.keys(this.tweens[target.id]).length > 0 || Object.keys(this.delays[target.id]).length > 0;
+    
+    let anyTweens = (this.tweens[target.id] && Object.keys(this.tweens[target.id]).length > 0) || (this.delays[target.id] && Object.keys(this.delays[target.id]).length > 0); // Delays may not have ref to target if it never had a delay
     if (!anyTweens){
       this.killTweensOf(target); // Kill all associated with physics body
     }

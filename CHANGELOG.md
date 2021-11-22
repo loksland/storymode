@@ -1,5 +1,6 @@
 # Changelog
 
+- v1.1.26 - (22-11-2021) Isolate physics link update to own method
 - v1.1.25 - (19-11-2021) Added nav.isPresentingModal(), allowing text content to be passed to Text.fromTx(),Transition `over:noblur` option added
 - v1.1.24 - (18-11-2021) Improved over transition performance, added core class emitter, improved glob pattern recognition
 - v1.1.23 - (12-11-2021) Added uitls.deepFreeze()
