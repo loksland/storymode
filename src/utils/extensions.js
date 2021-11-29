@@ -1,4 +1,4 @@
-import { utils } from './../storymode.js';
+import { utils, Scene, scaler } from './../storymode.js';
  
 // Extensions
 // ----------
@@ -341,6 +341,7 @@ PIXI.DisplayObject.prototype.setPivotWithoutMoving = function(pivotX, pivotY){
   const pivotOffsetAng = utils.angleDegsBetweenPoints(zeroPt, pivotOffsetScaled);
   
   this.position = utils.projectFromPointDeg(this.position, pivotOffsetAng+this.angle, pivotOffsetDist);
+
   
 }
 
@@ -434,3 +435,63 @@ PIXI.DisplayObject.prototype.destroyFiltersAndMasks = function(recursive = true)
   }
   
 }
+
+// Will play the animated sprite until it gets to the target frame
+PIXI.AnimatedSprite.prototype.playUntil = function(targetFrame, animateAlways = false){
+  this.loop = true;
+  if (this.currentFrame == targetFrame && !animateAlways){
+    return;
+  }
+  this.play();
+  this.onFrameChange = ()=>{
+    if (this.currentFrame === targetFrame){
+      this.stop();
+      this.onFrameChange = null;
+    }
+  }
+}
+
+// Screen shake 
+// ------------
+
+// https://youtu.be/tu-Qe66AvtY?t=660
+
+const MAX_SHAKE_ROT = 2.0;
+const MAX_SHAKE_OFFSET_ART = 15.0*0.5;
+
+PIXI.DisplayObject.prototype.applyShake = function(traumaPerc, maxFactor = 1.0){
+
+  if (typeof this._shake === 'undefined'){
+    this._shake = {};
+    this._shake.trauma = 0.0;    
+    if (this instanceof Scene){
+      this.setPivotWithoutMoving(scaler.stageW*0.5, scaler.stageH*0.5)
+      this._shake.origin = this.position.clone()
+    }
+    this._shake.kill = (target)=>{
+      gsap.killTweensOf(target);
+      target.rotation = 0.0;
+      target.position.copyFrom(target._shake.origin)
+      if (target instanceof Scene){
+        target.setPivotWithoutMoving(0.0, 0.0); // Default
+      }
+      delete target._shake;
+    }
+  }
+  
+  this._shake.trauma = Math.min(1.0, this._shake.trauma + traumaPerc); // Linear ease down 
+  gsap.killTweensOf(this._shake);
+  gsap.to(this._shake, 1.0, {trauma:0.0, ease:Linear.easeNone, onUpdateParams:[this], onUpdate:(target)=>{
+    
+    const shakeAmt = Math.pow(target._shake.trauma, 3); // Or 3
+    //console.log(gsap.ticker.time)
+    let rot = maxFactor*MAX_SHAKE_ROT * shakeAmt * utils.randFloatNegOneToOne()
+    const _x = target._shake.origin.x + maxFactor*MAX_SHAKE_OFFSET_ART * scaler.scale * shakeAmt * utils.randFloatNegOneToOne()
+    const _y = target._shake.origin.y + maxFactor*MAX_SHAKE_OFFSET_ART * scaler.scale * shakeAmt * utils.randFloatNegOneToOne()
+    gsap.set(target, {angle:rot, x:_x , y: _y});
+    
+  }, onCompleteParams:[this], onComplete:this._shake.kill})
+  
+}
+
+
