@@ -869,8 +869,12 @@ export function deepFreeze(obj){
 
 
 // Maths
-
 export function random1PlusMinus() {			
   return Math.random() > 0.5 ? -1.0 : 1.0;
+}
+
+
+export function randFloatNegOneToOne() {			
+  return Math.random() * 2.0 - 1.0; 
 }
 
