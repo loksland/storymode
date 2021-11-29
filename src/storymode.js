@@ -30,7 +30,7 @@ import KB from './utils/kb.js';
 const kb = new KB();
 
 import SFX from './utils/sfx.js';
-const sfx = new SFX();
+let sfx = new SFX();;
 
 import physics from './utils/physics.js';
 
@@ -50,7 +50,9 @@ for (let _filter of _filters) {
 }
 
 export function createApp(_htmlEle, fullScreen = false, bgAlpha = 1.0, bgColor = 0x000000, onLoadCallback = null) {
-  
+    
+    sfx.loadPrefs()
+    
     htmlEle = _htmlEle;
 
     // Docs: http://pixijs.download/release/docs/PIXI.Application.html#Application
@@ -117,9 +119,7 @@ function setup(bgAlpha){
   if (!nav.openDefaultScene()){
     throw new Error('Default scene not found.')
   }
-  
 }
-
 
 // export {stageW, stageH} from './core/scaler.js'; // Convenience alias
 export {pixiApp, filters, htmlEle}; // Internal access to these properties.
