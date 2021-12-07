@@ -311,8 +311,6 @@ class JRender {
     }
   }
   
-  
-  
   get mouseElement(){
     return pixiApp.resizeTo == window ? htmlEle : pixiApp.resizeTo; //pixiApp.resizeTo; // document.body
   }
@@ -378,7 +376,6 @@ class JRender {
   }
   
 }
-
 
 // JLink
 // -----

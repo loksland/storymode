@@ -114,6 +114,7 @@ export default class SFX extends PIXI.utils.EventEmitter {
   }
   
   toggleBgLoopEnabled(){
+    
     this._bgLoopEnabled = !this._bgLoopEnabled;
     store.save('sfx.bgLoopEnabled', this._bgLoopEnabled ? '1' : '0')
     if (this._bgLoopEnabled){

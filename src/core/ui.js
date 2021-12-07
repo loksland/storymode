@@ -112,6 +112,10 @@ function onLoadComplete(){
   }
 }
 
+
+
+
+
 PIXI.Texture.fromTx = function(txPath, frame = null){
   
   if (!txInfo[txPath]){
@@ -504,6 +508,8 @@ PIXI.DisplayObject.prototype.applyProj = function(syncProps = false){
   
   // Store a pure representation of the position and scale as it relates to the stage.
   this.txInfo._proj = {};
+
+  
   this.txInfo._proj.x = scaler.proj[projID].transArtX(this.txInfo.x);
   this.txInfo._proj.y = scaler.proj[projID].transArtY(this.txInfo.y);
   this.txInfo._proj.width = scaler.proj[projID].scale * this.txInfo.width;
@@ -511,15 +517,12 @@ PIXI.DisplayObject.prototype.applyProj = function(syncProps = false){
   
   // Take into account frame (clipping) applied to this sprite's texture
   if (this._hasFrame){ 
-    
     if (this.texture.frame.x != 0.0 || this.texture.frame.y != 0.0){
       this.txInfo._proj.x += this.texture.frame.x*scaler.proj[projID].pxScale; // Convert tx px offset to screen pixel * artboard scale 
       this.txInfo._proj.y += this.texture.frame.y*scaler.proj[projID].pxScale; // Convert tx px offset to screen pixel * artboard scale 
     }
-
-    this.txInfo._proj.width *= (this.texture.frame.width/this.texture.baseTexture.width)
-    this.txInfo._proj.height *= (this.texture.frame.height/this.texture.baseTexture.height)
-    
+    this.txInfo._proj.width *= (this.texture.frame.width/this.texture.baseTexture.width);
+    this.txInfo._proj.height *= (this.texture.frame.height/this.texture.baseTexture.height);
   }
   
   // Add bounds 
@@ -531,15 +534,19 @@ PIXI.DisplayObject.prototype.applyProj = function(syncProps = false){
   // Apply anchor. Containers don't use anchors.
   if (this.isSprite){
     this.anchor.set(this.txInfo.regPercX, this.txInfo.regPercY);
-  } 
+  } else if (this instanceof PIXI.Mesh){
+    this.pivot.x = this.texture.width * this.txInfo.regPercX;
+    this.pivot.y = this.texture.height * this.txInfo.regPercY;
+  }
   
   if (this.txInfo.parent){ // Don't manage alignment of children    
     this.x = scaler.proj[projID].scale * this.txInfo.x;
-    this.y = scaler.proj[projID].scale * this.txInfo.y;    
+    this.y = scaler.proj[projID].scale * this.txInfo.y; 
   } else {
     this.x = this.txInfo._proj.x
     this.y = this.txInfo._proj.y
   }
+  
   if (this.txInfo.hug){
     this.hug(this.txInfo.hug); 
   }
@@ -548,8 +555,11 @@ PIXI.DisplayObject.prototype.applyProj = function(syncProps = false){
     // - Text fields need no limit on dimensions
     // - Containers are positional pins and do not need to be scaled
     // - Take into consideration any frame (clipping) applied to the sprite's texture.    
-    this.width = this.txInfo._proj.width
-    this.height = this.txInfo._proj.height
+    this.width = this.txInfo._proj.width;
+    this.height = this.txInfo._proj.height;
+  } else if (this instanceof PIXI.Mesh){
+    this.scale.set(scaler.proj[projID].scale/scaler.artboardScaleFactor,scaler.proj[projID].scale/scaler.artboardScaleFactor);
+  
   }
   
   if (this instanceof Text){
@@ -720,7 +730,6 @@ PIXI.DisplayObject.prototype.addArt = function(txNameGlob){
           if (dispo != null){
             
             if (txs[i].parent){
-              
               // If parent is a spite counter act the effect of its scale on children
               if (this.isSprite){
                 dispo.x *= (1.0/this.scale.x);
@@ -728,7 +737,6 @@ PIXI.DisplayObject.prototype.addArt = function(txNameGlob){
                 dispo.scale.x *= (1.0/this.scale.x);
                 dispo.scale.y *= (1.0/this.scale.y);
               }
-              
             }
             
             this.addChild(dispo);
