@@ -302,6 +302,7 @@ class JRender {
         link.to.rotation = link.from.angle + utils.degToRad(link.valueModifiers.rotation); 
       }
       if (link.syncProps.scale){
+        // Assumes uniform density assets. Consider using: let resetingScale = dispo.txInfo.pxtopt*scaler.scale;
         let s = scaler.scale*(1.0/scaler.artboardScaleFactor)*link.from._scale*link.valueModifiers.scale;
         link.to.scale.set(s,s);
       }
