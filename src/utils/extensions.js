@@ -74,6 +74,10 @@ PIXI.Sprite.prototype.hitTestEllipse = function(globalPos){
   
 }
 
+PIXI.AnimatedSprite.prototype.isAnimatedSprite = function(){
+  return true;
+}
+
 // Note: will not work with sprites with scale flipped 
 PIXI.Sprite.prototype.enterTestRect = function(startPosGlobal, endPosGlobal, globalResults = true, checkMidpoint = false){
   
