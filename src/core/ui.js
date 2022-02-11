@@ -97,6 +97,10 @@ export function loadAssets(_loadAssetCallback){
     }
   }
   
+  
+  
+  
+  
   loader.load(onLoadComplete);
   
 }
@@ -130,7 +134,7 @@ PIXI.Texture.fromTx = function(txPath, frame = null){
 PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
   
   let isAnimSprite = this == AnimatedSprite || this.prototype instanceof AnimatedSprite
-  if (!txInfo[txPath] && !isAnimSprite){    
+  if (!txInfo[txPath] && !isAnimSprite){ // If animated sprite there will be no texture with that path
     throw new Error('Texture info not found `'+txPath+'`')
   }
   
@@ -170,16 +174,57 @@ PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
     let spritesheet = resources[spritesheetBaseName + SPRITESHEET_RESOURCE_SUFFIX];
     
     if (spritesheet){
-      
+    
       if (spritesheet.spritesheet && spritesheet.spritesheet.animations){
-        
+    
         if (spritesheet.spritesheet.animations[txPath]){
-          dispo = new PIXI.AnimatedSprite(spritesheet.spritesheet.animations[txPath]);
+          const ssTxs = spritesheet.spritesheet.animations[txPath];
+          
+          const applyRegFromF1 = true; // Register sprite textures based on frame #1
+          if (applyRegFromF1){ 
+            // Set default anchor for textures so they align with frame #1
+            // Assumes animation textures are named `%prefix%_0`,`%prefix%_1`,`%prefix%_2`,...
+            let baseFrameTxInfo
+            for (let frameIndex = 0; frameIndex < ssTxs.length; frameIndex++){
+              let frameTxPath = txPath + '_' + String(frameIndex)
+              if (!txInfo[frameTxPath]){
+                throw new Error('Spritesheet frame texture not found `'+frameTxPath+'`. ')
+              }
+              
+              let offset = {}
+              // Compare top left position
+              
+              offset.tx = txInfo[frameTxPath].x - txInfo[frameTxPath].width * txInfo[frameTxPath].regPercX;
+              offset.ty = txInfo[frameTxPath].y - txInfo[frameTxPath].height * txInfo[frameTxPath].regPercY;
+              if (frameIndex === 0){
+                
+                baseFrameTxInfo = offset;
+                baseFrameTxInfo.regOffsetX = txInfo[frameTxPath].width * txInfo[frameTxPath].regPercX;
+                baseFrameTxInfo.regOffsetY = txInfo[frameTxPath].height * txInfo[frameTxPath].regPercY;
+                
+                baseFrameTxInfo.x = txInfo[frameTxPath].x;
+                baseFrameTxInfo.y = txInfo[frameTxPath].y;
+                baseFrameTxInfo.regPercX = txInfo[frameTxPath].regPercX
+                baseFrameTxInfo.regPercY = txInfo[frameTxPath].regPercY
+                ssTxs[frameIndex].defaultAnchor= {x: txInfo[frameTxPath].regPercX,y: txInfo[frameTxPath].regPercX}; // |!| Maybe dont need this or use txinfo.regPercX / Y
+              } else {
+                ssTxs[frameIndex].defaultAnchor = {x:((baseFrameTxInfo.tx-offset.tx+baseFrameTxInfo.regOffsetX)/txInfo[frameTxPath].width), y: ((baseFrameTxInfo.ty-offset.ty+baseFrameTxInfo.regOffsetY)/txInfo[frameTxPath].height)}; // Convert offset to percentage of dimensions
+              }
+            }
+          }
+          
+          dispo = new PIXI.AnimatedSprite(ssTxs);
+          if (applyRegFromF1){
+            dispo.updateAnchor = true;
+          }
+          
           txPath = dispo.textures[0].textureCacheIds[0];
-        } 
+        } else {
+          throw new Error('Spritesheet animation not found `'+txPath+'`. ')
+        }
         
       } else {
-        throw new Error('Spritesheet animation not found `'+txPath+'`. Ensure tps auto-detect animations is enabled.')
+        throw new Error('Spritesheet animations not found. Ensure tps auto-detect animations is enabled.')
       }
       
     } else {
@@ -504,11 +549,20 @@ PIXI.DisplayObject.prototype.applyProj = function(syncProps = false){
     this.syncTxInfoToStage(syncProps, true);
   }
   
+  // Projection for animated sprites are based from frame 0
+  // Temporarily switch to frame 0, apply projection then resume state
+  let animSpriteWasPlaying = false;
+  let animSpriteCurrentFrame = 0;
+  if (this.isAnimatedSprite){
+    animSpriteWasPlaying = this.playing;
+    animSpriteCurrentFrame = this.currentFrame;
+    this.gotoAndStop(0)
+  }
+  
   const projID = this.txInfo.projID;
   
   // Store a pure representation of the position and scale as it relates to the stage.
   this.txInfo._proj = {};
-
   
   this.txInfo._proj.x = scaler.proj[projID].transArtX(this.txInfo.x);
   this.txInfo._proj.y = scaler.proj[projID].transArtY(this.txInfo.y);
@@ -534,6 +588,7 @@ PIXI.DisplayObject.prototype.applyProj = function(syncProps = false){
   // Apply anchor. Containers don't use anchors.
   if (this.isSprite){
     this.anchor.set(this.txInfo.regPercX, this.txInfo.regPercY);
+  //  this.txInfo._density = this.texture.width/this.txInfo.width
   } else if (this instanceof PIXI.Mesh){
     this.pivot.x = this.texture.width * this.txInfo.regPercX;
     this.pivot.y = this.texture.height * this.txInfo.regPercY;
@@ -559,7 +614,6 @@ PIXI.DisplayObject.prototype.applyProj = function(syncProps = false){
     this.height = this.txInfo._proj.height;
   } else if (this instanceof PIXI.Mesh){
     this.scale.set(scaler.proj[projID].scale/scaler.artboardScaleFactor,scaler.proj[projID].scale/scaler.artboardScaleFactor);
-  
   }
   
   if (this instanceof Text){
@@ -567,6 +621,14 @@ PIXI.DisplayObject.prototype.applyProj = function(syncProps = false){
     const diff = this.style.fontSize - calcFontSize;
     if (Math.abs(diff) > 0.001){ // Don't trigger font re-render if text field was just added
       this.style.fontSize = this.txInfo.tfParams.fontSize * scaler.proj[projID].scale;
+    }
+  }
+  
+  if (this.isAnimatedSprite){
+    if (animSpriteWasPlaying){
+      this.gotoAndPlay(animSpriteCurrentFrame)
+    } else {
+      this.gotoAndStop(animSpriteCurrentFrame)
     }
   }
   
