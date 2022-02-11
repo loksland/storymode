@@ -49,22 +49,32 @@ for (let _filter of _filters) {
   filters[_filter.id] = _filter.default;
 }
 
-export function createApp(_htmlEle, fullScreen = false, bgAlpha = 1.0, bgColor = 0x000000, onLoadCallback = null) {
+export function createApp(_htmlEle, fullScreen = false, pixiOptions = null, onLoadCallback = null) {
     
     sfx.loadPrefs()
     
     htmlEle = _htmlEle;
-
-    // Docs: http://pixijs.download/release/docs/PIXI.Application.html#Application
-    pixiApp = new PIXI.Application({                   
+        
+    let defaultOptions = {                   
         autoDensity: true, //  Adjusts the canvas using css pixels so it will scale properly (it was the default behavior in v4)
-        antialias: window.devicePixelRatio == 1, //(), 
-        backgroundAlpha: bgAlpha < 1.0 ? 0.0 : 1.0,
+        antialias: window.devicePixelRatio == 1, // Only anti alias from non-retina displays
+        backgroundAlpha: 1.0,
         resolution: window.devicePixelRatio, // Resolution controls scaling of content (sprites, etc.) 
         resizeTo: fullScreen ? window : htmlEle,
-        backgroundColor: bgColor,
+        backgroundColor: 0x000000,
         clearBeforeRender: true
-    });
+    }
+    
+    if (!pixiOptions){
+      pixiOptions = {};
+    }
+    pixiOptions = utils.extend(defaultOptions, pixiOptions);
+    
+    //pixiOptions.autoDensity = false;
+    //pixiOptions.resolution = 1.75; //1.75; // window.devicePixelRatio;
+    
+    // Docs: http://pixijs.download/release/docs/PIXI.Application.html#Application
+    pixiApp = new PIXI.Application(pixiOptions);
     
     pixiApp.render()
 
@@ -72,7 +82,7 @@ export function createApp(_htmlEle, fullScreen = false, bgAlpha = 1.0, bgColor =
     
     ui.loadAssets(function(){
       
-      setup(bgAlpha);
+      setup(pixiOptions.backgroundAlpha);
       
       if (onLoadCallback){
         onLoadCallback(pixiApp);
@@ -105,7 +115,7 @@ function setup(bgAlpha){
     dropShadowBlur: 0.0,
     dropShadowDistance: 2.0});  
     debugTf.x = 3.0;
-    debugTf.y = 3.0; //+ 50.0;    
+    debugTf.y = 3.0 + 50.0;    
     debugTf.alpha = 0.5;
     pixiApp.stage.addChild(debugTf);
     fpsAvg = -1;    
