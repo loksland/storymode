@@ -61,6 +61,11 @@ let totLoadsComplete = 0;
 let initialLoadItemCount = 0;
 let loadAssetCallback;
 
+let onLoaderQueueCallback = null;
+export function onLoaderQueue(_onLoaderQueueCallback){
+  onLoaderQueueCallback = _onLoaderQueueCallback
+}
+
 export function loadAssets(_loadAssetCallback){
   
   if (!psdInfo){
@@ -97,9 +102,9 @@ export function loadAssets(_loadAssetCallback){
     }
   }
   
-  
-  
-  
+  if (onLoaderQueueCallback){
+    onLoaderQueueCallback(loader);
+  }
   
   loader.load(onLoadComplete);
   
