@@ -396,7 +396,8 @@ export function intersectLineLine(a1, a2, b1, b2, applyToVector = null) {
     const ub = ub_t/u_b;
     if (applyToVector){
       applyToVector.x = a1.x+ua*(a2.x-a1.x);
-      applyToVector.y =a1.y+ua*(a2.y-a1.y)
+      applyToVector.y = a1.y+ua*(a2.y-a1.y);
+      return null;
     }
     res = new Point(a1.x+ua*(a2.x-a1.x), a1.y+ua*(a2.y-a1.y));
   } 
