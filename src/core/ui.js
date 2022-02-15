@@ -122,15 +122,12 @@ function onLoadComplete(){
 }
 
 
-
-
-
 PIXI.Texture.fromTx = function(txPath, frame = null){
   
   if (!txInfo[txPath]){
     throw new Error('Texture info not found `'+txPath+'`')
   }
-  
+  //console.log('resources[txPath]',resources,txPath,resources[txPath])
   return new PIXI.Texture(resources[txPath].texture, frame);
   
 }

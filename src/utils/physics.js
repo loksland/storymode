@@ -201,6 +201,11 @@ class JRender {
     
   }
   
+  static _physMtrsToArtPts(physMtrs, ptsPerMeterFactor){
+    const mtp = 1.0/ptsPerMeterFactor;
+    return mtp*physMtrs;
+  }
+  
   // Tools 
   
   artPtsToPhysMtrs(artPts){
@@ -544,7 +549,7 @@ class JWireframeRender extends PIXI.Graphics {
           
           this.moveTo(start.x, start.y);
 
-          if (constraint.render.type === 'spring') {
+          if (constraint.render.type === 'spring' && false) {
             
               let delta = {x:end.x-start.x,y:end.y-start.y},
                   normal = this._vectorPerp(this._vectorNormalise(delta)),
@@ -559,7 +564,6 @@ class JWireframeRender extends PIXI.Graphics {
                       start.y + delta.y * (j / coils) + normal.y * offset * this.ptm*(4.0)
                   );
               }
-              
           }
 
           this.lineTo(end.x, end.y);
