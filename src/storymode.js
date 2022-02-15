@@ -12,7 +12,7 @@ window.loader = PIXI.Loader.shared; //PIXI.Loader.shared; //.  new PIXI.Loader()
 window.resources = loader.resources;
 window.ticker = PIXI.Ticker.shared;
  
-const appEmitter = new PIXI.utils.EventEmitter();
+const appEmitter = new PIXI.utils.EventEmitter(); 
 
 import * as _ext from './utils/extensions.js';
 //import * as _polyfill from './utils/polyfill.js';
