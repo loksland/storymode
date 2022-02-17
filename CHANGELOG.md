@@ -1,5 +1,6 @@
 # Changelog
 
+- v1.1.29 - (17-02-2022) Wild card class association texture names support
 - v1.1.28 - (15-02-2022) Create app options, animated sprite features
 - v1.1.27 - (07-12-2021) Added mesh support to ui layout methods
 - v1.1.26 - (22-11-2021) Isolate physics link update to own method

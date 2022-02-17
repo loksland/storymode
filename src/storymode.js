@@ -20,7 +20,7 @@ import * as utils from './utils/utils.js';
 
 import Scene from './class/scene.js';
 import Camera from './class/camera.js';
-import Btn from './class/btn.js';
+import Btn from './class/btn.js'; 
 
 import * as nav from './core/nav.js';
 import * as scaler from './core/scaler.js';
