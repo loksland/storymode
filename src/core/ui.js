@@ -57,6 +57,12 @@ function registerSpritesheetPath(_spritesheetPath){
   spritesheetPath = _spritesheetPath;
 }
 
+let _crispTextMode = false;
+export function crispTextMode(enable){
+  _crispTextMode = enable;
+}
+
+
 let totLoadsComplete = 0;
 let initialLoadItemCount = 0;
 let loadAssetCallback;
@@ -167,6 +173,11 @@ PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
       align: txInfo[txPath].tfParams.align, // Only affects multi-line fields, use reg to control alignment
       fontStyle: fontStyle.style
     });
+    
+    if (_crispTextMode){
+      dispo.texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
+    }
+    
   
   } else if (isAnimSprite){
     
@@ -571,6 +582,11 @@ PIXI.DisplayObject.prototype.applyProj = function(syncProps = false){
   this.txInfo._proj.width = scaler.proj[projID].scale * this.txInfo.width;
   this.txInfo._proj.height = scaler.proj[projID].scale * this.txInfo.height;
   
+  //if (_crispTextMode && (this instanceof Text)){
+  //  this.txInfo._proj.x = Math.round(this.txInfo._proj.x);
+  //  this.txInfo._proj.y = Math.round(this.txInfo._proj.y);
+  //}
+  
   // Take into account frame (clipping) applied to this sprite's texture
   if (this._hasFrame){ 
     if (this.texture.frame.x != 0.0 || this.texture.frame.y != 0.0){
@@ -775,24 +791,38 @@ PIXI.DisplayObject.prototype.addArt = function(txNameGlob){
         } else {
           
           let dispo = null;
-          if (txClassLookup[psdID + '/' + txs[i].name]){
-            dispo = txClassLookup[psdID + '/' + txs[i].name].fromTx(psdID + '/' + txs[i].name);
-          } else if (txClassLookup['*/' + txs[i].name]){
-            dispo = txClassLookup['*/' + txs[i].name].fromTx(psdID + '/' + txs[i].name);
-          } else if (txs[i].type == 'div'){ // btn
-            dispo = Container.fromTx(psdID + '/' + txs[i].name);      
-          } else if (txs[i].type == 'img'){      
-            dispo = Sprite.fromTx(psdID + '/' + txs[i].name);      
-          } else if (txs[i].type == 'tf'){      
-            dispo = Text.fromTx(psdID + '/' + txs[i].name);   
-          } else if (txs[i].type == 'btn'){
-            dispo = Btn.fromTx(psdID + '/' + txs[i].name);
-          } else if (txs[i].type == 'rect'){
-            dispo = Graphics.fromTx(psdID + '/' + txs[i].name);  
+          // Check for wild card texture class suffix
+          if (txClassSuffixes){ // Look for any suffixes existing
+            let _path = txClassSuffixes['*'] || txClassSuffixes[psdID]; // Look for wildcard psd / current psd
+            if (_path){
+              _path = _path[txs[i].name.substr(-3)]; // Check last 3 chars match the suffix
+              if (_path){
+                if (_path.txPathEnd == txs[i].name.substr(-_path.txPathEnd.length)){ // Check for an exact match
+                  dispo = _path.class.fromTx(psdID + '/' + txs[i].name);
+                }
+              }
+            }
+          }
+          
+          if (!dispo){
+            if (txClassLookup[psdID + '/' + txs[i].name]){
+              dispo = txClassLookup[psdID + '/' + txs[i].name].fromTx(psdID + '/' + txs[i].name);
+            } else if (txClassLookup['*/' + txs[i].name]){
+              dispo = txClassLookup['*/' + txs[i].name].fromTx(psdID + '/' + txs[i].name);
+            } else if (txs[i].type == 'div'){ // btn
+              dispo = Container.fromTx(psdID + '/' + txs[i].name);      
+            } else if (txs[i].type == 'img'){      
+              dispo = Sprite.fromTx(psdID + '/' + txs[i].name);      
+            } else if (txs[i].type == 'tf'){      
+              dispo = Text.fromTx(psdID + '/' + txs[i].name);   
+            } else if (txs[i].type == 'btn'){
+              dispo = Btn.fromTx(psdID + '/' + txs[i].name);
+            } else if (txs[i].type == 'rect'){
+              dispo = Graphics.fromTx(psdID + '/' + txs[i].name);  
+            }
           }
           
           if (dispo != null){
-            
             if (txs[i].parent){
               // If parent is a spite counter act the effect of its scale on children
               if (this.isSprite){
@@ -1053,9 +1083,28 @@ function queueWebFonts(){
 
 // Class <-> texture registration
 let txClassLookup = {};
+let txClassSuffixes = null;
 function registerClassForTx(_class, txPath){
+  let parts = txPath.split('/');
+  if (parts.length == 2 && parts[1].charAt(0) === '*'){
+    if (!txClassSuffixes){
+      txClassSuffixes = {};
+    }    
+    let suffix = parts[1].substr(1)
+    if (suffix.length < 3){
+      throw new Error('Wildcard texture suffixes must be at least 3 characters')
+    }
+    let _psdID = parts[0];
+    if (!txClassSuffixes[_psdID]){
+      txClassSuffixes[_psdID] = {};
+    }
+    let suffixLast3 = suffix.substr(-3); 
+    txClassSuffixes[_psdID][suffixLast3] = {class: _class, txPathEnd:suffix};
+    return;
+  } 
   txClassLookup[txPath] = _class;
 }
+
 
 
 
