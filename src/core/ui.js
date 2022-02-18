@@ -293,7 +293,7 @@ PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
   
   // If `setup` function exists then call now after applying projection and adding children
   if (typeof dispo.init === 'function'){
-    dispo.init(); // Setup based on `txInfo`
+    dispo.init.bind(dispo)(); // Setup based on `txInfo`
   }
   
   return dispo;
@@ -850,8 +850,9 @@ PIXI.DisplayObject.prototype.addArt = function(txNameGlob){
   for (let dispo of added){
     // Call onAdded method if exists.
     // At this point the dispo has parent & siblings present.
-    if (typeof dispo.onAdded === 'function'){
-      dispo.onAdded(); // Setup based on `txInfo`
+    if (typeof dispo.onArtAdded === 'function'){
+      dispo.onArtAdded.bind(dispo)()
+      //tmp(); // Setup based on `txInfo`
     }
   }
   

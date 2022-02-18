@@ -1,5 +1,6 @@
 # Changelog
 
+- v1.1.31 - (18-02-2022) Bound dispo callbacks to dispos
 - v1.1.30 - (18-02-2022) addArt automatically calls .onAdded of dispo after parent and siblings present
 - v1.1.29 - (17-02-2022) Wild card class association texture names support
 - v1.1.28 - (15-02-2022) Create app options, animated sprite features
