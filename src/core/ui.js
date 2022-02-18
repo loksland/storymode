@@ -823,6 +823,7 @@ PIXI.DisplayObject.prototype.addArt = function(txNameGlob){
           }
           
           if (dispo != null){
+            
             if (txs[i].parent){
               // If parent is a spite counter act the effect of its scale on children
               if (this.isSprite){
@@ -843,6 +844,14 @@ PIXI.DisplayObject.prototype.addArt = function(txNameGlob){
           }
         }
       }
+    }
+  }
+  
+  for (let dispo of added){
+    // Call onAdded method if exists.
+    // At this point the dispo has parent & siblings present.
+    if (typeof dispo.onAdded === 'function'){
+      dispo.onAdded(); // Setup based on `txInfo`
     }
   }
   
