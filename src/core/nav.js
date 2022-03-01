@@ -182,8 +182,8 @@ function isPresentingModal(){
   return !(transStack.length < 2 || !transStack[transStack.length-1].isModal || !transStack[transStack.length-1].scenePrev);
 }
 
-
-function dismissScene(){
+// Optionally supply a |dismissData| object to be passed to parent scene's onWillArrive method
+function dismissScene(dismissData = null){
   
   if (locked){
     return;
@@ -197,7 +197,7 @@ function dismissScene(){
   
   transStack[transStack.length-1].scene.onWillExit(false); // Exit to be destroyed
   if (transStack[transStack.length-1].scenePrev){
-    transStack[transStack.length-1].scenePrev.onWillArrive(true); // Re-arrive modally
+    transStack[transStack.length-1].scenePrev.onWillArrive(true, dismissData); // Re-arrive modally
   }
   
   transStack[transStack.length-1].performOut(onSceneOut);

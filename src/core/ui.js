@@ -727,6 +727,12 @@ PIXI.DisplayObject.prototype.addArt = function(txNameGlob){
   endIndex = endIndex === null ? 0 : endIndex;
   
   let txNameGlobs = Array.from(arguments);
+  
+  // Remove nulls and false
+  txNameGlobs = txNameGlobs.filter(function (el) {
+    return el != null && el !== false;
+  });
+
   let getNamesOnly = false;
   if (txNameGlobs.length > 0 && txNameGlobs[0] == '_GETNAMESONLY'){
     getNamesOnly = true;
@@ -737,6 +743,9 @@ PIXI.DisplayObject.prototype.addArt = function(txNameGlob){
     // Use caller's custom txNameGlobs list
     txNameGlobs = this.addArtTxNameGlobs();
   }
+  
+  
+  
   // Put ! criterea first to optimise pattern matching later
   txNameGlobs.sort(function(a, b) {
     const aIsNot = a.startsWith('!');
@@ -894,7 +903,7 @@ function performValuePathMapping(mapping){
     } else {
       val = mapping[writePath];
     }
-    
+
     utils.setObjPathVal(writeObj, writePath.substr(writePathBase.length+1).split('.psd/').join('(dot)psd/'), val)
     
   }

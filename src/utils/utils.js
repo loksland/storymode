@@ -175,7 +175,17 @@ export function setObjPathVal(obj, path, val){
 
 	for (var i = 0; i < pathParts.length; i++){
 		if (i == pathParts.length - 1){
-			ref[pathParts[i]] = val;
+			
+      // Apply relative value mapping eg. `+22`
+      if (typeof val === 'string' && val.length > 0 && (val.charAt(0) === '+' ||val.charAt(0) === '-') && !isNaN(Number(ref[pathParts[i]]))) {
+        let mod = val.charAt(0) === '-' ? -1.0 : 1.0
+        let relVal = Number(val.substr(1))
+        if (!isNaN(relVal)){
+          val = ref[pathParts[i]] + mod*relVal
+        }
+      }
+      ref[pathParts[i]] = val;
+      
 		}	else if (ref[pathParts[i]] == undefined) {
 			ref[pathParts[i]] =  {};
 		}	
@@ -539,6 +549,24 @@ export function requireAll( requireContext ) {
   return requireContext.keys().map( requireContext );
 }
 
+// Returns object with original filename as the key.
+// Eg.
+// webpack.config:
+// module: { // Allow require HTML as a strong. See: https://webpack.js.org/guides/asset-modules/
+//   rules: [{
+//     test: /\.html$/,
+//     type: 'asset/source', // Exports the source code of the asset. Previously achievable by using raw-loader.
+//   }],
+// },
+// const modals = utils.requireAllLookup(require.context('./modals', false, /.html$/));
+export function requireAllLookup(requireContext){
+  let lookup = {}
+  requireContext.keys().forEach((key) => {
+    let safeKey = key.replace(/^[\.\\//]*/g, "");
+    lookup[safeKey] = requireContext(key)
+  });
+  return lookup;
+} 
 
 // From underscore.js
 // Usage: app.renderer.on('resize', debounce(onResize, 1000));
@@ -765,6 +793,7 @@ export function addClass(el, className) {
 export function removeClass(el, className){
   
     if (el.classList) {
+      
         el.classList.remove(className)
         
     } else if (hasClass(el, className)) {
@@ -877,5 +906,10 @@ export function random1PlusMinus() {
 
 export function randFloatNegOneToOne() {			
   return Math.random() * 2.0 - 1.0; 
+}
+
+export function getQueryVar(varname){
+  let params = (new URL(document.location)).searchParams;
+  return params.get(varname);
 }
 

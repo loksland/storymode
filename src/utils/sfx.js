@@ -124,6 +124,7 @@ export default class SFX extends PIXI.utils.EventEmitter {
     }
     
     this.emit('bgloop_enabled_change');
+    
   }
   
   // Volume
@@ -233,6 +234,7 @@ export default class SFX extends PIXI.utils.EventEmitter {
     this._loader = new PIXI.Loader();
     this.spritesByParentSound = {};
     this.parentSoundBySprite = {};
+    this.multis = {};
     let _resources = {};
     for (let _sceneid in nav.scenes){
       let _r = nav.scenes[_sceneid].class.getSfxResources();
@@ -243,14 +245,40 @@ export default class SFX extends PIXI.utils.EventEmitter {
               throw new Error('SFX: Duplicate resource identifier: `'+_soundID+'`');
             }
           } else {
-            const path = _r[_soundID].path ? _r[_soundID].path : _r[_soundID];             
-            if (_r[_soundID].sprites){
-              this.spritesByParentSound[_soundID] = _r[_soundID].sprites;
-              for (let _spriteID in _r[_soundID].sprites){
-                this.parentSoundBySprite[_spriteID] = _soundID;
+            if (_r[_soundID].multi){
+              // Multi sounds are lists of other sounds 
+              // - Each time they are called they step through their list 
+              // - They have the option to be randomised
+              let m = {};     
+              if (_r[_soundID].prefix && _r[_soundID].total){
+                m.ids = [];
+                for (let j = 0; j < _r[_soundID].total; j++){
+                  m.ids.push(_r[_soundID].prefix + String(j));
+                }
+              } else if (_r[_soundID].ids){
+                m.ids = _r[_soundID].ids              
+              } else {
+                throw new Error('SFX: Misconfigured multisound');
               }
-            }        
-            _resources[_soundID] = path;        
+              m.random =  _r[_soundID].random ? true : false; // Items will be shuffled on start and every manual reset
+              m.rezero =  _r[_soundID].rezero === false ? false : true; // Whether to go back to index 0 automatically or stay on last index        
+              m._orig_ids = m.ids.slice();
+              
+              this.multis[_soundID] = m;
+              
+              
+              
+              this.resetMulti(_soundID, true);
+            } else {
+              const path = _r[_soundID].path ? _r[_soundID].path : _r[_soundID];       
+              if (_r[_soundID].sprites){
+                this.spritesByParentSound[_soundID] = _r[_soundID].sprites;
+                for (let _spriteID in _r[_soundID].sprites){
+                  this.parentSoundBySprite[_spriteID] = _soundID;
+                }
+              }       
+              _resources[_soundID] = path;        
+            } 
           }
         }
       }
@@ -268,6 +296,32 @@ export default class SFX extends PIXI.utils.EventEmitter {
       this.onResourcesLoaded(this._loader, {});
     }
   
+  }
+  
+  resetMulti(soundID, force = false, enableRandom = true){
+    if (!force && (!this._sfxready || !this._sfxEnabled || !this.multis || !this.multis[soundID])){
+      return;
+    }
+    this.multis[soundID]._index = -1;
+    if (!enableRandom){      
+      this.multis[soundID].ids = this.multis[soundID]._orig_ids.slice(); // Restore original order
+    } else if (this.multis[soundID].random){
+      this.multis[soundID].ids = utils.shuffle(this.multis[soundID].ids);
+    }
+  }
+  
+  getMultiCounter(soundID){
+    if (!this._sfxready || !this._sfxEnabled || !this.multis || !this.multis[soundID]){
+      return -1;
+    }
+    return this.multis[soundID]._index;
+  }
+  
+  getMultiTotal(soundID){
+    if (!this._sfxready || !this._sfxEnabled || !this.multis || !this.multis[soundID]){
+      return -1;
+    }
+    return this.multis[soundID].ids.length
   }
   
   onResourcesLoaded(loader, resources){
@@ -367,9 +421,20 @@ export default class SFX extends PIXI.utils.EventEmitter {
     //this.resources[soundID].sound.preload = true;
     if (this.parentSoundBySprite[soundID] && this.resources[this.parentSoundBySprite[soundID]]){
       this.resources[this.parentSoundBySprite[soundID]].sound.volume = this._sfxVolume*this._volume
-      this.resources[this.parentSoundBySprite[soundID]].sound.play(soundID); //,{loop: false, singleInstance: false, volume: this._sfxVolume*this._volume});
+      this.resources[this.parentSoundBySprite[soundID]].sound.play(soundID); //,{loop: false, singleInstance: false, volume: this._sfxVolume*this._volume});      
     } else if (this.resources[soundID]){
+      //console.log(this.resources[soundID].sound.url)
       this.resources[soundID].sound.play({volume: this._sfxVolume*this._volume});
+    } else if (this.multis[soundID]){
+      this.multis[soundID]._index++;
+      if (this.multis[soundID]._index >= this.multis[soundID].ids.length){
+        if (this.multis[soundID].rezero){
+          this.multis[soundID]._index = 0;
+        } else {
+          this.multis[soundID]._index = this.multis[soundID].ids.length-1;
+        }
+      }
+      this.playSFX(this.multis[soundID].ids[this.multis[soundID]._index], 0.0)
     } else {
       console.log('SFX resource not found `'+soundID+'`')
     }

@@ -311,19 +311,21 @@ PIXI.DisplayObject.prototype.sendToBack = function(){
 
 PIXI.DisplayObject.prototype.debugStack = function(level = 0){
   
-  let output = []
+  let output = [];
+  let info = this.name;
+  let type = (this.isSprite) ? 'sprite' : 'other'
+  info += ' ('+type+')';
   
   if (level == 0){
-    output.push(this.name);
-    output.push('='.repeat(this.name.length));
+    output.push(info);
+    output.push('='.repeat(info.length));
   } else {
-    output.push('  '.repeat(level-1) + '- ' + this.name);
+    output.push('  '.repeat(level-1) + '- ' + info);
   }
   for (let i = this.children.length - 1; i >= 0; i--){
     let child = this.children[i];
     output = output.concat(child.debugStack(level+1));
   }
-  
   
   if (level == 0){
     window['c' + 'onsole']['l' + 'og'](output.join('\n'))

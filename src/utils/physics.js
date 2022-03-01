@@ -100,7 +100,7 @@ class JRunner { // } extends PIXI.utils.EventEmitter {
         this.accumulator -= this.targetDelta;
         //t += dt;
     }
-    
+
     // Render
     
     for (let i = 0; i < this.renders.length; i++){
