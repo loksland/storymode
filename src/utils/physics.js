@@ -51,8 +51,8 @@ class JRunner { // } extends PIXI.utils.EventEmitter {
     this.renderCallback = renderCallback;
     
     let defaults = {
-      fixedTimestep: false, // If timing is fixed, then the apparent simulation speed will change depending on the frame rate (but behaviour will be deterministic).
-                            // If the timing is variable, then the apparent simulation speed will be constant (approximately, but at the cost of determininism).
+      fixedTimestep: true, // If timing is fixed, then the apparent simulation speed will change depending on the frame rate (but behaviour will be deterministic).
+                           // If the timing is variable, then the apparent simulation speed will be constant (approximately, but at the cost of determininism).
       
     };
 
@@ -94,7 +94,9 @@ class JRunner { // } extends PIXI.utils.EventEmitter {
   tickFixed(){
     
     this.accumulator += ticker.elapsedMS; // Time elapsed in milliseconds from last frame to this frame.;
-
+    
+  
+    
     while ( this.accumulator >= this.targetDelta ){
         Engine.update(this.engine, this.targetDelta, 1.0);
         this.accumulator -= this.targetDelta;
@@ -312,7 +314,7 @@ class JRender {
         link.to.scale.set(s,s);
       }
       if (link.syncCallback){
-        link.syncCallback();
+        link.syncCallback(link);
       }
     }
   }
@@ -399,7 +401,13 @@ class JSyncLink {
     this.syncCallback = syncCallback;
   }
   dispose(){
-    this.data = null;
+    if (this.data){
+      for (let p in this.data){
+        this.data[p] = null;
+        delete this.data[p];
+      }
+      this.data = null;
+    }
     this.from = null;
     this.to = null;
     this.syncCallback = null;

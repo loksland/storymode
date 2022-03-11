@@ -641,69 +641,6 @@ export function intersects(a,b,c,d,p,q,r,s) {
   }
 };
 
-
-
-public static function roundToNearest(val, step = 1) {
-  
-  return Math.round(val * (1 / step)) / (1 / step);
-  
-}
-
-public static function closestValueInArray(target, numArray:Array) {
-  
-  var minDiff = -1;
-  
-  var closestVal = target;
-  for (var i:uint = 0; i < numArray.length; i++){
-    if (target == numArray[i]){
-      minDiff = 0;
-      closestVal = numArray[i];
-      break;
-    } else if (i == 0 || Math.abs(numArray[i] - target) < minDiff){
-      minDiff = Math.abs(numArray[i] - target);
-      closestVal = numArray[i];
-    }
-  }
-  
-  return closestVal;
-  
-}
-
-// Assumes numArray items are in ascending order
-public static function closestValueInArrayOverOrEqualTo(target, numArray:Array) {
-  var closestVal = target;
-  for (var i:uint = 0; i < numArray.length; i++){
-    if (numArray[i] >= target){
-      closestVal = numArray[i];
-      break;
-    }
-    closestVal = numArray[i];
-  }
-  
-  return closestVal;
-}
-
-
-// source: https://github.com/DaVikingCode/Citrus-Engine/blob/master/src/citrus/math/MathUtils.as
-public static function randomInt(min:int, max:int):int {
-  return Math.floor(Math.random() * (1 + max - min)) + min;
-}
-    
-
-
-// source: https://github.com/DaVikingCode/Citrus-Engine/blob/master/src/citrus/math/MathUtils.as
-public static function getRandomArrayItem(arr:Array):*
-{
-  return arr[randomInt(0, arr.length-1)];
-}
-
-public static function midPointBetweenPoints(aX, aY, bX, bY) {
-  
-  return new Point(aX + (bX-aX)*0.5,	aY + (bY-aY)*0.5);
-  
-}
-
-
 */
 
 export function shuffle(array) {

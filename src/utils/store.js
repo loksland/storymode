@@ -9,6 +9,8 @@ if(!STORAGE_ENABLED){
   console.log('WARNING: Local Storage is disabled');
 }
 
+let sessionData = {}; // Fallback just for this session
+
 export const enabled = _localStorageAvailable();
 
 export function setPrefix(_prefix){
@@ -16,26 +18,33 @@ export function setPrefix(_prefix){
 }
 
 export function save(key, val){  
-  if (!enabled){
+  key = prefix + '.' + key;
+  if (!enabled){    
+    sessionData[key] = val;
     return false;
   }
-  key = prefix + '.' + key;
   localStorage.setItem(key, val);    
   return true;
 }
 
 export function load(key){
-  if (!enabled){
-    return null;
-  }
   key = prefix + '.' + key;
-
+  if (!enabled){    
+    if (typeof sessionData[key] !== 'undefined'){
+      return sessionData[key];
+    }    
+    return null;
+  }  
   let data = localStorage.getItem(key);
   return data ? data : null;
 }
 
 export function remove(key){
   if (!enabled){
+    if (typeof sessionData[key] !== 'undefined'){
+      sessionData[key] = null;
+      delete sessionData[key];
+    }
     return;
   }
   key = prefix + '.' + key;
@@ -44,6 +53,7 @@ export function remove(key){
 
 export function removeAll(){
   if (!enabled){
+    sessionData = {}
     return null;
   }
   localStorage.clear();

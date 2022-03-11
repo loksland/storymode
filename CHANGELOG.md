@@ -1,5 +1,6 @@
 # Changelog
 
+- v1.1.33 - (11-03-2022) Texture.fromTx with spritesheet support, physics fixed timestamp as default, sfx concurrent and looping support, store session fallback
 - v1.1.32 - (02-03-2022) Require all with lookup added, multi sfx added, dismiss scene with optional data added
 - v1.1.31 - (18-02-2022) Bound dispo callbacks to dispos
 - v1.1.30 - (18-02-2022) addArt automatically calls .onAdded of dispo after parent and siblings present

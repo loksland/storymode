@@ -134,7 +134,19 @@ PIXI.Texture.fromTx = function(txPath, frame = null){
     throw new Error('Texture info not found `'+txPath+'`')
   }
   //console.log('resources[txPath]',resources,txPath,resources[txPath])
-  return new PIXI.Texture(resources[txPath].texture, frame);
+  if (resources[txPath] && resources[txPath].texture){
+    return new PIXI.Texture(resources[txPath].texture, frame);
+  } else {
+    let spritesheetBaseName = psdInfo[txInfo[txPath].psdID].doc.spritesheet 
+    let spritesheet = resources[spritesheetBaseName + SPRITESHEET_RESOURCE_SUFFIX];
+    if (spritesheet){     
+      return spritesheet.textures[txInfo[txPath].path];
+    } else {
+      throw new Error('Spritesheet not found `'+spritesheetBaseName+'` (via `'+txInfo[txPath].psdID+'`)')
+    }
+    throw new Error('Spritesheet textures not supported `'+txPath+'`')
+  }
+   
   
 }
 

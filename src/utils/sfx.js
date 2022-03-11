@@ -227,14 +227,14 @@ export default class SFX extends PIXI.utils.EventEmitter {
     // Set global volume
     // PIXI.sound.volumeAll = 0.1;
     
-    // console.log('PIXI.sound.volumeAll', PIXI.sound.volumeAll)
-    
     // Load all resources registered with static scene method: `getSfxResources()`
     
     this._loader = new PIXI.Loader();
     this.spritesByParentSound = {};
     this.parentSoundBySprite = {};
     this.multis = {};
+    this.concurrentTracking = {};
+    this.loopSfx = {};
     let _resources = {};
     for (let _sceneid in nav.scenes){
       let _r = nav.scenes[_sceneid].class.getSfxResources();
@@ -245,6 +245,10 @@ export default class SFX extends PIXI.utils.EventEmitter {
               throw new Error('SFX: Duplicate resource identifier: `'+_soundID+'`');
             }
           } else {
+            
+            // Optionally set concurrent to limit how many of this sfx (or multi) can play concurrently
+            
+            
             if (_r[_soundID].multi){
               // Multi sounds are lists of other sounds 
               // - Each time they are called they step through their list 
@@ -265,18 +269,44 @@ export default class SFX extends PIXI.utils.EventEmitter {
               m._orig_ids = m.ids.slice();
               
               this.multis[_soundID] = m;
-              
-              
+              if (_r[_soundID].concurrent && _r[_soundID].concurrent > 0){
+                this.concurrentTracking[_soundID] = {concurrent: _r[_soundID].concurrent, _playcount:0};
+              }      
+              if (_r[_soundID].loop){
+                throw new Error('SFX: Multi sounds don\'t support `loop` ('+_soundID+').');
+              }
               
               this.resetMulti(_soundID, true);
             } else {
               const path = _r[_soundID].path ? _r[_soundID].path : _r[_soundID];       
               if (_r[_soundID].sprites){
+                if (_r[_soundID].concurrent){
+                  throw new Error('SFX: Sprite parents don\'t support `concurrent` ('+_soundID+').');
+                }
+                if (_r[_soundID].loop){
+                  throw new Error('SFX: Sprite parents don\'t support `loop` ('+_soundID+').');
+                }
                 this.spritesByParentSound[_soundID] = _r[_soundID].sprites;
                 for (let _spriteID in _r[_soundID].sprites){
+                  // Individual spriute
                   this.parentSoundBySprite[_spriteID] = _soundID;
+                  if (_r[_soundID].sprites[_spriteID].concurrent && _r[_soundID].sprites[_spriteID].concurrent > 0){
+                    this.concurrentTracking[_spriteID] = {concurrent: _r[_soundID].sprites[_spriteID].concurrent, _playcount:0};
+                    delete _r[_soundID].sprites[_spriteID].concurrent; // Remove any props except start/end
+                  }
+                  if (_r[_soundID].sprites[_spriteID].loop){
+                    this.loopSfx[_spriteID] = true;
+                    delete _r[_soundID].sprites[_spriteID].loop; // Remove any props except start/end
+                  }                  
                 }
-              }       
+              } else { // Non sprite sound effect
+                if (_r[_soundID].concurrent && _r[_soundID].concurrent > 0){
+                  this.concurrentTracking[_soundID] = {concurrent: _r[_soundID].concurrent, _playcount:0};
+                }
+                if (_r[_soundID].loop){
+                  this.loopSfx[_soundID] = true;
+                } 
+              }      
               _resources[_soundID] = path;        
             } 
           }
@@ -322,6 +352,13 @@ export default class SFX extends PIXI.utils.EventEmitter {
       return -1;
     }
     return this.multis[soundID].ids.length
+  }
+  
+  setMultiRezero(soundID, rezero){
+    if (!this._sfxready || !this._sfxEnabled || !this.multis || !this.multis[soundID]){
+      return -1;
+    }
+    return this.multis[soundID].rezero = rezero;
   }
   
   onResourcesLoaded(loader, resources){
@@ -391,7 +428,8 @@ export default class SFX extends PIXI.utils.EventEmitter {
     
   }
   
-  playSFX(soundID, delay = -1.0){
+  // - _concurrentSoundID, the sound ID used to track and limit concurrent sound instances. 
+  playSFX(soundID, delay = -1.0, _concurrentSoundID = null){
     
     if (!this._sfxready || !this._sfxEnabled){
       return;
@@ -402,30 +440,23 @@ export default class SFX extends PIXI.utils.EventEmitter {
       return;
     }
     
-    
-    /*
-    if (options){ 
-      let defaults = {
-        pan: 0.0
-      };
-      options = utils.extend(defaults, options);        
-      if (options.pan != 0.0){
-        const stereo = new PIXI.sound.filters.StereoFilter()
-        stereo.pan = options.pan; // from -1 to 1
-        this.resources[soundID].sound.filters = [stereo];
-      }
-      // true to disallow playing multiple layered instances at once.
+    // Concurrent limits (per sound - not multi)
+    let concurrentLimit = -1;       
+    let multiCall = _concurrentSoundID ? true : false;
+
+    let concurrentSoundID = _concurrentSoundID ? _concurrentSoundID : soundID;
+    if (this.concurrentTracking[concurrentSoundID]){
+      concurrentLimit = this.concurrentTracking[concurrentSoundID].concurrent;  
     }
-    */
-        
-    //this.resources[soundID].sound.preload = true;
-    if (this.parentSoundBySprite[soundID] && this.resources[this.parentSoundBySprite[soundID]]){
-      this.resources[this.parentSoundBySprite[soundID]].sound.volume = this._sfxVolume*this._volume
-      this.resources[this.parentSoundBySprite[soundID]].sound.play(soundID); //,{loop: false, singleInstance: false, volume: this._sfxVolume*this._volume});      
-    } else if (this.resources[soundID]){
-      //console.log(this.resources[soundID].sound.url)
-      this.resources[soundID].sound.play({volume: this._sfxVolume*this._volume});
-    } else if (this.multis[soundID]){
+    
+    if (this.multis[soundID]){
+      
+      if (concurrentLimit > 0){ // Check if over limit so index doesn't have to tick uncessecarily
+        if (this.concurrentTracking[concurrentSoundID]._playcount == concurrentLimit){
+          return;
+        }
+      }
+      
       this.multis[soundID]._index++;
       if (this.multis[soundID]._index >= this.multis[soundID].ids.length){
         if (this.multis[soundID].rezero){
@@ -434,10 +465,87 @@ export default class SFX extends PIXI.utils.EventEmitter {
           this.multis[soundID]._index = this.multis[soundID].ids.length-1;
         }
       }
-      this.playSFX(this.multis[soundID].ids[this.multis[soundID]._index], 0.0)
+      this.playSFX(this.multis[soundID].ids[this.multis[soundID]._index], 0.0, soundID); // Pass 3rd parram to track concurrent limits
+      
     } else {
-      console.log('SFX resource not found `'+soundID+'`')
+      
+      let options = {};
+      options.volume = this._sfxVolume*this._volume
+      
+      // Get sound object based on if sprite or not
+      let result = this.getSoundForID(soundID);
+      if (result.isSprite){
+        options.sprite = soundID
+      }
+      
+      let sound = result.sound;
+      
+      if (sound){
+        
+        if (!multiCall && this.loopSfx[soundID]){ // Looping is ignored if called as child of multi
+        
+          options.loop = true;
+          // Looping SFX have a concurrent limit of 1 applied automatically 
+          concurrentLimit = 1;
+          if (!this.concurrentTracking[soundID]){
+            this.concurrentTracking[soundID] = {}
+            this.concurrentTracking[soundID].concurrent = 1;
+            this.concurrentTracking[soundID]._playcount = 0;
+          }
+        } 
+        
+        if (concurrentLimit > 0){        
+          if (this.concurrentTracking[concurrentSoundID]._playcount == concurrentLimit){
+            return;
+          }
+          // Track how many are playing for current `concurrentSoundID`
+          this.concurrentTracking[concurrentSoundID]._playcount++; 
+          if (!options.loop){ // No callback needed for loop
+            let self = this;
+            options.complete = ()=>{
+              self.concurrentTracking[concurrentSoundID]._playcount = Math.max(0, self.concurrentTracking[concurrentSoundID]._playcount-1);
+            }
+          }
+        }        
+        sound.play(options);
+      } else {
+        window['con' + 'sole']['log']('SFX resource not found `'+soundID+'`')
+      }
+      
     }
+  }
+  
+  stopSFX(soundID = null){
+    
+    if (!soundID || soundID == '*'){
+      // Stop all looping SFX
+      for (let soundID in this.loopSfx){
+        this.stopSFX(soundID);
+      }
+      return;
+    }
+    if (!this.loopSfx[soundID] || !this.concurrentTracking[soundID]){
+      return
+    }
+    
+    this.concurrentTracking[soundID]._playcount = 0;
+    let result = this.getSoundForID(soundID);
+    if (result.sound){
+      result.sound.stop();
+    }
+    
+  }
+  
+  getSoundForID(soundID){
+    let result = {};
+    if (this.parentSoundBySprite[soundID] && this.resources[this.parentSoundBySprite[soundID]]){
+      result.sound = this.resources[this.parentSoundBySprite[soundID]].sound
+      result.isSprite = true;
+    } else if (this.resources[soundID]){
+      result.sound = this.resources[soundID].sound;
+      result.isSprite = false;
+    } 
+    return result;
   }
   
   setBgLoop(soundID){
@@ -464,7 +572,7 @@ export default class SFX extends PIXI.utils.EventEmitter {
         this._resumeBgLoop();
       }
     } else {
-      console.log('BG loop resource not found `'+soundID+'`')
+      window['con' + 'sole']['log']('BG loop resource not found `'+soundID+'`')
     }
   }
 
