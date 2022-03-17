@@ -54,13 +54,14 @@ export default class SFX extends PIXI.utils.EventEmitter {
   
   // Called after store has chance to be configured
   loadPrefs(){
-    
+
     let _sfxEnabled = store.load('sfx.sfxEnabled')
     this._sfxEnabled = _sfxEnabled === null ? DEFAULT_SFX_ENABLED : _sfxEnabled === '1';
 
     let _bgLoopEnabled = store.load('sfx.bgLoopEnabled')
     this._bgLoopEnabled = _bgLoopEnabled === null ? DEFAULT_BGLOOP_ENABLED : _bgLoopEnabled === '1';
-    
+  
+    this.syncBgState();
   }
   
   get sfxready(){
@@ -158,7 +159,6 @@ export default class SFX extends PIXI.utils.EventEmitter {
   // prevent sound effects from being loaded and played in the meantime
   // Must be called before or during storymode.createApp callback
   enqueueBgResources(bgResources, callback){
-    
     this._bgResources = bgResources;
     
   }
@@ -212,6 +212,7 @@ export default class SFX extends PIXI.utils.EventEmitter {
     
   }
   
+  // First the script must be loaded - if not already
   beginLoad(){
     if (PIXI.sound){
       this.onScriptLoaded();
@@ -236,19 +237,20 @@ export default class SFX extends PIXI.utils.EventEmitter {
     this.concurrentTracking = {};
     this.loopSfx = {};
     let _resources = {};
+    
     for (let _sceneid in nav.scenes){
       let _r = nav.scenes[_sceneid].class.getSfxResources();
       if (_r){
+        
+        
+        
         for (let _soundID in _r){
           if (_resources[_soundID]){  
             if (_r[_soundID] !== _resources[_soundID]){ // Identical queued; ignore
               throw new Error('SFX: Duplicate resource identifier: `'+_soundID+'`');
             }
-          } else {
-            
+          } else {            
             // Optionally set concurrent to limit how many of this sfx (or multi) can play concurrently
-            
-            
             if (_r[_soundID].multi){
               // Multi sounds are lists of other sounds 
               // - Each time they are called they step through their list 
@@ -385,12 +387,32 @@ export default class SFX extends PIXI.utils.EventEmitter {
     this.emit('sfxready');
     
     // SFX can now be played. Load the background next.
+    this.loadBgResources();
+    
+  }
+  
+  loadBgResources(){
+
+    
     if (this._bgResources){
+      
+      this.spritesByParentSound = {};
       
       this._loader = new PIXI.Loader();
       
       for (let _soundID in this._bgResources){
         const path = this._bgResources[_soundID].path ? this._bgResources[_soundID].path : this._bgResources[_soundID];           
+        
+        if (this._bgResources[_soundID].sprites){
+          // Save the sprites to apply to the sound after it has loaded
+          this.spritesByParentSound[_soundID] = this._bgResources[_soundID].sprites;
+          for (let _spriteID in this._bgResources[_soundID].sprites){
+            // Individual spriute
+            this._bgResources[_soundID].sprites[_spriteID].loop = true
+            this.parentSoundBySprite[_spriteID] = _soundID;
+          }
+        }
+        
         this._loader.add(_soundID, path); 
       }
       
@@ -401,6 +423,17 @@ export default class SFX extends PIXI.utils.EventEmitter {
   }
   
   onBgResourcesLoaded(loader, resources){
+    
+    if (resources){
+      // Add sprites to any loaded bg sounds
+      for (let _soundID in this.spritesByParentSound){
+        if (resources[_soundID] && resources[_soundID].sound){
+          resources[_soundID].sound.addSprites(this.spritesByParentSound[_soundID]);
+        } 
+      }
+    } 
+    
+    delete this.spritesByParentSound;
     
     this._loader = null;
     this.resources = utils.extend(this.resources, resources); 
@@ -428,15 +461,33 @@ export default class SFX extends PIXI.utils.EventEmitter {
     
   }
   
+  // - If supplying options as a number it is assumed a delay value in seconds
   // - _concurrentSoundID, the sound ID used to track and limit concurrent sound instances. 
-  playSFX(soundID, delay = -1.0, _concurrentSoundID = null){
+  playSFX(soundID, options = null, _concurrentSoundID = null){
     
     if (!this._sfxready || !this._sfxEnabled){
       return;
     }
     
+    // Defaults - Can be supplied as option params
+    let delay = -1;
+    let volume = 1.0;
+    
+    if (typeof options === 'number'){
+      delay = options; // Assume number is delay;
+      options = null;
+    }  else if (options && typeof options === 'object'){   
+      if (typeof options.volume === 'number'){
+        volume = options.volume;
+      }
+      if (typeof options.delay === 'number'){
+        delay = options.delay;
+        delete options.delay; // Remove delay as it will be applied now
+      }
+    }
+    
     if (delay > 0.0){
-      utils.wait(this, delay, this.playSFX, [soundID]);
+      utils.wait(this, delay, this.playSFX, [soundID, options]);
       return;
     }
     
@@ -449,7 +500,9 @@ export default class SFX extends PIXI.utils.EventEmitter {
       concurrentLimit = this.concurrentTracking[concurrentSoundID].concurrent;  
     }
     
-    if (this.multis[soundID]){
+    if (this.multis[soundID]){ 
+      
+      // Multi 
       
       if (concurrentLimit > 0){ // Check if over limit so index doesn't have to tick uncessecarily
         if (this.concurrentTracking[concurrentSoundID]._playcount == concurrentLimit){
@@ -465,13 +518,15 @@ export default class SFX extends PIXI.utils.EventEmitter {
           this.multis[soundID]._index = this.multis[soundID].ids.length-1;
         }
       }
-      this.playSFX(this.multis[soundID].ids[this.multis[soundID]._index], 0.0, soundID); // Pass 3rd parram to track concurrent limits
+      this.playSFX(this.multis[soundID].ids[this.multis[soundID]._index], options, soundID); // Pass 3rd parram to track concurrent limits
       
     } else {
       
-      let options = {};
-      options.volume = this._sfxVolume*this._volume
+      // Sprite / Non-sprite
       
+      let options = {};
+      options.volume = this._sfxVolume*this._volume*volume
+    
       // Get sound object based on if sprite or not
       let result = this.getSoundForID(soundID);
       if (result.isSprite){
@@ -483,7 +538,6 @@ export default class SFX extends PIXI.utils.EventEmitter {
       if (sound){
         
         if (!multiCall && this.loopSfx[soundID]){ // Looping is ignored if called as child of multi
-        
           options.loop = true;
           // Looping SFX have a concurrent limit of 1 applied automatically 
           concurrentLimit = 1;
@@ -566,7 +620,9 @@ export default class SFX extends PIXI.utils.EventEmitter {
       this.bgLoopSlug = null;
       return;
     }
-    if (this.resources[soundID]){
+    
+    let result = this.getSoundForID(soundID);
+    if (result.sound){
       this.bgLoopSlug = soundID;
       if (this._bgLoopEnabled){
         this._resumeBgLoop();
@@ -575,26 +631,40 @@ export default class SFX extends PIXI.utils.EventEmitter {
       window['con' + 'sole']['log']('BG loop resource not found `'+soundID+'`')
     }
   }
-
-  _stopBgLoop(){
-    
-    if (this.bgLoopSlug && this.resources[this.bgLoopSlug]){
-      this.resources[this.bgLoopSlug].sound.stop();
-    }
-    
-  }
   
-  _resumeBgLoop(){
-    if (this._bgLoopEnabled && this.bgLoopSlug){
-      this.resources[this.bgLoopSlug].sound.play({loop: true, singleInstance: true, volume: this._bgLoopVolume*this._volume});
+    _stopBgLoop(){
+      if (this.bgLoopSlug){
+        let result = this.getSoundForID(this.bgLoopSlug);
+        if (result.sound){
+          result.sound.stop();
+        }
+      } 
     }
-  }
-  
-  updateBgLoopVolume(){
-    if (this.resources && this.bgLoopSlug && this.resources[this.bgLoopSlug].sound){
-      this.resources[this.bgLoopSlug].sound.volume = this._bgLoopVolume*this._volume
+    
+    _resumeBgLoop(){
+      if (this._bgLoopEnabled && this.bgLoopSlug){
+        let result = this.getSoundForID(this.bgLoopSlug);
+        if (result.sound){
+          let options = {singleInstance: true, volume: this._bgLoopVolume*this._volume}
+          if (result.isSprite){
+            options.sprite = this.bgLoopSlug;
+          }
+          result.sound.play(options);
+        }
+      } 
     }
-  }
+    
+    updateBgLoopVolume(){
+      if (this.resources && this.bgLoopSlug){
+        let result = this.getSoundForID(this.bgLoopSlug);
+        if (result.sound){
+          result.sound.volume = this._bgLoopVolume*this._volume
+        } else {
+          
+        }
+      }
+    }
+    
   
 }
     

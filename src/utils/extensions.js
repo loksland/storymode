@@ -465,38 +465,56 @@ PIXI.AnimatedSprite.prototype.playUntil = function(targetFrame, animateAlways = 
 const MAX_SHAKE_ROT = 2.0;
 const MAX_SHAKE_OFFSET_ART = 15.0*0.5;
 
-PIXI.DisplayObject.prototype.applyShake = function(traumaPerc, maxFactor = 1.0){
+// - `maxFactor` is a factor applied to built in properties defined above
 
+PIXI.DisplayObject.prototype.applyShake = function(traumaPerc, maxFactor = 1.0, options = null, extraTargets = null){
+
+  let defaults = {
+      rotateOnly: false,
+  };
+  options = utils.extend(defaults, options);
+
+  let targets = [this];
+  if (extraTargets){
+    targets = targets.concat(Array.isArray(extraTargets) ? extraTargets : [extraTargets]);
+  }
+  
   if (typeof this._shake === 'undefined'){
     this._shake = {};
     this._shake.trauma = 0.0;    
-    if (this instanceof Scene){
-      this.setPivotWithoutMoving(scaler.stageW*0.5, scaler.stageH*0.5)
-      this._shake.origin = this.position.clone()
+    if (!options.rotateOnly){
+      if (this instanceof Scene){
+        this.setPivotWithoutMoving(scaler.stageW*0.5, scaler.stageH*0.5)
+        this._shake.origin = this.position.clone()
+      } 
     }
-    this._shake.kill = (target)=>{
-      gsap.killTweensOf(target);
-      target.rotation = 0.0;
-      target.position.copyFrom(target._shake.origin)
-      if (target instanceof Scene){
-        target.setPivotWithoutMoving(0.0, 0.0); // Default
+    this._shake.kill = (targets)=>{
+      gsap.killTweensOf(targets);
+      for (let target of targets){
+        target.rotation = 0.0;
       }
-      delete target._shake;
+      if (!options.rotateOnly){
+        targets[0].position.copyFrom(targets[0]._shake.origin)      
+        if (targets[0] instanceof Scene){
+          targets[0].setPivotWithoutMoving(0.0, 0.0); // Default
+        }
+      }
+      delete targets[0]._shake;
     }
   }
   
   this._shake.trauma = Math.min(1.0, this._shake.trauma + traumaPerc); // Linear ease down 
   gsap.killTweensOf(this._shake);
-  gsap.to(this._shake, 1.0, {trauma:0.0, ease:Linear.easeNone, onUpdateParams:[this], onUpdate:(target)=>{
-    
-    const shakeAmt = Math.pow(target._shake.trauma, 3); // Or 3
-    //console.log(gsap.ticker.time)
-    let rot = maxFactor*MAX_SHAKE_ROT * shakeAmt * utils.randFloatNegOneToOne()
-    const _x = target._shake.origin.x + maxFactor*MAX_SHAKE_OFFSET_ART * scaler.scale * shakeAmt * utils.randFloatNegOneToOne()
-    const _y = target._shake.origin.y + maxFactor*MAX_SHAKE_OFFSET_ART * scaler.scale * shakeAmt * utils.randFloatNegOneToOne()
-    gsap.set(target, {angle:rot, x:_x , y: _y});
-    
-  }, onCompleteParams:[this], onComplete:this._shake.kill})
+  gsap.to(this._shake, 1.0, {trauma:0.0, ease:Linear.easeNone, onUpdateParams:[targets], onUpdate:(targets)=>{
+    const shakeAmt = Math.pow(targets[0]._shake.trauma, 3); // Or 3
+    let tw = {};
+    tw.angle = maxFactor*MAX_SHAKE_ROT * shakeAmt * utils.randFloatNegOneToOne()
+    if (!options.rotateOnly){
+      tw.x = targets[0]._shake.origin.x + maxFactor*MAX_SHAKE_OFFSET_ART * scaler.scale * shakeAmt * utils.randFloatNegOneToOne()
+      tw.y = targets[0]._shake.origin.y + maxFactor*MAX_SHAKE_OFFSET_ART * scaler.scale * shakeAmt * utils.randFloatNegOneToOne()
+    }
+    gsap.set(targets, tw);
+  }, onCompleteParams:[targets], onComplete:this._shake.kill})
   
 }
 
