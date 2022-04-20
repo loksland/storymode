@@ -1,3 +1,4 @@
+/** @module storymode */
 
 // PixiJS convenience aliases 
 window.Sprite = PIXI.Sprite;
@@ -15,7 +16,6 @@ window.ticker = PIXI.Ticker.shared;
 const appEmitter = new PIXI.utils.EventEmitter(); 
 
 import * as _ext from './utils/extensions.js';
-//import * as _polyfill from './utils/polyfill.js';
 import * as utils from './utils/utils.js';
 
 import Scene from './class/scene.js';
@@ -49,6 +49,22 @@ for (let _filter of _filters) {
   filters[_filter.id] = _filter.default;
 }
 
+
+/**
+ * Called after initial assets are loaded.
+ *
+ * @callback AppLoadCallback
+ * @param {PIXI.Application} pixiApp The PIXI Application 
+ */
+ 
+ 
+/**
+ * Creates a new PIXI Application, wrapper for `new PIXI.Application(...)`
+ * @param {DOMElement} htmlEle - The DOM element in which to add the Pixi canvas.
+ * @param {boolean} [fullScreen=false] - If true will base the canvas dimensions on the window size rather than the containing element.
+ * @param {Object} [pixiOptions=null] - Option object to override defaults sent to PIXI. See: http://pixijs.download/release/docs/PIXI.Application.html#Application
+ * @param {AppLoadCallback} [onLoadCallback=null] - Called after initial assets are loaded.
+ */
 export function createApp(_htmlEle, fullScreen = false, pixiOptions = null, onLoadCallback = null) {
     
     sfx.loadPrefs()
@@ -62,16 +78,13 @@ export function createApp(_htmlEle, fullScreen = false, pixiOptions = null, onLo
         resolution: window.devicePixelRatio, // Resolution controls scaling of content (sprites, etc.) 
         resizeTo: fullScreen ? window : htmlEle,
         backgroundColor: 0x000000,
-        clearBeforeRender: true
+        clearBeforeRender: true // This sets if the renderer will clear the canvas or not before the new render pass.
     }
     
     if (!pixiOptions){
       pixiOptions = {};
     }
     pixiOptions = utils.extend(defaultOptions, pixiOptions);
-    
-    //pixiOptions.autoDensity = false;
-    //pixiOptions.resolution = 1.75; //1.75; // window.devicePixelRatio;
     
     // Docs: http://pixijs.download/release/docs/PIXI.Application.html#Application
     pixiApp = new PIXI.Application(pixiOptions);
@@ -94,6 +107,7 @@ export function createApp(_htmlEle, fullScreen = false, pixiOptions = null, onLo
       
     })
 }
+
 
 let fpsAvg;
 // All assets are loaded by this point and the stage is empty

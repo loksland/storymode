@@ -1,5 +1,6 @@
 # Changelog
 
+- v1.1.35 - (20-04-2022) Started moving to jsdocs
 - v1.1.34 - (17-03-2022) Apply shake supports rotate only, SFX bg loops support sprites
 - v1.1.33 - (11-03-2022) Texture.fromTx with spritesheet support, physics fixed timestamp as default, sfx concurrent and looping support, store session fallback
 - v1.1.32 - (02-03-2022) Require all with lookup added, multi sfx added, dismiss scene with optional data added

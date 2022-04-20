@@ -1,7 +1,21 @@
+
 import { scaler, Camera} from './../storymode.js';
 
-export default class Scene extends PIXI.Container {
+/**
+ * The scene class represents a distinct screen in the application. 
+ * Scenes are created, loaded and displayed by the `nav`, and are closely coupled to this class.
+ * @extends PIXI.Container
+ */
+class Scene extends PIXI.Container {
   
+  /**
+   * Creates a new storymode Scene. Note: scenes are created and managed by the `nav` class so there should be no need to construct scenes in most situations.
+   * @constructor
+   * @param {Object} [sceneData=null] - Optional parameters sent along to the scene construction. 
+   * @param {string} [psdID=null] - The associated PSD, if any. Eg. `mypsd.psd`
+   * @param {integer} [bgColor=0x000000] - Solid background color of the scene, used by some transitions.
+   * @param {boolean} [createCamera=false] - Whether a camera should be created and added to the new scene.
+   */
   constructor(sceneData, psdID = null, bgColor = 0x000000, createCamera = false){   
      
     super();
@@ -137,3 +151,5 @@ export default class Scene extends PIXI.Container {
   }
   
 }
+
+export default Scene
