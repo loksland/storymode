@@ -3,13 +3,15 @@ import { scaler, Camera} from './../storymode.js';
 
 /**
  * The scene class represents a distinct screen in the application. 
+ * This class is designed to be subclassed.
  * Scenes are created, loaded and displayed by the `nav`, and are closely coupled to this class.
  * @extends PIXI.Container
  */
 class Scene extends PIXI.Container {
   
   /**
-   * Creates a new storymode Scene. Note: scenes are created and managed by the `nav` class so there should be no need to construct scenes in most situations.
+   * Creates a new storymode Scene. 
+   * Note: scenes are created and managed by the `nav` class so there should be no need to construct scenes in most situations.
    * @constructor
    * @param {Object} [sceneData=null] - Optional parameters sent along to the scene construction. 
    * @param {string} [psdID=null] - The associated PSD, if any. Eg. `mypsd.psd`
@@ -20,12 +22,39 @@ class Scene extends PIXI.Container {
      
     super();
     
+    /**
+     * Any data passed to the scene on creation
+     * @type {Object}
+     * @public
+     */
     this.sceneData = sceneData;
+    
+    /**
+     * The full name of the associated Photoshop document. `ui.addArt()` uses this property to find textures.
+     * @type {!string}
+     * @public
+     */
     this.psdID = psdID ; // If PSD not set use scene id as fallback 
-
+    
+    /**
+     * The name of the scene instance.
+     * @type {!string}
+     * @public
+     */
     this.name = sceneData.sceneID + '_' + sceneData.instanceID;
-  
+    
+    /**
+     * The background color of the scene.
+     * @type {!number}
+     * @public
+     */
     this.bgColor = bgColor;
+    
+    /**
+     * The camera, if any.
+     * @type {?storymode.camera} 
+     * @public
+     */
     this.camera = null; // createCamera ? : null;
     if (createCamera){
       this.camera = new Camera(psdID);
@@ -36,7 +65,11 @@ class Scene extends PIXI.Container {
     
   }
   
-  didLoad(ev){
+  /**
+   * Called after scene is added to the stage. Call `ready()` at the end of any initialisation.
+   * @param {PIXI.Container} parent - Parent container. This should be passed to super when subclassing. 
+   */
+  didLoad(parent){
     
     this.off('added',  this.didLoad);
     this.on('removed',  this.dispose);
@@ -50,13 +83,20 @@ class Scene extends PIXI.Container {
     
   }
   
+  /**
+   * To be called by the scene after `didLoad()` when the scene is ready to be presented.
+   */
   ready(){
     
     this.emit('ready', this);
     
   }
   
-  // Called by `nav`
+  /**
+   * This method is called by `nav` when a stage resize is fired. 
+   * It should not be sublcassed.
+   * @private
+   */
   _shouldReloadOnStageResize(stageW, stageH){
     
     this.bgScreen.width = stageW
@@ -66,24 +106,41 @@ class Scene extends PIXI.Container {
     
   }
   
-  // Overwrite to customise, no need to call super.shouldReloadOnStageResize()
+  /**
+   * This method is intended to be overridden to handle stage resize logic.
+   * Return `false` to prevent the `nav` from automatically reloading the scene when a stage resize is detected. 
+   * @param {number} [stageW] - Stage width in points.
+   * @param {number} [stageH] - Stage height in points.
+   * @returns {boolean} shouldReload - Whether the entire scene should be reloaded with a new one.
+   */
   shouldReloadOnStageResize(stageW, stageH){
     return true 
   }
   
-  // Overwrite to customise Mario transitions.
-  
+  // 
+  /**
+   * Overwrite to customise the focus point of the `mario` transition animation. 
+   * @param {boolean} forArrive - Whether for an arrival or exit phase of the transition.
+   * @returns {PIXI.Point} point - Focus point in stage coords (pts),
+   */
   getMarioTransPt(forArrive){
     return new Point(scaler.stageW*0.5, scaler.stageH*0.5);
   }
   
-  // Return 0.0 for none
+  /**
+   * Overwrite to customise the radius of the `mario` transition spotlight.
+   * @param {boolean} forArrive - Whether for an arrival or exit phase of the transition.
+   * @returns {number} radius - Radius of spotlight, in pts.
+   */
   getMarioTransFocusRad(forArrive){
     return 100.0;
   }
   
-  
   // sfx.js Integration - to be overridden
+  
+  /**
+   * Overwrite to supply a list of audio resources required by the scene. See `sfx` docs for format options.
+   */
   static getSfxResources(){
     
     //  return {
@@ -94,24 +151,54 @@ class Scene extends PIXI.Container {
                       
   }
   
-  
+  /**
+   * Lifecycle method: scene is added to the stage and transition is about to begin.
+   * This is a suitable place to layout the scene for presentation to the user.
+   * Ensure to call `super.onWillArrive(fromModal)` method when subclassing.
+   * @param {boolean} fromModal - If true then the scene is being presented as the result of a modal being dismissed.
+   */
   onWillArrive(fromModal){
   }
   
+  /**
+   * Lifecycle method: scene arrival transition is complete.
+   * This is a suitable place to add interactive event listeners.
+   * Ensure to call `super.onDidArrive(fromModal)` method when subclassing.
+   * @param {boolean} fromModal - If true then the scene is being presented as the result of a modal being dismissed.
+   */
   onDidArrive(fromModal){
   }
   
+  /**
+   * Lifecycle method: scene exit transition is about to begin.
+   * This is a suitable place to remvoe interactive event listeners.
+   * Ensure to call `super.onWillExit(fromModal)` method when subclassing.
+   * @param {boolean} fromModal - If true then the scene is being temperarily removed to present a modal scene.
+   */
   onWillExit(fromModal){
   }
   
+  /**
+   * Lifecycle method: scene exit transition is complete. 
+   * The scene is no longer visible at this point and cleaning up can be performed.
+   * Ensure to call `super.onDidExit(fromModal)` method when subclassing.
+   * @param {boolean} fromModal - If true then the scene is being temperarily removed to present a modal scene.
+   */
   onDidExit(fromModal){
   }
   
-  // Overwrite to capture all button clicks 
+  /**
+   * Captures all clicks for storymode.btn instances added to the scene or its children (up to 2 levels).
+   * @param {storymode.btn} btn - The button that was clicked.
+   */
   onBtn(btn){
     console.log('Clicked btn `'+btn.name+'`.');
   }
   
+  /**
+   * Called when scene is about to be destroyed.
+   * When subclassing ensure `super.dispose()` is called after performing clean up.
+   */
   dispose(){
     
     if (this.art){
@@ -127,7 +214,7 @@ class Scene extends PIXI.Container {
     this.bgScreen = null;
     
     // Removes filters and mask references from scene and all children recursively 
-    this.destroyFiltersAndMasks()
+    this.destroyFiltersAndMasks();
     
     // Once removed from stage, destroy and use no more.
     this.destroy({children:true});  
@@ -138,14 +225,17 @@ class Scene extends PIXI.Container {
     
   }
   
-  // Remove all animations
+  /**
+   * Attempts to remove all tweens from the scene and all it's children, recursively.
+   * @private
+   */
   killTweens(dispo = null){
     dispo = dispo !== null ? dispo : this;
     TweenMax.killTweensOf(dispo);
     if (this.art){
       this.art = null;
     }
-    for (var child of dispo.children){
+    for (let child of dispo.children){
       this.killTweens(child)
     }
   }

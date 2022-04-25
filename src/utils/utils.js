@@ -1,7 +1,25 @@
+/** @module utils */
 
 import objectAssignDeep from './objectAssignDeep.js';
 export {objectAssignDeep}
 
+
+/**
+ * Given a font weight string description, will return the weight as a number compatible with the PIXI text system.
+ * <br>- 100 - Thin
+ * <br>- 200 - Extra Light (Ultra Light)
+ * <br>- 300 - Light
+ * <br>- 400 - Normal
+ * <br>- 500 - Medium
+ * <br>- 600 - Semi Bold (Demi Bold)
+ * <br>- 700 - Bold
+ * <br>- 800 - Extra Bold (Ultra Bold)
+ * <br>- 900 - Black (Heavy)
+ * @param {string} fontWeightStrToNum - The font weight description. 
+ * @returns {number} fontWeight - The numeric font weight. If weight is undetermined will return 400 as default.
+ * @example
+ * utils.fontWeightStrToNum('extra bold'); // Returns 800
+ */
 export function fontWeightStrToNum(fontWeightStr){
 
   let str = fontWeightStr.trim().toLowerCase();
@@ -23,7 +41,6 @@ export function fontWeightStrToNum(fontWeightStr){
   }
   
   if (str.split('normal').length > 1 || str.split('regular').length > 1){
-    
     return 400;
   }
 
@@ -65,21 +82,45 @@ export function fontWeightStrToNum(fontWeightStr){
   
 }
   
+/**
+ * Gets the computed style of the given HTML DOM element as a number value. 
+ * @param {DOMElement} element - The DOM element to target.
+ * @param {string} property - The property to retrieve. Eg. `width`.
+ * @returns {integer} value - The property value.
+ */
 export function getProp(ele, prop){
 	var style = window.getComputedStyle(ele, null);
 	var val = parseInt(style[prop]);
 	return(val);
 }
 
+/**
+ * Returns the HTML DOM element with the given id.
+ * @param {string} id - The id of the DOM element to retrieve.
+ * @returns {DOMElement} [element=null] - The DOM element, if found.
+ */
 export function e(id){
   return id ? document.getElementById(id) : null;
 }
 
-// Shallow clone only
+/**
+ * Performs a shallow clone of a given object. 
+ * @param {Object} source - The object to clone.
+ * @returns {Object} clone - The duplicate object.
+ */
 export function cloneObj(obj){
   return Object.assign({}, obj);
 }
 
+
+/**
+ * Given source dimensions, returns the scale needed to completely cover the given bounds while maintaining aspect ratio.
+ * @param {number} sourceWidth - The source width.
+ * @param {number} sourceHeight - The source height.
+ * @param {number} boundsWidth - The bounds width.
+ * @param {number} boundsHeight - The bounds height.
+ * @returns {number} scale - The resulting scale.
+ */
 export function coverScale(srcW, srcH, boundsW, boundsH) {
 
 	var ratioSrc = srcW/srcH;
@@ -93,6 +134,14 @@ export function coverScale(srcW, srcH, boundsW, boundsH) {
 	
 };
 
+/**
+ * Returns the scale needed to contain the source dimensions exactly within the given bounds while maintaining aspect ratio.
+ * @param {number} sourceWidth - The source width.
+ * @param {number} sourceHeight - The source height.
+ * @param {number} boundsWidth - The bounds width.
+ * @param {number} boundsHeight - The bounds height.
+ * @returns {number} scale - The resulting scale.
+ */
 export function containScale(srcW, srcH, boundsW, boundsH) {
 
 	var ratioSrc = srcW/srcH;
@@ -107,11 +156,12 @@ export function containScale(srcW, srcH, boundsW, boundsH) {
 };
 
 
-
-// If |defineSingleAxisMode| is set to false:
-//   Both x and y will resolve, C applies to both x and y, M means centered on y axis, will default to 0 (centered)
-// If |defineSingleAxisMode| is set to true:
-//   C means centered on x axis, M means centered on y axis and any unset axis will return null. 
+/**
+ * Given a 1-2 character description of a horizontal and/or vertical alignment, will return the alignment as a vector representation.
+ * @param {string} alignmentDescription - The alignment description as initials. Eg. `CT` for center / top. Case independent.
+ * @param {boolean} [defineSingleAxisMode=false] - If true: C means centered on x axis, M means centered on y axis and any unset axis will return null. If false: Both x and y will resolve, C applies to both x and y, M means centered on y axis, will default to 0 (centered).
+ * @returns {vector} alignment - The alignment as a vector. A value of -1 means left/top, a value of 0 means centered and a value of 1 means right/bottom.
+ */
 export function alignmentStringToXY(alignmentStr, defineSingleAxisMode = false){
   
   // let alignment = defaultAlignment ? defaultAlignment : {x:0,y:0};
@@ -165,6 +215,18 @@ export function alignmentStringToXY(alignmentStr, defineSingleAxisMode = false){
   
 }
 
+
+/**
+ * Set the path of an object with supplied value.
+ * <br>If the path doesn't exist then it will be created.
+ * <br>If the existing value is numeric and the value is a string prefixed with `-=` or `+=`, then the value will be updated relative to its existing value.
+ * @param {Object} object - The target object.
+ * @param {string} path - The path to set, as a single string with dot syntax.
+ * @param {*} value - The value to apply.
+ * @example
+ * let obj = {foo:{bar:123}}
+ * setObjPathVal(obj, 'foo.bar', 321);
+ */
 export function setObjPathVal(obj, path, val){
 
 	var ref = obj;
@@ -175,27 +237,38 @@ export function setObjPathVal(obj, path, val){
 
 	for (var i = 0; i < pathParts.length; i++){
 		if (i == pathParts.length - 1){
-			
       // Apply relative value mapping eg. `+22`
       if (typeof val === 'string' && val.length > 0 && (val.charAt(0) === '+' ||val.charAt(0) === '-') && !isNaN(Number(ref[pathParts[i]]))) {
         let mod = val.charAt(0) === '-' ? -1.0 : 1.0
-        let relVal = Number(val.substr(1))
+        val = val.substr(1);
+        if (val.charAt(0) === '='){
+          val = val.substr(1);
+        }
+        let relVal = Number(val)
         if (!isNaN(relVal)){
           val = ref[pathParts[i]] + mod*relVal
         }
       }
       ref[pathParts[i]] = val;
-      
 		}	else if (ref[pathParts[i]] == undefined) {
 			ref[pathParts[i]] =  {};
 		}	
 		ref = ref[pathParts[i]];
 	}
-	
-	return obj;
-
+  
 }
 
+
+/**
+ * Returns the value of an object at a given path.
+ * <br>Supports array indexes in the path. Eg. `path.to.arr[7]`.
+ * @param {Object} object - The target object.
+ * @param {string} path - The path to retrieve, as a single string with dot syntax.
+ * @returns {Object} value - The value retrieved.
+ * @example
+ * let obj = {foo:{bar:['a','b','c']}}
+ * getObjPath(obj, 'foo.bar[1]'); // Returns `b`
+ */
 export function getObjPath(obj, path){
 
 	var ref = obj;
@@ -240,7 +313,18 @@ export function getObjPath(obj, path){
 
 }
 
-export function pad(subject, padChar, targetLength, padBefore = true){
+/**
+ * Pads string to a given length with supplied character.
+ * <br>Supports array indexes in the path. Eg. `path.to.arr[7]`.
+ * @param {string|number} subject - The target to pad.
+ * @param {integer} targetLength - The desired string length.
+ * @param {string} [padChar='0'] - The pad character to use.
+ * @param {boolean} [padBefore=true] - If true: pad chars will be added to the start of the subject, otherwise will be added to the end.
+ * @returns {string} padded - The padded string.
+ * @example
+ * pad(777, 5); // Returns `00777`
+ */
+export function pad(subject, targetLength, padChar = '0', padBefore = true){
   
   subject = String(subject);
   
@@ -252,6 +336,12 @@ export function pad(subject, padChar, targetLength, padBefore = true){
 // Maths 
 // -----
 
+/**
+ * Returns the distance between 2 vector points.
+ * @param {vector} pointA - An object with `x` and `y` properties.
+ * @param {vector} pointB - An object with `x` and `y` properties.
+ * @returns {number} distance
+ */
 export function distanceBetweenPoints(ptA, ptB) {
   
   const dx = ptA.x - ptB.x;
@@ -261,48 +351,99 @@ export function distanceBetweenPoints(ptA, ptB) {
   
 }
 
+/**
+ * Restricts a given value between 0 and 1 (inclusive).
+ * @param {number} value 
+ * @returns {number} restrictedValue
+ */
 export function clamp01(value){
   return value < 0 ? 0 : (value > 1 ? 1 : value);
 }
+
+/**
+ * Restricts a given value between -1 and 1 (inclusive).
+ * @param {number} value 
+ * @returns {number} restrictedValue
+ */
 export function clampNeg1Pos1(value){
   return value < -1 ? -1 : (value > 1 ? 1 : value);
 }
 
+/**
+ * Returns the angle in radians between 2 points.
+ * @param {vector} originPoint - An object with `x` and `y` properties.
+ * @param {vector} destinationPoint - An object with `x` and `y` properties.
+ * @returns {number} angleRadians - The angle in radians.
+ */
 export function angleRadsBetweenPoints(ptA, ptB){
   
   return Math.atan2(ptB.y - ptA.y, ptB.x - ptA.x);
   
 }
 
+/**
+ * Returns the angle in degrees between 2 points.
+ * @param {vector} originPoint - An object with `x` and `y` properties.
+ * @param {vector} destinationPoint - An object with `x` and `y` properties.
+ * @returns {number} angleDegrees - The angle in degrees.
+ */
 export function angleDegsBetweenPoints(ptA, ptB){
   
-  return radToDeg(angleRadsBetweenPoints(ptA, ptB));
+  return Math.atan2(ptB.y - ptA.y, ptB.x - ptA.x) / Math.PI * 180.0
   
 }
 
+/**
+ * Projects from a point at a given radian angle and distance.
+ * @param {vector} originPoint - An object with `x` and `y` properties.
+ * @param {number} angleRadians - The rotation angle, in radians.
+ * @param {number} distance - The distance to project.
+ * @returns {PIXI.Point} projectedPoint - A new point object.
+ */
 export function projectFromPointRad(pt, angleRads, dist) {
 
-  return new Point(pt.x + dist * Math.cos(angleRads), pt.y + dist * Math.sin(angleRads));			
+  return new Point(pt.x + dist * Math.cos(angleRads), pt.y + dist * Math.sin(angleRads));		
   
 }
 
+/**
+ * Projects from a point at a given degree angle and distance.
+ * @param {vector} originPoint - An object with `x` and `y` properties.
+ * @param {number} angleDegrees - The rotation angle, in degrees.
+ * @param {number} distance - The distance to project.
+ * @returns {PIXI.Point} projectedPoint - A new point object.
+ */
 export function projectFromPointDeg(pt, angleDegs, dist) {
-
-  return projectFromPointRad(pt, degToRad(angleDegs), dist);
+  
+  let angleRads = angleDegs / 180.0 * Math.PI;   
+  return new Point(pt.x + dist * Math.cos(angleRads), pt.y + dist * Math.sin(angleRads));		
   
 }
 
-// Projects from |ptA| to |ptB| at set distance
+/**
+ * Returns the point projecting from one point to another at a set distance.
+ * @param {vector} originPoint - An object with `x` and `y` properties.
+ * @param {vector} targetPoint - An object with `x` and `y` properties.
+ * @param {number} distance - The distance to project.
+ * @returns {PIXI.Point} projectedPoint - A new point object.
+ */
 export function projectDistance(ptA, ptB, dist){
   
   const dx = ptA.x - ptB.x;
   const dy = ptA.y - ptB.y;
   const fullDist = Math.sqrt(dx * dx + dy * dy);
-
   return new Point(ptA.x - dx*(dist/fullDist), ptA.y - dy*(dist/fullDist));			
   
 }
 
+/**
+ * Rotates one point around another a given angle (in radians)
+ * @param {vector} centerPoint - An object with `x` and `y` properties.
+ * @param {vector} subjectPoint - An object with `x` and `y` properties.
+ * @param {number} angleRadians - The rotation angle, in radians.
+ * @param {boolean} overwrite - If true: `subjectPoint` will be updated with the result. If false: a new PIXI.Point object will be returned.
+  * @returns {PIXI.Point|null} result - The resulting coordinate.
+ */
 export function rotatePtAroundPtRad(centerPt, pt, angRads, overwrite = false){
   
   if (overwrite){
@@ -313,6 +454,14 @@ export function rotatePtAroundPtRad(centerPt, pt, angRads, overwrite = false){
   
 }
 
+/**
+ * Rotates one point around another a given angle (in degrees)
+ * @param {vector} centerPoint - An object with `x` and `y` properties.
+ * @param {vector} subjectPoint - An object with `x` and `y` properties.
+ * @param {number} angleDegrees - The rotation angle, in degrees.
+ * @param {boolean} overwrite - If true: `subjectPoint` will be updated with the result. If false: a new PIXI.Point object will be returned.
+  * @returns {PIXI.Point|null} result - The resulting coordinate.
+ */
 export function rotatePtAroundPtDeg(centerPt, pt, angDegs, overwrite = false){
   
   return rotatePtAroundPtRad(centerPt, pt, degToRad(angDegs), overwrite);
@@ -321,31 +470,65 @@ export function rotatePtAroundPtDeg(centerPt, pt, angDegs, overwrite = false){
 
 
 // result is in radians, NOT degress
+
+/**
+* Return the shortest angular offset (in radians) from a source angle (in radians) to a target angle (in radians). 
+* <br>The result may be negative.
+ * @param {number} sourceAngleRadians - The source angle in radians.
+ * @param {number} targetAngleRadians - The target angle in radians.
+ * @returns {number} offsetAngleRadians - The offset in radians.
+ */
 export function angularDeltaFromAnglesRad(sourceAngRads, targetAngRads){
   
   return Math.atan2(Math.sin(targetAngRads-sourceAngRads), Math.cos(targetAngRads-sourceAngRads)); 
   
 }
 
+/**
+ * Return the shortest angular offset (in degrees) from a source angle (in degrees) to a target angle (in degrees). 
+ * <br>The result may be negative.
+ * @param {number} sourceAngleDegrees - The source angle in degrees.
+ * @param {number} targetAngleDegrees - The target angle in degrees.
+ * @returns {number} offsetAngleDegrees - The offset in degrees.
+ */
 export function angularDeltaFromAnglesDeg(sourceAngDegs, targetAngDegs){
   
   return radToDeg(angularDeltaFromAnglesRad(degToRad(sourceAngDegs), degToRad(targetAngDegs)));
   
 }
 
+/**
+ * Converts angle from degrees to radians.
+ * @param {number} angleDegrees - Angle in degrees.
+ * @returns {number} angleRadians - Angle in radians.
+ */
 export function degToRad(deg){
 	
 	return deg / 180.0 * Math.PI;   
 
 }
 
+/**
+ * Converts angle from radians to degrees.
+ * @param {number} angleRadians - Angle in radians.
+ * @returns {number} angleDegrees - Angle in degrees.
+ */
 export function radToDeg(rad){
 
 	return rad / Math.PI * 180.0;  
 
 }
 
-// Supports '!pattern','pattern*','!dingo*','*dingo' etc
+
+/**
+ * Returns if a string matches a glob pattern.
+ * <br>Supports patterns such as '!pattern','pattern*','!dingo*','*dingo'.
+ * @param {string} subject - The subject string.
+ * @param {string} glob - The glob pattern. 
+ * @returns {boolean} match - Whether the subject matched the glob pattern.
+ * @example
+ * utils.globMatch('kitten', '*ten'); // Returns true.
+ */
 let _globMatchCache = {}; // Caches regex
 export function globMatch(subject, glob){
   
@@ -386,15 +569,24 @@ export function globMatch(subject, glob){
   
 }
 
+/**
+ * Escapes any regex reserved tokens from a string.
+ * @param {string} subject - The subject string.
+ * @returns {string} escapedSubject - The escaped string, ready to be used in a regex expression.
+ */
 export function escapeRegExp(string) {
-  
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); 
-  
 }
 
 
-// Returns the intersection point between two infinite length lines,
-// defined by a1 -> a2 and b1 -> b2.
+/**
+ * Returns the intersection point between two infinite length lines.
+ * @param {vector} lineApoint0 - An object with `x` and `y` properties.
+ * @param {vector} lineApoint1 - An object with `x` and `y` properties.
+ * @param {vector} lineBpoint0 - An object with `x` and `y` properties.
+ * @param {vector} lineBpoint1 - An object with `x` and `y` properties.
+ * @returns {PIXI.Point|null} intersectionPoint - Will return null if lines don't intersect.
+ */
 export function intersectLineLine(a1, a2, b1, b2, applyToVector = null) {
   
   let res = null;
@@ -414,7 +606,14 @@ export function intersectLineLine(a1, a2, b1, b2, applyToVector = null) {
   return res;
 }
 
-// Returns the intersection point between two closed lines.
+/**
+ * Returns the intersection point between two closed lines.
+ * @param {vector} lineApoint0 - An object with `x` and `y` properties.
+ * @param {vector} lineApoint1 - An object with `x` and `y` properties.
+ * @param {vector} lineBpoint0 - An object with `x` and `y` properties.
+ * @param {vector} lineBpoint1 - An object with `x` and `y` properties.
+ * @returns {PIXI.Point|null} intersectionPoint - Will return null if segments don't intersect.
+ */
 export function intersectSegmentSegment(a1, a2, b1, b2) {
   
   var res = null;
@@ -432,8 +631,16 @@ export function intersectSegmentSegment(a1, a2, b1, b2) {
   return res;
 };
 
-// Returns the intersection point between two rays,
-// Defined as an infinite line from pivot point 1 through point point 2.
+
+/**
+ * Returns the intersection point between two rays.
+ * <br>A ray is an infinite line from origin point through the target point.
+ * @param {vector} lineAorigin - An object with `x` and `y` properties.
+ * @param {vector} lineAtarget - An object with `x` and `y` properties.
+ * @param {vector} lineBorigin - An object with `x` and `y` properties.
+ * @param {vector} lineBtarget - An object with `x` and `y` properties.
+ * @returns {PIXI.Point|null} intersectionPoint - Will return null if the rays don't intersect.
+ */
 export function intersectRayRay(a1, a2, b1, b2) {
 
   var res = null;
@@ -453,8 +660,17 @@ export function intersectRayRay(a1, a2, b1, b2) {
 };
 
 
-
-
+/**
+ * Returns the intersection point between a line segment and the edges of a box.
+ * @param {vector} segmentPoint0 - An object with `x` and `y` properties.
+ * @param {vector} segmentPoint1 - An object with `x` and `y` properties.
+ * @param {number} boxLeftX - The leftmost position of the box.
+ * @param {number} boxTopY - The topmost position of the box.
+ * @param {number} boxWidth - The box width.
+ * @param {number} boxHeight - The box height.
+ * @returns {PIXI.Point|null} intersectionPoint - Will return null if the segment doesn't intersect the box edge.
+ * @private
+ */
 export function intersectSegmentBox(l1, l2, xb, yb, wb, hb) {
   
   return intersectSegmentSegment(l1.x, l1.y, l2.x, l2.y, xb, yb, xb, yb + hb) || 
@@ -464,13 +680,17 @@ export function intersectSegmentBox(l1, l2, xb, yb, wb, hb) {
   
 }
 
-
+/**
+ * Returns the intersection point between a line segment and the edges of a box.
+ * @param {vector} segmentPoint0 - An object with `x` and `y` properties.
+ * @param {vector} segmentPoint1 - An object with `x` and `y` properties.
+ * @param {rectangle} rectangle - An object with `x`, `y`, `width` and `height` properties.
+ * @returns {PIXI.Point|null} intersectionPoint - Will return null if the segment doesn't intersect the box edge.
+ * @private
+ */
 export function intersectSegmentRect(l1, l2, rect) {
-  
   return intersectSegmentBox(l1, l1, rect.x, rect.y, rect.width, rect.height)
-  
 }
-
 
 // Returns an array of intersection points (0-2) between a circle and line segment
 export function intersectionPtsBetweenCircleAndLineSeg(lineSegP0, lineSegP1, circleCenter, circleRadius){
@@ -662,6 +882,7 @@ export function shuffle(array) {
 export function darkenCol(col, amt) {
   return lightenCol(col, -Math.abs(amt))
 }
+  
   
 export function lightenCol(rgb, brite)
 {
