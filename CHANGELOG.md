@@ -1,5 +1,6 @@
 # Changelog
 
+- v1.1.37 - (27-04-2022) Added clipboard copy to utils
 - v1.1.36 - (25-04-2022) Adding documentation, utils tweaks
 - v1.1.35 - (20-04-2022) Started moving to jsdocs
 - v1.1.34 - (17-03-2022) Apply shake supports rotate only, SFX bg loops support sprites
