@@ -461,6 +461,26 @@ export default class SFX extends PIXI.utils.EventEmitter {
     
   }
   
+  // A mixer is an object with sound ids and volume factors.
+  // Eg. {sound_effect_1: 1.0, sound_effect_2:1.0, vo_*:1.0}
+  // Set to null to remove
+  registerMixer(mixerObj){
+    this.mixerObj = mixerObj;    
+    // Make a look up for glob patterns. Eg. `mysound_*`
+    this.mixerObjGlobs = [];
+    this.mixerObjGlobFirstChar = '';    
+    if (this.mixerObj){
+      for (let soundID in this.mixerObj){
+        if (soundID.split('*').length > 1){
+          if (!this.mixerObjGlobFirstChar.includes(soundID.charAt(0))){
+            this.mixerObjGlobFirstChar+=soundID.charAt(0)
+          }
+          this.mixerObjGlobs.push(soundID);
+        }
+      }
+    }
+  }
+  
   // - If supplying options as a number it is assumed a delay value in seconds
   // - _concurrentSoundID, the sound ID used to track and limit concurrent sound instances. 
   playSFX(soundID, options = null, _concurrentSoundID = null){
@@ -489,6 +509,33 @@ export default class SFX extends PIXI.utils.EventEmitter {
     if (delay > 0.0){
       utils.wait(this, delay, this.playSFX, [soundID, options]);
       return;
+    }
+    
+    if (this.mixerObj) {
+      
+      let mixerFactor = 1.0;
+      if (typeof this.mixerObj[soundID] !== 'undefined'){
+        mixerFactor = this.mixerObj[soundID];
+      } else if (this.mixerObjGlobs.length > 0 && this.mixerObjGlobFirstChar.includes(soundID.charAt(0))){ // Check if first char is registered as a glob
+        // Check if glob if not exact match
+        for (let mixerGlob of this.mixerObjGlobs){
+          if (utils.globMatch(soundID, mixerGlob)){
+            mixerFactor = this.mixerObj[mixerGlob];
+            break;
+          }
+        }
+      }
+      
+      if (mixerFactor !== 1.0){  
+        volume *= mixerFactor;
+        // Apply volume to options, create options if it doens't exist
+        // This is so a multi sound will have it's parent mixer volume
+        if (options && typeof options === 'object'){   
+          options.volume = volume;
+        } else {
+          options = {volume:volume}
+        }
+      }
     }
     
     // Concurrent limits (per sound - not multi)
@@ -525,7 +572,7 @@ export default class SFX extends PIXI.utils.EventEmitter {
       // Sprite / Non-sprite
       
       let options = {};
-      options.volume = this._sfxVolume*this._volume*volume
+      options.volume = Math.max(0.0, Math.min(1.0, this._sfxVolume*this._volume*volume)); 
     
       // Get sound object based on if sprite or not
       let result = this.getSoundForID(soundID);
