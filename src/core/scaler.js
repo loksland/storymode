@@ -1,5 +1,5 @@
 
-import { pixiApp, utils, nav, htmlEle } from './../storymode.js';
+import { pixiApp, utils, mutils, nav, htmlEle } from './../storymode.js';
 import fscreen from 'fscreen';
 
 let proj; // Artboard projections 
@@ -83,10 +83,10 @@ class ArtboardProjection {
       // `w` / `h` / `contain` / 'cover' (case insensitive). 
       if (scaleToFit == 'contain'){
         // Make entire artboard visible to up to stage bounds, will use letterboxing
-        this.scale = utils.containScale(artboardDims.width, artboardDims.height, stageW, stageH);
+        this.scale = mutils.containScale(artboardDims.width, artboardDims.height, stageW, stageH);
       } else if (scaleToFit == 'cover'){
         // Cover stage bounds entirely, clipping tops or bottoms as necessary
-        this.scale = utils.coverScale(artboardDims.width, artboardDims.height, stageW, stageH);
+        this.scale = mutils.coverScale(artboardDims.width, artboardDims.height, stageW, stageH);
       } else if (scaleToFit == 'w'){
         this.scale = stageW/artboardDims.width;
       } else if (scaleToFit == 'h'){

@@ -1,3 +1,7 @@
+/**
+ * Handles scene transitions and modal display.
+ * @module nav
+ */
 
 import { utils,scaler } from './../storymode.js';
 
@@ -24,10 +28,28 @@ for (let transMod of _trans) {
   }
 }
 
+
+/**
+ * Registers all scenes to be loaded.
+ * @param {Object} scenes - Scene configuration object
+ * @example 
+// app.js 
+const scenes = {
+  home: {class: Home, sceneData: {}, default:true}, 
+  play: {class: Play, sceneData: {}}
+}
+nav.setScenes(scenes);
+ */
 function setScenes(_scenes){
   scenes = _scenes;
 }
 
+/**
+ * Called by `storymode` during setup.
+ * @param {Pixi.Stage} stage 
+ * @param {number} bgAlpha
+ * @private
+ */
 function setupStage(stage, bgAlpha){
   
   //ticker.add(function(time) {
@@ -62,6 +84,12 @@ function setupStage(stage, bgAlpha){
   
 }
 
+/**
+ * Listener for stage resize, called continously.
+ * @param {number} stageW - Stage width in points.
+ * @param {number} stageH - Stage height in points.
+ * @private
+ */
 function onResizeImmediate(_stageW,_stageH){
   
   bg.width = _stageW;
@@ -72,18 +100,30 @@ function onResizeImmediate(_stageW,_stageH){
   
 }
 
+/**
+ * Listener for stage resize, debounced.
+ * @param {number} stageW - Stage width in points.
+ * @param {number} stageH - Stage height in points.
+ * @private
+ */
 function onResize(stageW,stageH){
   reloadSceneStack();
 }
 
+/**
+ * Toggle input for entire stage.
+ * @param {boolean} enable 
+ */
 function enableInput(enable){
   inputScreen.visible = !enable;
 }
 
-function isScenePresentedModally(){
-  return transStack[transStack.length-1].isModal || pendingModalTrans; // If `pendingModalTrans` is set scene is not modal yet though will be 
-}
 
+
+/**
+ * Will return if current scene has a transparent background.
+ * @returns {boolean} sceneIsTransparent
+ */
 function isScenePresentedWithTransparentBg(){
   
   if (pendingModalTrans && pendingModalTrans.isTransparent){
@@ -98,7 +138,11 @@ function isScenePresentedWithTransparentBg(){
   
 }
 
-// Returns success bool
+/**
+ * Opens default scene. Called internally by `storymode` on startup.
+ * @returns {boolean} success
+ * @private
+ */
 function openDefaultScene(){
   
   if (!scenes){
@@ -114,6 +158,13 @@ function openDefaultScene(){
   return false;
 }
 
+/**
+ * Transition to a scene.
+ * @param {string} sceneID - Scene identifier.
+ * @param {boolean} [isModal=false] - Whether scene should be loaded modally (over the top).
+ * @param {string} [transID='fade'] - Transition identifier.
+ * @param {Object} [sceneData=null] - Optional data to be passed to scene.
+ */
 function openScene(sceneID, isModal = false, transID = 'fade', sceneData = null){
   
   if (locked){
@@ -161,10 +212,21 @@ function openScene(sceneID, isModal = false, transID = 'fade', sceneData = null)
   
 }
 
+/**
+ * Creates a 7 character integer.
+ * @returns {integer} id
+ * @private
+ */
 function createInstanceID(){
   return 1000000 + Math.round(Math.random()*8999999); // 7 char integer
 }
 
+/**
+ * Called when scene being loaded is ready to be presented.
+ * <br>Triggers entry transition to begin.
+ * @param {Scene} scene
+ * @private
+ */
 function onSceneReady(scene){
   
   scene.off('ready', onSceneReady);
@@ -173,16 +235,31 @@ function onSceneReady(scene){
     transStack[transStack.length-1].scenePrev.onWillExit(transStack[transStack.length-1].isModal); // Exit to modal
   }
   transStack[transStack.length-1].scene.onWillArrive(false); // First scene arrival will never be modal
-    
   transStack[transStack.length-1].performIn(onSceneIn);  
   
 }
 
+/**
+ * Will return if current scene is presented modally.
+ * @returns {boolean} sceneIsModal
+ */
+function isScenePresentedModally(){
+  return transStack[transStack.length-1].isModal || pendingModalTrans; // If `pendingModalTrans` is set scene is not modal yet though will be 
+}
+
+/**
+ * Will return if current scene is presented modally.
+ * @returns {boolean} sceneIsModal
+ * @private
+ */
 function isPresentingModal(){
   return !(transStack.length < 2 || !transStack[transStack.length-1].isModal || !transStack[transStack.length-1].scenePrev);
 }
 
-// Optionally supply a |dismissData| object to be passed to parent scene's onWillArrive method
+/**
+ * Dismiss currently presented modal scene.
+ * @param {Object} [dismissData=null] - Optionally supply an object to be passed to parent scene's `onWillArrive()` method
+ */
 function dismissScene(dismissData = null){
   
   if (locked){
@@ -204,6 +281,10 @@ function dismissScene(dismissData = null){
     
 }
 
+/**
+ * Called when arriving scene transition is complete.
+ * @private
+ */
 function onSceneIn(){
   
   if (transStack[transStack.length-1].scenePrev){
@@ -243,6 +324,10 @@ function onSceneIn(){
   
 }
 
+/**
+ * Called when exiting scene transition is complete.
+ * @private
+ */
 function onSceneOut(){
   
   transStack[transStack.length-1].scene.onDidExit(false); // Not modal, about to be destroyed
@@ -265,6 +350,10 @@ function onSceneOut(){
   
 }
 
+/**
+ * Reload scene stack if `nav` was waiting to scene to arrive first.
+ * @private
+ */
 function checkForReloadOnNextArrive(){
   if (transStack[transStack.length-1].reloadOnNextArrive){
     delete transStack[transStack.length-1].reloadOnNextArrive;
@@ -272,6 +361,10 @@ function checkForReloadOnNextArrive(){
   }
 }
 
+/**
+ * Reload all scene instances with new instances.
+ * @param {boolean} [force=false] - To ignore the scene's `shouldReloadOnStageResize()`.
+ */
 function reloadSceneStack(force = false){
   
   // Called during a scene transition, wait for arrival.
@@ -301,12 +394,13 @@ function reloadSceneStack(force = false){
     
 }
 
+/**
+ * Write to the console a basic outline of child display objects.
+ */
 function debugTransStack(){
-  
   for (let i = transStack.length - 1; i >= 0; i--){   
     console.log(String(i) + ') `'+transStack[i].scene.name+'` ' + (i == transStack.length - 1 ? '*top*' : ''));
   }
-  
 }
 
 export { scenes }

@@ -17,6 +17,7 @@ const appEmitter = new PIXI.utils.EventEmitter();
 
 import * as _ext from './utils/extensions.js';
 import * as utils from './utils/utils.js';
+import * as mutils from './utils/mutils.js';
 
 import Scene from './class/scene.js';
 import Camera from './class/camera.js';
@@ -150,5 +151,5 @@ export {pixiApp, filters, htmlEle}; // Internal access to these properties.
 export {Scene, Camera, Btn}; // Classes
 export {appEmitter}; // Emitter events
 export {kb, sfx, store, physics} // Helpers 
-export {utils, nav, ui, scaler}; // Core 
+export {utils, mutils,nav, ui, scaler}; // Core 
 

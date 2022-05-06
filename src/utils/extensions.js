@@ -1,4 +1,4 @@
-import { utils, Scene, scaler } from './../storymode.js';
+import { utils, mutils, Scene, scaler } from './../storymode.js';
  
 // Extensions
 // ----------
@@ -70,7 +70,7 @@ PIXI.Sprite.prototype.hitTestEllipse = function(globalPos){
     localPos.x *= this.height/this.width
   }
   
-  return utils.distanceBetweenPoints(localPos, this.getLocalCenter()) < 0.5*Math.max(this.localWidth, this.localHeight)
+  return mutils.distanceBetweenPoints(localPos, this.getLocalCenter()) < 0.5*Math.max(this.localWidth, this.localHeight)
   
 }
 
@@ -125,13 +125,13 @@ PIXI.Sprite.prototype.enterTestRect = function(startPosGlobal, endPosGlobal, glo
   if (localStartPos.x < cornerTL.x) { 
     
     // Left hand side
-    intersectionPosInternal = utils.intersectSegmentSegment(localStartPos, localEndPos, cornerTL, cornerBL) 
+    intersectionPosInternal = mutils.intersectSegmentSegment(localStartPos, localEndPos, cornerTL, cornerBL) 
     surfaceNormalAngleInternal = 180.0;
     
   } else if (localStartPos.x > cornerTR.x) { 
     
     // Right hand side
-    intersectionPosInternal = utils.intersectSegmentSegment(localStartPos, localEndPos, cornerTR, cornerBR) 
+    intersectionPosInternal = mutils.intersectSegmentSegment(localStartPos, localEndPos, cornerTR, cornerBR) 
     surfaceNormalAngleInternal = 0.0;
     
   } 
@@ -140,13 +140,13 @@ PIXI.Sprite.prototype.enterTestRect = function(startPosGlobal, endPosGlobal, glo
     if (localStartPos.y > cornerTL.y) { 
       
       // Bottom
-      intersectionPosInternal = utils.intersectSegmentSegment(localStartPos, localEndPos, cornerBL, cornerBR) 
+      intersectionPosInternal = mutils.intersectSegmentSegment(localStartPos, localEndPos, cornerBL, cornerBR) 
       surfaceNormalAngleInternal = 90.0;
       
     } else if (localStartPos.y < cornerBL.y) { 
       
       // Top
-      intersectionPosInternal = utils.intersectSegmentSegment(localStartPos, localEndPos, cornerTL, cornerTR) 
+      intersectionPosInternal = mutils.intersectSegmentSegment(localStartPos, localEndPos, cornerTL, cornerTR) 
       surfaceNormalAngleInternal = -90.0;
       
     }
@@ -214,16 +214,16 @@ PIXI.Sprite.prototype.enterTestEllipse = function(startPosGlobal, endPosGlobal, 
 
   const rad = 0.5*Math.max(this.localWidth, this.localHeight);
   const c = this.getLocalCenter()
-  // const dist = utils.distanceBetweenPoints(c, localEndPos);
+  // const dist = mutils.distanceBetweenPoints(c, localEndPos);
 
   //if (dist < rad){
  
-  const result = utils.intersectionPtsBetweenCircleAndLineSeg(localStartPos, localEndPos, c, rad);
+  const result = mutils.intersectionPtsBetweenCircleAndLineSeg(localStartPos, localEndPos, c, rad);
   
   if (result.length > 0){
     let intersectionPosInternal = result[0];
           
-    let surfaceNormalAngleInternal = utils.angleDegsBetweenPoints(c, intersectionPosInternal); 
+    let surfaceNormalAngleInternal = mutils.angleDegsBetweenPoints(c, intersectionPosInternal); 
           
     // Convert to eliptical position
     intersectionPosInternal.x*=(1.0/scaleFactorX)
@@ -268,7 +268,7 @@ PIXI.DisplayObject.prototype.angleToGlobal = function(localAngle){
   this.toGlobal(this._angleLocalGlobalOrigin, this._angleLocalGlobalOrigin)
   this.toGlobal(this._angleLocalGlobalTarget, this._angleLocalGlobalTarget)
   
-  return utils.angleDegsBetweenPoints(this._angleLocalGlobalOrigin, this._angleLocalGlobalTarget);
+  return mutils.angleDegsBetweenPoints(this._angleLocalGlobalOrigin, this._angleLocalGlobalTarget);
   
 }
 
@@ -285,7 +285,7 @@ PIXI.DisplayObject.prototype.angleToLocal = function(globalAngle){
   this.toLocal(this._angleLocalGlobalOrigin, null, this._angleLocalGlobalOrigin);
   this.toLocal(this._angleLocalGlobalTarget, null, this._angleLocalGlobalTarget);
   
-  return utils.angleDegsBetweenPoints(this._angleLocalGlobalOrigin, this._angleLocalGlobalTarget);
+  return mutils.angleDegsBetweenPoints(this._angleLocalGlobalOrigin, this._angleLocalGlobalTarget);
   
 }
 
@@ -343,10 +343,10 @@ PIXI.DisplayObject.prototype.setPivotWithoutMoving = function(pivotX, pivotY){
   const angOffset = 0.0;
   const pivotOffsetScaled = new Point(pivotOffset.x * this.scale.x, pivotOffset.y * this.scale.y)
   const zeroPt = new Point(0.0,0.0);
-  const pivotOffsetDist = utils.distanceBetweenPoints(zeroPt, pivotOffsetScaled);
-  const pivotOffsetAng = utils.angleDegsBetweenPoints(zeroPt, pivotOffsetScaled);
+  const pivotOffsetDist = mutils.distanceBetweenPoints(zeroPt, pivotOffsetScaled);
+  const pivotOffsetAng = mutils.angleDegsBetweenPoints(zeroPt, pivotOffsetScaled);
   
-  this.position = utils.projectFromPointDeg(this.position, pivotOffsetAng+this.angle, pivotOffsetDist);
+  this.position = mutils.projectFromPointDeg(this.position, pivotOffsetAng+this.angle, pivotOffsetDist);
 
   
 }
@@ -358,11 +358,11 @@ PIXI.Graphics.prototype.dashedLineTo = function(fromPt, toPt, dash = 16.0, gap =
     penDist -= gap + dash;
   }
   let penEnabled = false;
-  let totalDist = utils.distanceBetweenPoints(fromPt, toPt);
+  let totalDist = mutils.distanceBetweenPoints(fromPt, toPt);
   
   let penPt;
   if (penDist > 0.0){
-    penPt = utils.projectDistance(fromPt, toPt, penDist);
+    penPt = mutils.projectDistance(fromPt, toPt, penDist);
     this.moveTo(penPt.x, penPt.y);
   } else {
     this.moveTo(fromPt.x, fromPt.y);
@@ -372,11 +372,11 @@ PIXI.Graphics.prototype.dashedLineTo = function(fromPt, toPt, dash = 16.0, gap =
     penEnabled = !penEnabled;
     if (penEnabled){
       penDist = Math.min(totalDist, penDist + dash);
-      penPt = utils.projectDistance(fromPt, toPt, penDist);
+      penPt = mutils.projectDistance(fromPt, toPt, penDist);
       this.lineTo(penPt.x, penPt.y);
     } else {
       penDist = Math.min(totalDist, penDist + gap);
-      penPt = utils.projectDistance(fromPt, toPt, penDist);
+      penPt = mutils.projectDistance(fromPt, toPt, penDist);
       this.moveTo(penPt.x, penPt.y);
     }
   }
@@ -468,7 +468,7 @@ const MAX_SHAKE_OFFSET_ART = 15.0*0.5;
 // - `maxFactor` is a factor applied to built in properties defined above
 
 PIXI.DisplayObject.prototype.applyShake = function(traumaPerc, maxFactor = 1.0, options = null, extraTargets = null){
-
+  
   let defaults = {
       rotateOnly: false,
   };
@@ -480,7 +480,9 @@ PIXI.DisplayObject.prototype.applyShake = function(traumaPerc, maxFactor = 1.0, 
   }
   
   if (typeof this._shake === 'undefined'){
+
     this._shake = {};
+    this._shake.targets = targets;
     this._shake.trauma = 0.0;    
     if (!options.rotateOnly){
       if (this instanceof Scene){
@@ -488,9 +490,11 @@ PIXI.DisplayObject.prototype.applyShake = function(traumaPerc, maxFactor = 1.0, 
         this._shake.origin = this.position.clone()
       } 
     }
-    this._shake.kill = (targets)=>{
-      gsap.killTweensOf(targets);
-      for (let target of targets){
+    this._shake.kill = ()=>{
+
+      gsap.killTweensOf(targets); // Includes self
+      gsap.killTweensOf(targets[0]._shake)
+      for (let target of targets){ // Captured
         target.rotation = 0.0;
       }
       if (!options.rotateOnly){
@@ -499,23 +503,33 @@ PIXI.DisplayObject.prototype.applyShake = function(traumaPerc, maxFactor = 1.0, 
           targets[0].setPivotWithoutMoving(0.0, 0.0); // Default
         }
       }
+      targets[0]._shake = null;
       delete targets[0]._shake;
+      
     }
   }
+
   
   this._shake.trauma = Math.min(1.0, this._shake.trauma + traumaPerc); // Linear ease down 
   gsap.killTweensOf(this._shake);
   gsap.to(this._shake, 1.0, {trauma:0.0, ease:Linear.easeNone, onUpdateParams:[targets], onUpdate:(targets)=>{
     const shakeAmt = Math.pow(targets[0]._shake.trauma, 3); // Or 3
     let tw = {};
-    tw.angle = maxFactor*MAX_SHAKE_ROT * shakeAmt * utils.randFloatNegOneToOne()
+    tw.angle = maxFactor*MAX_SHAKE_ROT * shakeAmt * mutils.randFloatNegOneToOne()
     if (!options.rotateOnly){
-      tw.x = targets[0]._shake.origin.x + maxFactor*MAX_SHAKE_OFFSET_ART * scaler.scale * shakeAmt * utils.randFloatNegOneToOne()
-      tw.y = targets[0]._shake.origin.y + maxFactor*MAX_SHAKE_OFFSET_ART * scaler.scale * shakeAmt * utils.randFloatNegOneToOne()
+      tw.x = targets[0]._shake.origin.x + maxFactor*MAX_SHAKE_OFFSET_ART * scaler.scale * shakeAmt * mutils.randFloatNegOneToOne()
+      tw.y = targets[0]._shake.origin.y + maxFactor*MAX_SHAKE_OFFSET_ART * scaler.scale * shakeAmt * mutils.randFloatNegOneToOne()
     }
     gsap.set(targets, tw);
-  }, onCompleteParams:[targets], onComplete:this._shake.kill})
+  }, onComplete:this._shake.kill})
   
+}
+
+PIXI.DisplayObject.prototype.killShake = function(){
+
+  if (typeof this._shake !== 'undefined'){
+    this._shake.kill();
+  }
 }
 
 

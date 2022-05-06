@@ -8,23 +8,68 @@ import { utils, nav, store } from './../storymode.js';
 // - bin/js/pixi-sound.js.map (optional)
 
 // USAGE:
-/*
-if (!sfx.ready){
-  sfx.on('ready', this.onready, this)
-} else {
-  onready();
-}
-// ...
-onready(){
-  sfx.off('ready', this.onready, this)
-}
-*/
+// if (!sfx.ready){
+//   sfx.on('ready', this.onready, this)
+// } else {
+//   onready();
+// }
+// // ...
+// onready(){
+//   sfx.off('ready', this.onready, this)
+// }
 
 const DEFAULT_SFX_ENABLED = true;
 const DEFAULT_BGLOOP_ENABLED = true;
 
-export default class SFX extends PIXI.utils.EventEmitter {
+/**
+ * Sound and audio manager utilising the PixiJS Sound plugin.
+ * <br>Docs: <a href="https://pixijs.io/sound/docs/index.html" >https://pixijs.io/sound/docs/index.html</a>
+ * <br>- If no audio assets are queued in the project then this script will not be requested and is not needed.
+ * <br>- If the PIXI Sound script is not already loaded by the HTML, it will be loaded on first user interaction with the document from the following file path: 
+ * <br>- `(build0)/js/pixi-sound.js`
+ * @extends PIXI.utils.EventEmitter
+ * @example
+// app.js 
+sfx.bgLoopVolume = 0.6; // Set bg audio volume factor.
+sfx.volume = 0.8; // Global volume factor.
+sfx.waitForInteractionToLoad = false; // Will load immediately when able after initial assets and scene are ready.
+sfx.setBgLoop('bg_loop'); // Assign bg loop.
+sfx.enqueueBgResources({bg_loop_parent: {path: 'audio/bg_loop.mp3', sprites: {bg_loop: {start:0.5, end:4.5}}); // A bg audio as sprite to assist looping.
+createApp(...)
+
+// sampleScene.js
+const {sfx} = require(`storymode`);
+export default class MyClass extends Scene {
+    static getSfxResources(){
+      return {
+        ding: 'sfx/ding.mp3',
+        dong: {path: 'sfx/dong.mp3'}, // Optional path property
+        mastertrack: {path:'sfx/master-track.mp3', sprites:{ // Optionally define sprites
+          explosion: {start:0.5, end:1.0},          
+          success_bling: {start:1.0, end: 2.0}
+        }},
+        _fireloop: {path:'audio/fire.mp3', sprites:{
+          fireloop: {start:0.2, end:2.8, loop:true}, // Looping
+        }},
+        ouch: {multi:true, total:3, prefix:'_ouch_', random:true, rezero:false}, // Create a multi sound that will step through members each subsequent call
+        _ouch_0: {path:'sfx/ouch_0.mp3'},
+        _ouch_1: {path:'sfx/ouch_1.mp3'},
+        _ouch_2: {path:'sfx/ouch_2.mp3'},
+      };            
+    }
+    // ...
+    sfx.playSFX('ding');
+    sfx.playSFX('explosion'); // Play sprite
+  }
+}
+ */
+class SFX extends PIXI.utils.EventEmitter {
   
+  /**
+   * Creates a new SFX module.
+   * <br>This instance is created by `storymode` during startup. 
+   * @constructor
+   */
   constructor(){  
     
     super();
@@ -34,7 +79,6 @@ export default class SFX extends PIXI.utils.EventEmitter {
     
     this._bgResources = null;
     this._enableLoadCalled = false;
-    
     
     this._sfxVolume = 1.0;
     this._bgLoopVolume = 1.0;
@@ -53,6 +97,7 @@ export default class SFX extends PIXI.utils.EventEmitter {
   }
   
   // Called after store has chance to be configured
+  
   loadPrefs(){
 
     let _sfxEnabled = store.load('sfx.sfxEnabled')
@@ -62,16 +107,32 @@ export default class SFX extends PIXI.utils.EventEmitter {
     this._bgLoopEnabled = _bgLoopEnabled === null ? DEFAULT_BGLOOP_ENABLED : _bgLoopEnabled === '1';
   
     this.syncBgState();
+    
   }
   
+  /**
+   * Will be `true` when the sound engine and registered audio assets are all loaded and ready to play.
+   * <br>This will be set to true before background audio assets are loaded.
+   * @readonly
+   * @type {!boolean}
+   */
   get sfxready(){
     return this._sfxready;
   }
   
+  /**
+   * Will be `true` when the background audio assets queued by `sfx.enqueueBgResources()` are loaded.
+   * @readonly
+   * @type {!boolean}
+   */
   get bgready(){
     return this._bgready;
   }
   
+  /**
+   * Whether sound effects are enabled. 
+   * @type {boolean}
+   */
   get sfxEnabled(){
     return this._sfxEnabled;
   }
@@ -83,6 +144,10 @@ export default class SFX extends PIXI.utils.EventEmitter {
     this.toggleSfxEnabled();
   }
   
+  /**
+   * Whether background audio is enabled. 
+   * @type {boolean}
+   */
   get bgLoopEnabled(){
     return this._bgLoopEnabled;
   }
@@ -94,17 +159,28 @@ export default class SFX extends PIXI.utils.EventEmitter {
     this.toggleBgLoopEnabled();
   }
   
+  /**
+   * If `true` then will piggy back bg loop enabled to auto update to always follow sfx volume. 
+   * @type {boolean}
+   */
   set useSfxStateForBg(_useSfxStateForBg){
     this._useSfxStateForBg = _useSfxStateForBg;
     this.syncBgState();
   }
   
+  /**
+   * If `useSfxStateForBg` is set to `true` will update `bgLoopEnabled` to match `_sfxEnabled`
+   * @private
+   */
   syncBgState(){
     if (this._useSfxStateForBg){
       this.bgLoopEnabled = this._sfxEnabled;
     }
   }
   
+  /**
+   * Toggle sound effect enabled state.
+   */
   toggleSfxEnabled(){
     
     this._sfxEnabled = !this._sfxEnabled;
@@ -114,6 +190,9 @@ export default class SFX extends PIXI.utils.EventEmitter {
     
   }
   
+  /**
+   * Toggle background audio enabled state.
+   */
   toggleBgLoopEnabled(){
     
     this._bgLoopEnabled = !this._bgLoopEnabled;
@@ -131,6 +210,10 @@ export default class SFX extends PIXI.utils.EventEmitter {
   // Volume
   // ------
   
+  /**
+   * The sfx volume level from 0.0 to 1.0.
+   * @type {number}
+   */
   get sfxVolume(){
     return this._sfxVolume;
   }
@@ -138,6 +221,10 @@ export default class SFX extends PIXI.utils.EventEmitter {
     this._sfxVolume = volume;
   }
   
+  /**
+   * The background volume level from 0.0 to 1.0.
+   * @type {number}
+   */
   get bgLoopVolume(){
     return this._bgLoopVolume;
   }
@@ -146,6 +233,10 @@ export default class SFX extends PIXI.utils.EventEmitter {
     this.updateBgLoopVolume();
   }
 
+  /**
+   * Global volume factor.
+   * @type {number}
+   */
   get volume(){
     return this._volume;
   }
@@ -154,17 +245,30 @@ export default class SFX extends PIXI.utils.EventEmitter {
     this.updateBgLoopVolume();
   }
   
-  // Load global, low priority sounds.
-  // It's assumed these are larger files - they will be loaded last and will not 
-  // prevent sound effects from being loaded and played in the meantime
-  // Must be called before or during storymode.createApp callback
-  enqueueBgResources(bgResources, callback){
+
+  /**
+   *   Optionally call this method to queue global background audio resources.
+   * <br>- These assets will be loaded after all other assets are loaded and ready to use.
+   * <br>- Should be called before or during `storymode.createApp()` callback.
+   * @param {Object} bgResources - Global resources to load. Eg. `{ding: 'sfx/ding.mp3', dong: 'sfx/dong.mp3'}`.
+   * @example
+   * // app.js
+   * sfx.waitForInteractionToLoad = false;
+   * sfx.setBgLoop('cello'); // Will be played when ready
+   * sfx.enqueueBgResources({cello: 'audio/cello.mp3'}); 
+   * createApp(...)
+   */
+  enqueueBgResources(bgResources){
     this._bgResources = bgResources;
-    
   }
   
   // If `false` then will load immediately when able, rather than waiting for user to interact with the DOM
   // Must be caled before or during storymode.createApp callback
+  
+  /**
+   * If `false` then will load immediately when able, rather than waiting for user to interact with the DOM. Should be called before or during `storymode.createApp()` callback.
+   * @type {boolean}  
+   */
   set waitForInteractionToLoad(_waitForInteractionToLoad){
     this._waitForInteractionToLoad = _waitForInteractionToLoad;
   }
@@ -173,10 +277,13 @@ export default class SFX extends PIXI.utils.EventEmitter {
     return this._waitForInteractionToLoad
   }
   
-  // Called after primary load by app.js
+  /**
+   * Called by `storymode` after initial load. Indicates that audio can commence loading.
+   * @private
+   */
   _enableLoad(){
     
-    // Only call once
+    // Ensure this method is only call once
     if (this._enableLoadCalled){
       return;
     }
@@ -197,6 +304,11 @@ export default class SFX extends PIXI.utils.EventEmitter {
     }
   }
   
+  /**
+   * Scans scenes fror registered sfx resources and returns `true` if any were found.
+   * @returns {boolean} resourcesFound 
+   * @private
+   */
   anySfxResources(){
     
     for (let _sceneid in nav.scenes){
@@ -213,6 +325,12 @@ export default class SFX extends PIXI.utils.EventEmitter {
   }
   
   // First the script must be loaded - if not already
+  
+  /**
+   * Begin the loading of queued resources.
+   * <br>Ensures that `pixi-sound.js` is loaded before continuing. 
+   * @private
+   */
   beginLoad(){
     if (PIXI.sound){
       this.onScriptLoaded();
@@ -221,6 +339,10 @@ export default class SFX extends PIXI.utils.EventEmitter {
     }
   }
   
+  /**
+   * Commence resource loading, after pixi sound JS is loaded.
+   * @private
+   */  
   onScriptLoaded(){
 
     // PIXI.sound.Sound.volumeAll(0.5);
@@ -241,8 +363,6 @@ export default class SFX extends PIXI.utils.EventEmitter {
     for (let _sceneid in nav.scenes){
       let _r = nav.scenes[_sceneid].class.getSfxResources();
       if (_r){
-        
-        
         
         for (let _soundID in _r){
           if (_resources[_soundID]){  
@@ -330,6 +450,10 @@ export default class SFX extends PIXI.utils.EventEmitter {
   
   }
   
+  /**
+   * Resets the counter associated with the multisound to zero, if random is set to true will shuffle its members.
+   * @param {string} soundID - The multi sound identifier.
+   */  
   resetMulti(soundID, force = false, enableRandom = true){
     if (!force && (!this._sfxready || !this._sfxEnabled || !this.multis || !this.multis[soundID])){
       return;
@@ -342,6 +466,11 @@ export default class SFX extends PIXI.utils.EventEmitter {
     }
   }
   
+  /**
+   * Gets the current counter index for the given multisound. 
+   * @param {string} soundID - The multi sound identifier.
+   * @returns {int} counter - The multi sound counter (zero-indexed).
+   */  
   getMultiCounter(soundID){
     if (!this._sfxready || !this._sfxEnabled || !this.multis || !this.multis[soundID]){
       return -1;
@@ -349,6 +478,11 @@ export default class SFX extends PIXI.utils.EventEmitter {
     return this.multis[soundID]._index;
   }
   
+  /**
+   * Gets the total individual sounds for the given multisound. 
+   * @param {string} soundID - The multi sound identifier.
+   * @returns {int} total 
+   */  
   getMultiTotal(soundID){
     if (!this._sfxready || !this._sfxEnabled || !this.multis || !this.multis[soundID]){
       return -1;
@@ -356,6 +490,11 @@ export default class SFX extends PIXI.utils.EventEmitter {
     return this.multis[soundID].ids.length
   }
   
+  /**
+   * Sets whether the given multisound should rezero after getting to the last sound in the sequence.
+   * @param {string} soundID - The multi sound identifier.
+   * @param {boolean} rezero - Whether to go back to zero or stay on last sound.
+   */  
   setMultiRezero(soundID, rezero){
     if (!this._sfxready || !this._sfxEnabled || !this.multis || !this.multis[soundID]){
       return -1;
@@ -363,6 +502,13 @@ export default class SFX extends PIXI.utils.EventEmitter {
     return this.multis[soundID].rezero = rezero;
   }
   
+  /**
+   * Called after sfx assets are loaded and ready to play.
+   * <br>- SFX will be playable after this method is called.
+   * @param {PIXI.Loader} loader - The loader instance.
+   * @param {Object} resources - Loaded sfx audio assets.
+   * @private
+   */  
   onResourcesLoaded(loader, resources){
     
     this._loader = null;
@@ -391,9 +537,12 @@ export default class SFX extends PIXI.utils.EventEmitter {
     
   }
   
+  /**
+   * Begin the load of background (low priority) resournces.
+   * @private
+   */  
   loadBgResources(){
 
-    
     if (this._bgResources){
       
       this.spritesByParentSound = {};
@@ -422,6 +571,14 @@ export default class SFX extends PIXI.utils.EventEmitter {
     
   }
   
+  
+  /**
+   * Called after background assets are loaded and ready to play.
+   * <br>- Bg sounds will be playable after this method is called.
+   * @param {PIXI.Loader} loader - The loader instance.
+   * @param {Object} resources - Loaded bg audio assets.
+   * @private
+   */  
   onBgResourcesLoaded(loader, resources){
     
     if (resources){
@@ -450,7 +607,10 @@ export default class SFX extends PIXI.utils.EventEmitter {
     }
     
   }
-    
+  
+  /**
+   * Stop all sound playback.
+   */  
   stopAll(){
     
     if (!this._sfxready){
@@ -461,9 +621,14 @@ export default class SFX extends PIXI.utils.EventEmitter {
     
   }
   
-  // A mixer is an object with sound ids and volume factors.
-  // Eg. {sound_effect_1: 1.0, sound_effect_2:1.0, vo_*:1.0}
-  // Set to null to remove
+
+  
+  /**
+   * Register a mixer object to affect volume factor of specified sounds.
+   * <br>Set to null to remove.
+   * <br>Supports simple prefix glob patterns in the format of `mysound_*`.
+   * @param {Object} [mixerObj=null] - The configuration object. Eg. {sound_effect_1: 1.0, sound_effect_2:1.0, vo_*:1.0}.
+   */  
   registerMixer(mixerObj){
     this.mixerObj = mixerObj;    
     // Make a look up for glob patterns. Eg. `mysound_*`
@@ -481,8 +646,21 @@ export default class SFX extends PIXI.utils.EventEmitter {
     }
   }
   
-  // - If supplying options as a number it is assumed a delay value in seconds
-  // - _concurrentSoundID, the sound ID used to track and limit concurrent sound instances. 
+
+
+  /**
+   * Called after initial assets are loaded.
+   *
+   * @typedef PlaybackOptions
+   * @property {number} [delay=0] Delay before playback, in seconds.
+   * @property {volume} [volume=1.0] Volume multiplier.
+   */
+
+  /**
+   * Plays requested audio resource.
+   * @param {string} soundID - The multi sound identifier.
+   * @param {PlaybackOptions|number} options - Playback options, if a number then will be set as the delay value.
+   */  
   playSFX(soundID, options = null, _concurrentSoundID = null){
     
     if (!this._sfxready || !this._sfxEnabled){
@@ -616,6 +794,10 @@ export default class SFX extends PIXI.utils.EventEmitter {
     }
   }
   
+  /**
+   * Stops playback of looping sfx audio.
+   * @param {string} [soundID=null] - The sound identifier, set to null or '*' to stop all looping sfx audio.
+   */  
   stopSFX(soundID = null){
     
     if (!soundID || soundID == '*'){
@@ -637,6 +819,12 @@ export default class SFX extends PIXI.utils.EventEmitter {
     
   }
   
+  /**
+   * Gets info about a registered sound.
+   * @param {string} soundID - The sound identifier.
+   * @returns {Object} info 
+   * @private
+   */  
   getSoundForID(soundID){
     let result = {};
     if (this.parentSoundBySprite[soundID] && this.resources[this.parentSoundBySprite[soundID]]){
@@ -649,6 +837,10 @@ export default class SFX extends PIXI.utils.EventEmitter {
     return result;
   }
   
+  /**
+   * Sets the resource id to be the looping background music track.
+   * @param {string} soundID - The sound identifier.
+   */  
   setBgLoop(soundID){
     
     // Hold on to for later
@@ -679,39 +871,50 @@ export default class SFX extends PIXI.utils.EventEmitter {
     }
   }
   
-    _stopBgLoop(){
-      if (this.bgLoopSlug){
-        let result = this.getSoundForID(this.bgLoopSlug);
-        if (result.sound){
-          result.sound.stop();
-        }
-      } 
-    }
-    
-    _resumeBgLoop(){
-      if (this._bgLoopEnabled && this.bgLoopSlug){
-        let result = this.getSoundForID(this.bgLoopSlug);
-        if (result.sound){
-          let options = {singleInstance: true, volume: this._bgLoopVolume*this._volume}
-          if (result.isSprite){
-            options.sprite = this.bgLoopSlug;
-          }
-          result.sound.play(options);
-        }
-      } 
-    }
-    
-    updateBgLoopVolume(){
-      if (this.resources && this.bgLoopSlug){
-        let result = this.getSoundForID(this.bgLoopSlug);
-        if (result.sound){
-          result.sound.volume = this._bgLoopVolume*this._volume
-        } else {
-          
-        }
+  /**
+   * Stops background playback.
+   * @private
+   */  
+  _stopBgLoop(){
+    if (this.bgLoopSlug){
+      let result = this.getSoundForID(this.bgLoopSlug);
+      if (result.sound){
+        result.sound.stop();
       }
-    }
-    
+    } 
+  }
   
+  /**
+   * Resumes paused background playback.
+   * @private
+   */  
+  _resumeBgLoop(){
+    if (this._bgLoopEnabled && this.bgLoopSlug){
+      let result = this.getSoundForID(this.bgLoopSlug);
+      if (result.sound){
+        let options = {singleInstance: true, volume: this._bgLoopVolume*this._volume}
+        if (result.isSprite){
+          options.sprite = this.bgLoopSlug;
+        }
+        result.sound.play(options);
+      }
+    } 
+  }
+  
+  /**
+   * Resyncs the background playback volume.
+   * @private
+   */  
+  updateBgLoopVolume(){
+    if (this.resources && this.bgLoopSlug){
+      let result = this.getSoundForID(this.bgLoopSlug);
+      if (result.sound){
+        result.sound.volume = this._bgLoopVolume*this._volume
+      } 
+    }
+  }
+    
 }
+
+export default SFX;
     

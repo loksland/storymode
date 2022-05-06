@@ -1,5 +1,6 @@
 # Changelog
 
+- v1.1.39 - (06-05-2022) Docs, maths utils added
 - v1.1.38 - (29-04-2022) sfx: added mixer config obj support
 - v1.1.37 - (27-04-2022) Added clipboard copy to utils
 - v1.1.36 - (25-04-2022) Adding documentation, utils tweaks

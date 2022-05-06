@@ -1,4 +1,4 @@
-import { utils, scaler, pixiApp, htmlEle, ui} from './../storymode.js';
+import { utils, mutils, scaler, pixiApp, htmlEle, ui} from './../storymode.js';
 
 let Engine,
     Render,
@@ -306,7 +306,7 @@ class JRender {
         link.to.y = scaler.proj.default.transArtY(this.mtp*(link.from.position.y+link.valueModifiers.y + this.valueModifiers.y)); 
       }
       if (link.syncProps.rotation){
-        link.to.rotation = link.from.angle + utils.degToRad(link.valueModifiers.rotation); 
+        link.to.rotation = link.from.angle + mutils.degToRad(link.valueModifiers.rotation); 
       }
       if (link.syncProps.scale){
         // Assumes uniform density assets. Consider using: let resetingScale = dispo.txInfo.pxtopt*scaler.scale;
@@ -750,8 +750,8 @@ class Jgsap {
       
       if ('rotation' in twFrom){
         twProps._syncProps.rotation = true;
-        twFrom.rotation = utils.degToRad(twFrom.rotation);
-        twTo.rotation = utils.degToRad(twTo.rotation);      
+        twFrom.rotation = mutils.degToRad(twFrom.rotation);
+        twTo.rotation = mutils.degToRad(twTo.rotation);      
         twProps.rotation = twFrom.rotation;
       }
       
@@ -795,7 +795,7 @@ class Jgsap {
         } else {
           twProps.rotation = target.angle;
         }        
-        tw.rotation = utils.degToRad(tw.rotation); // Convert from degs to radians
+        tw.rotation = mutils.degToRad(tw.rotation); // Convert from degs to radians
       }
       
       if ('scale' in tw){
