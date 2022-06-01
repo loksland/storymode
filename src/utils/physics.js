@@ -29,31 +29,73 @@ if (typeof window['Matter'] !== 'undefined'){
 // Overview:
 // Integrates between between matter.js to storymode.
 // 
-// - When there is syncing, PIXI display objects sync to the engine bodies.
-// - Modifiers and tweens involving physics bodies are always in physics coords
-// - Bodies and their synced dispos have center registrations
+// 
+// 
+// - 
 
 // Requires:
 /*
 <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.17.1/matter.min.js" integrity="sha512-3CP+e7z5ieYYTIyvRvV3eGVYR67yXg5V2mWfg8pEJJd2mlh8tG/cnDv5scTmRztEYHTksBlpPOmxFOiMtHfZdQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 */
 
+/** 
+ * Handles translation between `Matter.js` (v0.17.1) and `PIXI` coord space.
+ * <br>- See {@link  https://brm.io/matter-js/}
+ * <br>- When there is syncing, PIXI display objects sync to the engine bodies.
+ * <br>- Modifiers and tweens involving physics bodies are always in physics coords.
+ * <br>- Bodies and their synced dispos have center registrations.
+ * @namespace physics 
+ */
+
 // JRunner
 // -------
 
-// A pixi ticker integrated with matter js engine
+/**
+ * Handles the link between the `PIXI` ticker and `Matter.js` time.
+ * <br>- Handles the `matter.js` engine time update
+ * @memberof physics
+ * @example
+const {..., physics} = require(`storymode`);
+// Create jrender instance:
+this.jrender = new physics.JRender({ptsPerMeterFactor:0.5});
+this.jrunner = new physics.JRunner(this.engine, this.jrender, this.onRender.bind(this), {fixedTimestep: false});
+ */
 class JRunner { // } extends PIXI.utils.EventEmitter {
   
+/**
+ * Called after every `Matter.js` render.
+ * @callback physics.JRunner.onRender
+ * @param {number} elapsedMS - Time elapsed in milliseconds from last frame to this frame.
+ */
+      
+ /**
+  * JRunner config options.
+  * @typedef {Object} physics.JRunner.Options
+  * @property {boolean} [fixedTimestep=true] If timing is fixed, then the apparent simulation speed will change depending on the frame rate (but behaviour will be deterministic).<br>If the timing is variable, then the apparent simulation speed will be constant (approximately, but at the cost of determininism).
+  * @memberOf physics.JRunner
+  */
+   
+ /**
+  * @param {Matter.Engine} engine - `Matter.js` engine instance.
+  * @param {physics.JRender} render - `JRender` class instance.
+  * @param {physics.JRunner.onRender} [renderCallback=null] - Function to be called every render, immediately after the `render.drawRender()` is called. 
+  * @param {physics.JRunner.Options} [options=null] - Configuration object.
+  * @constructor
+  */  
   constructor(engine, render, renderCallback, options){  
     
     this.engine = engine;
+    
+    /**
+     * A list of `JRender` instances managed by the runner.
+     * @readonly
+     * @type {Array}
+     */
     this.renders = Array.isArray(render) ? render : [render];
     this.renderCallback = renderCallback;
     
     let defaults = {
-      fixedTimestep: true, // If timing is fixed, then the apparent simulation speed will change depending on the frame rate (but behaviour will be deterministic).
-                           // If the timing is variable, then the apparent simulation speed will be constant (approximately, but at the cost of determininism).
-      
+      fixedTimestep: true      
     };
 
     options = utils.extend(defaults, options);
@@ -75,12 +117,28 @@ class JRunner { // } extends PIXI.utils.EventEmitter {
     
   }
   
+  /**
+   * Pauses the ticker.
+   * @example 
+onDidExit(fromModal){
+ super.onDidExit(fromModal);
+ this.jrunner.pauseTick();
+}
+   */  
   pauseTick(){
     this.ticking = false;
     ticker.remove(this.tickFixed, this);
     ticker.remove(this.tickVariable, this);
   }
 
+  /**
+   * Resumes the ticker.
+   * @example 
+onWillArrive(fromModal){
+ super.onWillArrive(fromModal);
+ this.jrunner.resumeTick();  
+}
+   */  
   resumeTick(){
     if (this.ticking){
       return;
@@ -89,13 +147,14 @@ class JRunner { // } extends PIXI.utils.EventEmitter {
     ticker.add(this.fixedTimestep ? this.tickFixed : this.tickVariable, this);
   }
   
-  
-  // See: https://gafferongames.com/post/fix_your_timestep/
+  /**
+   * Internal fixed timestep tick function.
+   * <br>- If the frame rate slows below the target rate, more engine updates are called to compensate before calling the render. 
+   * <br>- See {@link https://gafferongames.com/post/fix_your_timestep/}
+   */
   tickFixed(){
     
     this.accumulator += ticker.elapsedMS; // Time elapsed in milliseconds from last frame to this frame.;
-    
-  
     
     while ( this.accumulator >= this.targetDelta ){
         Engine.update(this.engine, this.targetDelta, 1.0);
@@ -104,7 +163,6 @@ class JRunner { // } extends PIXI.utils.EventEmitter {
     }
 
     // Render
-    
     for (let i = 0; i < this.renders.length; i++){
       this.renders[i].drawRender(this.engine.world);
     }
@@ -115,6 +173,9 @@ class JRunner { // } extends PIXI.utils.EventEmitter {
     
   }
 
+  /**
+   * Internal variable timestep tick function.
+   */
   tickVariable(){
     
     // https://pixijs.download/dev/docs/PIXI.Ticker.html
@@ -159,7 +220,9 @@ class JRunner { // } extends PIXI.utils.EventEmitter {
     
   }
   
-  // Must be called manually
+  /**
+   * Clean up method, must be called manually.
+   */
   dispose(){
     
     this.pauseTick();
@@ -180,29 +243,74 @@ class JRunner { // } extends PIXI.utils.EventEmitter {
 // JRender
 // -------
 
-// Integrates between storymode / Pixi sprites and Matter physics objects / engine
-// - As a rule PIXI always syncs to matter.js, rather than the other way around
+// 
+// 
 
+
+/**
+ * Handles the relationship between `PIXI` display objects and `Matter.js` physics objects and engine.
+ * <br>- As a rule `PIXI` always syncs to matter.js, rather than the other way around.
+ * @memberof physics
+ * @example
+// Create jrender instance:
+this.jrender = new physics.JRender({ptsPerMeterFactor:0.5});
+ */
 class JRender {
   
+  /**
+   * JRender config options.
+   * @typedef {Object} physics.JRender.Options
+   * @property {number} [ptsPerMeterFactor=1.0] Art points to `matter.js` meters factor. This will affect how heavy / light the simulation will feel.
+   * @memberOf physics.JRunner
+   */
+    
+  /**
+   * @param {physics.JRender.Options} [options=null] - Configuration object.
+   * @constructor
+   */  
   constructor(options){
     
     let defaults = {
       ptsPerMeterFactor: 1.0
-      // wireframeEnabled: false
     };
     
     options = utils.extend(defaults, options);
     
-    this.ptm = options.ptsPerMeterFactor; // points to meter: Multiply by this to translate (art) pt to matter.js units (in meters)
-    this.mtp = 1.0/options.ptsPerMeterFactor; // meters to points: Multiply by this to translate matter.js units (in meters) to (art) pts
+    /**
+     * Points to meters: Multiply by this to translate (art) pt to `matter.js` units (in meters).
+     * <br>- This property is used by the conversion methods.
+     * @type {number}
+     * @public
+     */
+    this.ptm = options.ptsPerMeterFactor; 
+    
+    /**
+     * Meters to points: Multiply by this to translate `matter.js` units (in meters) to (art) pts.
+     * <br>- This property is used by the conversion methods.
+     * @type {number}
+     * @public
+     */
+    this.mtp = 1.0/options.ptsPerMeterFactor;
     
     this.valueModifiers = {x:0.0,y:0.0}; // This only affects links
     
+    /**
+     * Lookup of `JSyncLink` instances.
+     * <br>- Each link will be referenced by its label.
+     * @type {Object}
+     * @public
+     */
     this.links = {};
     
   }
   
+  /**
+   * Static method that converts physics engine coordinate space meters measurement to PSD art pts.
+   * @param {number} physMtrs - Physics engine meters.
+   * @param {number} ptsPerMeterFactor - Art points to `matter.js` meters factor.
+   * @returns {number} artPts - PSD art pts.
+   * @private
+   */ 
   static _physMtrsToArtPts(physMtrs, ptsPerMeterFactor){
     const mtp = 1.0/ptsPerMeterFactor;
     return mtp*physMtrs;
@@ -210,32 +318,82 @@ class JRender {
   
   // Tools 
   
+  /**
+   * Converts PSD art pts measurement to the physics engine coordinate space meters.
+   * @param {number} artPts - PSD art pts.
+   * @returns {number} physMtrs - Physics engine meters.
+   */   
   artPtsToPhysMtrs(artPts){
     return this.ptm*artPts;
   }
   
+  /**
+   * Converts physics engine coordinate space meters measurement to PSD art pts.
+   * @param {number} physMtrs - Physics engine meters.
+   * @returns {number} artPts - PSD art pts.
+   */ 
   physMtrsToArtPts(physMtrs){
     return this.mtp*physMtrs;
   }
   
+  /**
+   * Convert screen x pt position to physics engine coordinate space meters.
+   * <br>- This will take into account the offset of the projected artboard.
+   * <br>- Default scaler projection assumed.
+   * @param {number} screenX - Screen x position in pts (css).
+   * @returns {number} physMtrsX - Physics engine meters.
+   */ 
   screenXToPhysMtrs(screenX){
     return scaler.proj.default.transScreenX(screenX)*this.ptm;
   }
   
+  /**
+   * Convert screen y pt position to physics engine coordinate space meters.
+   * <br>- This will take into account the offset of the projected artboard.
+   * <br>- Default scaler projection assumed.
+   * @param {number} screenY - Screen y position in pts (css).
+   * @returns {number} physMtrsY - Physics engine meters.
+   */ 
   screenYToPhysMtrs(screenY){
     return scaler.proj.default.transScreenY(screenY)*this.ptm;
   }
   
+  /**
+   * Convert screen pts (css) measurement to physics engine coordinate space meters.
+   * <br>- Default scaler projection assumed.
+   * @param {number} screenPts - Screen pt measurement (css).
+   * @returns {number} physMtrs - Physics engine meters.
+   */ 
   screenPtsToPhysMtrs(screenPts){
     return screenPts*(1.0/scaler.scale)*this.ptm;
   }
   
+  /**
+   * Convert physics engine coordinate space meters measurement to screen pts (css).
+   * @param {number} physMtrs - Physics engine meters.
+   * @returns {number} screenPts - Screen pt measurement (css).
+   */ 
   physMtrsToScreenPts(physMtrs){
     return physMtrs*this.mtp*scaler.scale
   }
   
   // ---
   
+  /**
+   * A `matter.js` object defining properties to be used to create a physics body.
+   * @typedef {Object} JRender.BodyDef
+   * @property {number} width - Width.
+   * @property {number} height - Height.
+   * @property {number} cx - Center x.
+   * @property {number} cy - Center y.
+   * @memberOf physics
+   */
+   
+  /**
+   * Converts a PIXI display object to a `matter.js` body definition to be used to create a physics body.
+   * @param {PIXI.DisplayObject} dispo - Display Object. Center registration is assumed.
+   * @returns {JRender.BodyDef} bodyDef - Body definition.
+   */ 
   dispoToBodyDef(dispo){
     
     let def = {};
@@ -251,11 +409,16 @@ class JRender {
       def.cy = this.screenYToPhysMtrs(dispo.y);
     }
     
-    return def;    
+    return def;
     
   }
   
-  // |txInfo| can be a txPath (eg `myart.psd/mysprite`)
+  /**
+   * Convert `storymode` `txInfo` (or string `txPath`) to a `matter.js` body definition. 
+   * <br>- Will throw an error if texture path not found.
+   * @param {string|Object} txInfo - Texture info path (eg. `myart.psd/mysprite`) or object.
+   * @returns {JRender.BodyDef} bodyDef - Body definition.
+   */ 
   txInfoToBodyDef(txInfo){
     
     if (typeof txInfo === 'string'){
@@ -275,6 +438,11 @@ class JRender {
     
   }
   
+  /**
+   * Convert PIXI.Rectangle to a `matter.js` body definition. 
+   * @param {PIXI.Rectangle} rectangle
+   * @returns {JRender.BodyDef} bodyDef - Body definition.
+   */ 
   rectToBodyDef(rect){
     let def = {};
     def.width = this.screenPtsToPhysMtrs(rect.width);
@@ -284,6 +452,11 @@ class JRender {
     return def;
   }
   
+  /**
+   * Called by `JRunner` once every tick, after physics engine has updated.
+   * <br>- Each link will be synced to the new physics engine state.
+   * @param {PIXI.Rectangle} rectangle
+   */ 
   drawRender(world){
     
     let link;
@@ -293,6 +466,11 @@ class JRender {
     }
   }
   
+  /**
+   * Syncs the link to the physics engine state.
+   * @param {string} label - Label associated with link.
+   * @param {boolean} [label=false] - If true will update the link regardless of its `syncEnabled` state.
+   */ 
   applySync(label, force = false){
     const link = this.links[label];
     
@@ -319,16 +497,67 @@ class JRender {
     }
   }
   
+  /**
+   * Returns the appropriate HMTL element to supply to the constructor of the `matter.js` Mouse.
+   * @readonly
+   * @type {!DOMElement}
+   * @example 
+this.mouse = Mouse.create(this.jrender.mouseElement);
+   */
   get mouseElement(){
     return pixiApp.resizeTo == window ? htmlEle : pixiApp.resizeTo; //pixiApp.resizeTo; // document.body
   }
   
+  /**
+   * Adjusts a `matter.js` mouse instance to match the current stage dimensions.
+   * @param {Matter.Mouse} mouse - Mouse instance.
+   */ 
   adjustMouseToStage(mouse){
     Mouse.setOffset(mouse, {x:this.ptm*(-scaler.proj.default.topLeft.x*(1.0/scaler.scale)), y:this.ptm*(-scaler.proj.default.topLeft.y*(1.0/scaler.scale))}); //scaler.proj.default.transArtY(0.0)
     Mouse.setScale(mouse, {x:this.ptm*(1.0/scaler.scale), y:this.ptm*(1.0/scaler.scale)})
   }
   
   // - Sync props: x,y,rotation(in radians),scale
+
+ /**
+  * A config object indicating which properties to sync.
+  * <br>-If all syncProps are false (or not properties defined), the remaining are assumed true
+  * <br>-If any sync props are true, the remaining are assumed false.
+  * @typedef {Object} JRender.SyncProps
+  * @property {boolean} x - Sync x position.
+  * @property {boolean} y - Sync y position.
+  * @property {boolean} rotation - Sync rotation.
+  * @property {boolean} scale - Sync scale.
+  * @memberOf physics
+  */
+ 
+ /**
+  * Adjust the values being synced to the display object.
+  * @typedef {Object} JRender.SyncValueModifiers
+  * @property {number} [x=0] - X value to be added to the sync value (in physics meters).
+  * @property {number} [y=0] - Y value to be added to the sync value (in physics meters).
+  * @property {number} [rotatio=0] - Rotation to be added to the sync value (in radians).
+  * @property {number} [scale=1.0] - Scale to be multiplied by the sync value.
+  * @memberOf physics
+  */
+  
+  /**
+   * An optional callback fired at the end of each link sync.
+   * @callback JRender.SyncCallback
+   * @param {physics.JSyncLink} link - The link being synced. 
+   * @memberOf physics
+   */
+   
+  /**
+   * Creates a new `JSyncLink` and adds to the JRender's `links`.
+   * @param {string} label - Label for the link.
+   * @param {Matter.Body} from - Physics body (the leader).
+   * @param {PIXI.DisplayObject} to - Display object (the follower).
+   * @param {JRender.SyncProps} [syncProps=null] - Which properties to sync.
+   * @param {JRender.SyncValueModifiers} [valueModifiers=null] - Sync value modfiers.
+   * @param {JRender.SyncCallback} [syncCallback=null] - Optional function to call after each sync.
+   * @returns {physics.JSyncLink} link - The newly created link object.
+   */ 
   createSyncLink(label, from, to, syncProps = null, valueModifiers = null, syncCallback = null){
     
     if (!from.id || !from.type || from.type !== 'body'){
@@ -340,7 +569,6 @@ class JRender {
     
     // If all syncProps are false, the remaining are assumed true
     // If any sync props are true, the remaining are assumed false.
-    // Apart from rotation and scale that are always assumed false
     let syncPropDefault = true
     for (let p in syncProps){
       if (syncProps[p] === true){
@@ -357,11 +585,24 @@ class JRender {
     
   }
   
+  /**
+   * Adds a sync link to the JRender's `links`.
+   * <br>- This is automatically performed by the `createSyncLink()` method.
+   * @param {string} label - Label for the link.
+   * @param {physics.JSyncLink} link - The link to added.
+   * @returns {physics.JSyncLink} link - The newly added link object.
+   */ 
   addSyncLink(label, link){
     this.links[label] = link;
     return this.links[label];
   }
   
+  /**
+   * Removes a sync link from JRender's `links`.
+   * @param {string} label - Label for the link.
+   * @param {boolean} [dispose=true] - Whether to destroy the link.
+   * @returns {physics.JSyncLink} link - The removed link.
+   */ 
   removeSyncLink(label, dispose = true){
     if (!this.links[label]){
       return null;
@@ -390,16 +631,84 @@ class JRender {
 
 // Represents a link between PIXI and matterjs
 // - Just a light class with refs. Calculations are done on the render.
+
+/**
+ * Represents a relationship between a display object and a `matter.js` physics body. 
+ * <br>- Primarily used for storage.
+ * <br>- Created, stored and managed in the `JRender` Class. 
+ * @memberof physics
+ * @example
+this.jrender.link.ball_0.autoSync = false;
+this.jrender.link.ball_0.from.isStatic = true;
+ */
 class JSyncLink {
+  
+  /**
+  * This constructor is handled by `JRender.addSyncLink()` in most cases.
+  * @param {Matter.Body} from - Physics body (the leader).
+  * @param {PIXI.DisplayObject} to - Display object (the follower).
+  * @param {JRender.SyncProps} [syncProps=null] - Which properties to sync.
+  * @param {JRender.SyncValueModifiers} [valueModifiers=null] - Sync value modfiers.
+  * @param {JRender.SyncCallback} [syncCallback=null] - Optional function to call after each sync.
+  * @constructor
+  */  
   constructor(from, to, syncProps, valueModifiers, syncCallback = null) {
+    
+    /**
+     * Physics body (the leader).
+     * @type {Matter.Body}
+     * @public
+     */
     this.from = from;
+    
+    /**
+     * Display object (the follower).
+     * @type {PIXI.DisplayObject}
+     * @public
+     */
     this.to = to;
+    
+    /**
+     * Whether syncing is enabled. Default is true.
+     * @type {boolean}
+     * @public
+     */
     this.syncEnabled = true;
+    
+    /**
+     * Which properties to sync.
+     * @type {JRender.SyncProps}
+     * @public
+     */
     this.syncProps = syncProps;
+    
+    /**
+     * Sync value modfiers.
+     * @type {JRender.SyncValueModifiers}
+     * @public
+     */
     this.valueModifiers = valueModifiers;
+    
+    /**
+     * An object where any additional data can be defined for later reference.
+     * @type {Object}
+     * @public
+     */
     this.data = {}
+    
+    /**
+     * Optional function to call after each sync.
+     * @type {JRender.SyncCallback}
+     * @public
+     */
     this.syncCallback = syncCallback;
+    
   }
+  
+  /**
+  * Manually removes data from the sync link.
+  * <br>- This method is called by `JRender` when it is manually disposed.
+  */  
   dispose(){
     if (this.data){
       for (let p in this.data){
@@ -418,21 +727,47 @@ class JSyncLink {
 // JWireframeRender
 // ----------------
 
-// A wireframe renderer for storymode
-// - This is intended for development purposes.
-/*
-Usage:
-```js
-
-let jwireframeRender =  new physics.JWireframeRender(mouse);
-this.addChild(jwireframeRender); // Should be auto disposed on scene dispose
-this.jrunner.renders.push(jwireframeRender); // Attach to runner.render list
-
-```
-*/
-
+/**
+ * JWireframeRender config options. *
+ * @typedef {Object} physics.JWireframeRender.Options
+ * @property {number} [lineThickness=3.0] - The line thickness for the render, in screen pts (css). 
+ * @property {number} [ptsPerMeterFactor=1.0] - Art points to `matter.js` meters factor. Should match that of the main JRender.
+ * @memberOf physics.JWireframeRender
+ */
+ 
+ 
+/**
+ * A wireframe renderer to be used in development environments.
+ * <br>- Will render bodies, springs, pins and mouse.
+ * <br>- Needs to be added to the `JRunner` list of renders.
+ * @extends PIXI.Graphics
+ * @memberof physics
+ * @example
+didLoad(ev){
+ 
+ // ... 
+ 
+ this.jrender = ...
+ this.jrunner = ...  
+ this.mouse = ...
+ 
+ if (true){
+   let jwireframeRender =  new physics.JWireframeRender(this.mouse, {lineThickness:1.0, ptsPerMeterFactor: this.jrender.ptm});
+   this.addChild(jwireframeRender); // Should be auto disposed on scene dispose
+   this.jrunner.renders.push(jwireframeRender); // Attach to runner.render list
+ }
+ 
+ this.ready();
+ 
+}
+ */
 class JWireframeRender extends PIXI.Graphics {
   
+  /**
+   * @param {Matter.Mouse} mouse - `Matter.js` mouse instance.
+   * @param {physics.JWireframeRender.Options} [options=null] - Configuration object.
+   * @constructor
+   */ 
   constructor(mouse, options){
     
     super();
@@ -639,19 +974,34 @@ class JWireframeRender extends PIXI.Graphics {
 // Extensions
 // ----------
 
+
+/**
+ * This class acts as a proxy for `gsap` to animate basic properties of `matter.js` bodies and composites. 
+ * @hideconstructor
+ * @alias physics.jgsap
+ * @memberof physics
+ * @example
+physics.jgsap.to(this.box, 2.0, {scale:0.5, x:this.jrender.screenXToPhysMtrs(this.art.ball_3.x),y:this.jrender.screenYToPhysMtrs(this.art.ball_3.y), rotation:180.0, ease:Back.easeInOut, yoyo:true, repeat:-1});
+ */
 class Jgsap {
   
-  constructor(){
-    this.c = 0;
-    this.tweens = {};
-    this.delays = {};
-    this._tweenBind = this._tween.bind(this)
-  }
-  
+  /**
+   * Replacement for `gsap.fromTo` for targeting `Matter.js` bodies, with the same arguments.
+   * @param {Matter.Body|Matter.Composite} target - The body or composite to animate.
+   * @param {number} dur - Duration, in seconds.
+   * @param {Object} twFrom - From gsap tween properties.
+   * @param {Object} twTo - To gsap tween properties.
+   */ 
   fromTo(target, dur, twFrom, twTo){
     this._tween(target, dur, twFrom, twTo);
   }
   
+  /**
+   * Replacement for `gsap.from` for targeting `Matter.js` bodies, with the same arguments.
+   * @param {Matter.Body|Matter.Composite} target - The body or composite to animate.
+   * @param {number} dur - Duration, in seconds.
+   * @param {Object} tw - From gsap tween properties.
+   */ 
   from(target, dur, tw){
     if (tw.delay && tw.delay > 0.0){
       let delay = tw.delay;
@@ -667,6 +1017,12 @@ class Jgsap {
     }
   }
   
+  /**
+   * Replacement for `gsap.to` for targeting `Matter.js` bodies, with the same arguments.
+   * @param {Matter.Body|Matter.Composite} target - The body or composite to animate.
+   * @param {number} dur - Duration, in seconds.
+   * @param {Object} tw - To gsap tween properties.
+   */ 
   to(target, dur, tw){
     if (tw.delay && tw.delay > 0.0){
       let delay = tw.delay;
@@ -682,11 +1038,19 @@ class Jgsap {
     }
   }
   
+  /**
+   * Creates a new ID for each tween.
+   * @private
+   */ 
   generateID(){
     this.c++;
     return this.c;
   }
   
+  /**
+   * Internal method that performs the tween, registering listeners to apply the changes to the physics body.
+   * @private
+   */ 
   _tween(target, dur, twFrom, twTo, delayID = null){
     
     if (!target.id || !target.type){
@@ -827,6 +1191,11 @@ class Jgsap {
     }
   }
   
+  
+  /**
+   * Internal method receiving update events.
+   * @private
+   */ 
   onTwUpdate(target, twID, _onUpdate = null, _onUpdateParams = null){
     
     let twProps = this.tweens[target.id][twID];
@@ -887,6 +1256,10 @@ class Jgsap {
     
   }
   
+  /**
+   * Internal method receiving complete events.
+   * @private
+   */ 
   onTwComplete(target, twID, _onComplete = null, _onCompleteParams = null){
     
     if (!target){
@@ -911,6 +1284,9 @@ class Jgsap {
     
   }
   
+  /**
+   * Removes all pending and current animations and delayed calls.
+   */ 
   killAll(){
     gsap.killTweensOf(this._tweenBind); // Removes all pending delayed calls
     for (var targetID in this.tweens){
@@ -925,6 +1301,10 @@ class Jgsap {
     this.tweens = {};
   }
   
+  /**
+   * Removes all pending and current animations and delayed calls for the given physics body or composite.
+   * @param {Matter.Body|Matter.Composite} target - The body or composite to target.
+   */ 
   killTweensOf(target){
         
     if (this.delays[target.id]){
@@ -953,4 +1333,4 @@ let jgsap = new Jgsap();
 // Body and Composite - tracking position and scale attributes
 
 export default { JRunner, JRender, JWireframeRender, jgsap}
-    
+

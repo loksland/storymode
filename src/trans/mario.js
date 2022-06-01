@@ -9,14 +9,25 @@ export const id = 'mario';
 // Configuring:
 // `trans.mario.setDefaultBgCol(0x00ff00);`
 
-let defaultBgCol = 0x000000;
 
-export default class MarioTrans {
+let defaultBgCol = 0x000000;
+/**
+ * Will close in a telescope/spot light effect as seen in early Mario games.
+ * <br>- Evoked with 'mario' transition ID.
+ * <br>- Optionally overwrite the background colour by using a colon paramer, eg. '`mario:ff3300'.
+ * <br>- Use the scene subclass method {@link Scene#getMarioTransFocusRad} to configure the spotlight size.
+ * <br>- Use the scene subclass method {@link Scene#getMarioTransPt} to configure the spotlight position.
+ * @memberof module:nav
+ * @hideconstructor
+ * @example
+nav.openScene(myScene, false, 'mario')
+ */
+class MarioTrans {
   
   constructor(scene, scenePrev = null, isModal = false, transConfigStr = null){
     
     this.scene = scene;
-    this.scenePrev = scenePrev;
+    this.scenePrev = scenePrev; 
     this.isModal = isModal;
     this.isTransparent = false;
     
@@ -30,8 +41,12 @@ export default class MarioTrans {
     
   }
   
-  //static defaultBgCol = 0x0000ff;
-  
+  /**
+   * Set default background color for the transition.
+   * @param {int} defaultBgCol - Color, eg. 0xff3300.
+   * @example 
+   nav.trans.mario.setDefaultBgCol(0xff3300)
+   */
   static setDefaultBgCol(_defaultBgCol){
     defaultBgCol = _defaultBgCol;
   }
@@ -147,3 +162,4 @@ export default class MarioTrans {
   }
   
 }
+export default MarioTrans

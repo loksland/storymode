@@ -4,7 +4,18 @@ export const id = 'over';
 
 const BLUR_FG = false;
 const APPLY_BG_ALPHA = false;
-export default class OverTrans {
+
+
+/**
+ * This transition is designed for scenes displayed modally. The new scene will arrive over the existing scene.
+ * <br>- Evoked with 'over' transition ID.
+ * <br>- The background scene will be blurred by default, use 'over:noblur' to disable this.
+ * @memberof module:nav
+ * @hideconstructor
+ * @example
+nav.openScene(myScene, true, 'over')
+ */
+class OverTrans {
   
   constructor(scene, scenePrev = null, isModal = false, transConfigStr = null){
     
@@ -116,3 +127,5 @@ export default class OverTrans {
   }
   
 }
+
+export default OverTrans

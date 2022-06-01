@@ -28,6 +28,7 @@ const DEFAULT_BGLOOP_ENABLED = true;
  * <br>- If the PIXI Sound script is not already loaded by the HTML, it will be loaded on first user interaction with the document from the following file path: 
  * <br>- `(build0)/js/pixi-sound.js`
  * @extends PIXI.utils.EventEmitter
+ * @hideconstructor
  * @example
 // app.js 
 sfx.bgLoopVolume = 0.6; // Set bg audio volume factor.
@@ -185,6 +186,11 @@ class SFX extends PIXI.utils.EventEmitter {
     
     this._sfxEnabled = !this._sfxEnabled;
     store.save('sfx.sfxEnabled', this._sfxEnabled ? '1' : '0')   
+    
+    /**
+     * Called when sound effects enabled state changes.
+     * @event SFX#sfx_enabled_change
+     */
     this.emit('sfx_enabled_change');
     this.syncBgState();
     
@@ -203,6 +209,10 @@ class SFX extends PIXI.utils.EventEmitter {
       this._stopBgLoop();
     }
     
+    /**
+     * Called when bg loop enabled state changes.
+     * @event SFX#bgloop_enabled_change
+     */
     this.emit('bgloop_enabled_change');
     
   }
@@ -247,16 +257,25 @@ class SFX extends PIXI.utils.EventEmitter {
   
 
   /**
-   *   Optionally call this method to queue global background audio resources.
+   * Optionally call this method to queue global background audio resources.
    * <br>- These assets will be loaded after all other assets are loaded and ready to use.
    * <br>- Should be called before or during `storymode.createApp()` callback.
    * @param {Object} bgResources - Global resources to load. Eg. `{ding: 'sfx/ding.mp3', dong: 'sfx/dong.mp3'}`.
    * @example
-   * // app.js
-   * sfx.waitForInteractionToLoad = false;
-   * sfx.setBgLoop('cello'); // Will be played when ready
-   * sfx.enqueueBgResources({cello: 'audio/cello.mp3'}); 
-   * createApp(...)
+// app.js
+sfx.waitForInteractionToLoad = false;
+sfx.setBgLoop('cello'); // Will be played when ready
+sfx.enqueueBgResources({cello: 'audio/cello.mp3'}); 
+createApp(...)
+
+// Alternatively use a sprite for smoother looping:
+
+// app.js
+sfx.setBgLoop('spriteloop'); 
+sfx.enqueueBgResources({bg_loop: 'audio/bg_loop.mp3',
+bg_loop_sprite: {path:'audio/my-music.mp3', sprites:{
+ spriteloop: {start:0.1, end:4.9},
+}}}); 
    */
   enqueueBgResources(bgResources){
     this._bgResources = bgResources;
@@ -529,7 +548,20 @@ class SFX extends PIXI.utils.EventEmitter {
     delete this.spritesByParentSound;
     
     //delete this.spritesByParentSound[_soundID]; // No longer needed
-    
+    /**
+     * Called when audio library and audio files are loaded, though background files may still be downloading.
+     * @event SFX#sfxready
+     * @example 
+if (!sfx.sfxready){
+ sfx.on('sfxready', this.onSfxReady, this)
+} else {
+ onSfxReady();
+}
+
+onSfxReady() {
+ sfx.off('sfxready', this.onSfxReady, this)
+}
+     */
     this.emit('sfxready');
     
     // SFX can now be played. Load the background next.
@@ -596,6 +628,20 @@ class SFX extends PIXI.utils.EventEmitter {
     this.resources = utils.extend(this.resources, resources); 
     this._bgready = true;
     
+    /**
+     * Called when background audio files are loaded, this will be after all other audio files queued by scenes.
+     * @event SFX#bgready
+     * @example 
+if (!sfx.bgready){
+ sfx.on('bgready', this.onBgReady, this)
+} else {
+ onBgReady();
+}
+
+onBgReady() {
+ sfx.off('bgready', this.onBgReady, this)
+}
+     */
     this.emit('bgready');
     
     this._bgResources = null;
@@ -651,15 +697,16 @@ class SFX extends PIXI.utils.EventEmitter {
   /**
    * Called after initial assets are loaded.
    *
-   * @typedef PlaybackOptions
+   * @typedef {Object} SFX.PlaybackOptions
    * @property {number} [delay=0] Delay before playback, in seconds.
    * @property {volume} [volume=1.0] Volume multiplier.
+   * @memberOf SFX
    */
 
   /**
    * Plays requested audio resource.
    * @param {string} soundID - The multi sound identifier.
-   * @param {PlaybackOptions|number} options - Playback options, if a number then will be set as the delay value.
+   * @param {SFX.PlaybackOptions|number} options - Playback options, if a number then will be set as the delay value.
    */  
   playSFX(soundID, options = null, _concurrentSoundID = null){
     

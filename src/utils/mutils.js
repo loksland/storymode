@@ -1,3 +1,4 @@
+
 /**
  * Maths utility methods.
  * @module mutils

@@ -107,4 +107,6 @@ wiki
 tick-pub.command
 .DS_Store
 IDEAS.md
-tools
+tools/particle-bundler
+tools/projection-bundler
+archive

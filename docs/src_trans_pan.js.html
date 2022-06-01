@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: src/trans/pan.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: src/trans/pan.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { scaler,nav } from './../storymode.js';
+
+export const id = ['pan','parallax'];
+
+// Usage:
+// `pan:left`
+// `pan:right`
+// `pan:top`
+// `pan:down`
+// -or-
+// `parallax:left`
+// `parallax:right`
+// `parallax:top`
+// `parallax:down`
+// Then set z property in PSD layers. Eg. `start.btn(reg:c,ui,z:2)`
+// Confguring: 
+// `trans.parallax.setParallaxOffset(1000.00)`
+
+let parallaxOffset = 600.00;
+
+/**
+ * Pan in new scene from any direction.
+ * &lt;br>- Set the *camera* direction using colon separator. Eg.`pan:up`,`pan:down`,`pan:left`,`pan:right`.
+ * &lt;br>- Alternatively use `parallax:%direction%' and scene elements will move relative to their `z` properties (defined in PSD).
+ * @memberof module:nav
+ * @hideconstructor
+ * @example
+nav.openScene(myScene, false, 'pan:up')
+ */
+class PanTrans {
+  
+  constructor(scene, scenePrev = null, isModal = false, transConfigStr = null, transID = null){
+    
+    this.scene = scene;
+    this.scenePrev = scenePrev;
+    this.isModal = isModal;
+    this.isTransparent = false;
+    this.isParallax = transID == 'parallax'; // Parallax trans alias
+    
+    transConfigStr = (!transConfigStr || transConfigStr.length == 0) ? 'r' : transConfigStr.toLowerCase().charAt(0);
+    // this.dir is the camera movement direction
+    if (transConfigStr == 'u'){
+      this.dir = {y:-1.0,x:0.0};
+    } else if (transConfigStr == 'd'){
+      this.dir = {y:1.0,x:0.0};      
+    } else if (transConfigStr == 'l'){
+      this.dir = {y:0.0, x:-1.0};
+    } else { // `right` is default
+      this.dir = {y:0.0, x:1.0};
+    }
+    
+    this.parallaxOffset = parallaxOffset ; //config.trans.parallax.parallaxOffset; // How many pixels is 1 meter z offset when scene is offset by one stage width.
+    
+    this.dur = 0.9; // this.parallaxOffset ? 0.9 : 0.7;
+    
+  }
+  
+  static setParallaxOffset(_parallaxOffset){
+    parallaxOffset = _parallaxOffset;
+  }
+  
+  
+  performIn(onInCallback){
+    
+    this.scene.visible = true;
+    this.scene.x = scaler.stageW * this.dir.x 
+    this.scene.y = scaler.stageH * this.dir.y
+    
+    if (!nav.isScenePresentedWithTransparentBg()){
+      TweenMax.to(nav.bg, this.dur, {pixi: {tint:this.scene.bgColor}, ease:Linear.easeNone});
+    }
+    
+    if (this.scenePrev){
+      TweenMax.to(this.scenePrev, this.dur, {pixi: {x: scaler.stageW * -this.dir.x, y: scaler.stageH * -this.dir.y}, ease:Power3.easeInOut});
+    }
+    var tw = {pixi: {x: 0.0, y: 0.0}, ease:Power3.easeInOut, onComplete: this.onIn.bind(this), onCompleteParams: [onInCallback]};
+    
+    if (this.isParallax){
+      let eles = [this.scene];
+      if (this.scenePrev){
+        eles.push(this.scenePrev);
+      }
+      tw.onUpdate = this.applyParallax.bind(this);
+      tw.onUpdateParams = [eles];
+      this.applyParallax(eles, true);
+    }
+    
+    TweenMax.to(this.scene, this.dur, tw);
+    
+  }
+  
+  onIn(onInCallback){
+    
+    let eles = [this.scene]
+    if (this.scenePrev){
+      this.scenePrev.x = 0.0;
+      this.scenePrev.y = 0.0;
+      this.scenePrev.visible = false; // Hide incase is modal for performance
+      eles.push(this.scenePrev)
+    }
+    
+    if (this.isParallax){
+      this.resetParallax(eles)
+    }
+    
+    onInCallback();    
+    
+  }
+  
+  applyParallax(scenes, firstRun = false){
+    
+    for (const scene of scenes){
+      
+      const percX = scene.x/scaler.stageW;
+      const percY = scene.y/scaler.stageH;
+      
+      for (const dispo of scene.children){
+        if (dispo.txInfo){
+          if (firstRun){
+            dispo.txInfo._parallax_x = dispo.x;
+            dispo.txInfo._parallax_y = dispo.y;
+          }
+          dispo.x = dispo.txInfo._parallax_x + dispo.txInfo.z * percX * this.parallaxOffset;
+          dispo.y = dispo.txInfo._parallax_y + dispo.txInfo.z * percY * this.parallaxOffset;
+        }
+      }
+      
+    }
+    
+  }
+  
+  resetParallax(scenes){
+    
+    for (const scene of scenes){
+      
+      for (const dispo of scene.children){
+        if (dispo.txInfo){
+          
+          dispo.x = dispo.txInfo._parallax_x;
+          dispo.y = dispo.txInfo._parallax_y;
+          
+          delete dispo.txInfo._parallax_x;
+          delete dispo.txInfo._parallax_y;
+          
+        }
+      }
+      
+    }
+    
+  }
+  
+  performOut(onOutCallback){
+    
+    this.scenePrev.visible = true;
+    this.scenePrev.x = scaler.stageW * this.dir.x * -1.0;
+    this.scenePrev.y = scaler.stageH * this.dir.y * -1.0;
+    
+    TweenMax.to(nav.bg, this.dur, {pixi: {tint:this.scenePrev.bgColor}, ease:Linear.easeNone});
+    
+    TweenMax.to(this.scene, this.dur, {pixi: {x: scaler.stageW * -this.dir.x * -1.0, y: scaler.stageH * -this.dir.y * -1.0}, ease:Power3.easeInOut});
+    
+    var tw = {pixi: {x: 0.0, y: 0.0}, ease:Power3.easeInOut, onComplete: this.onOut.bind(this), onCompleteParams: [onOutCallback]}
+    if (this.isParallax){
+      tw.onUpdate = this.applyParallax.bind(this);
+      tw.onUpdateParams = [[this.scene,this.scenePrev]];
+      this.applyParallax(eles, true);
+    }
+    
+    TweenMax.to(this.scenePrev, this.dur, tw);
+    
+  }
+  
+  onOut(onOutCallback){
+    
+    this.scene.visible = false;
+    this.scene.x = 0.0;
+    this.scene.y = 0.0;
+    
+    if (this.isParallax){
+      this.resetParallax([this.scene,this.scenePrev])
+    }
+    
+    onOutCallback();        
+    
+  }
+  
+}
+
+export default PanTrans
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-mutils.html">mutils</a></li><li><a href="module-nav.html">nav</a></li><li><a href="module-scaler.html">scaler</a></li><li><a href="module-store.html">store</a></li><li><a href="module-storymode.html">storymode</a></li><li><a href="module-ui.html">ui</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Namespaces</h3><ul><li><a href="physics.html">physics</a></li><li><a href="PIXI.html">PIXI</a></li></ul><h3>Classes</h3><ul><li><a href="-_PhysicsNotes.html">_PhysicsNotes</a></li><li><a href="-_PsdConfiguration.html">_PsdConfiguration</a></li><li><a href="-_Snippets.html">_Snippets</a></li><li><a href="-_WindowScope.html">_WindowScope</a></li><li><a href="kb.html">kb</a></li><li><a href="module-nav.FadeTrans.html">FadeTrans</a></li><li><a href="module-nav.MarioTrans.html">MarioTrans</a></li><li><a href="module-nav.OverTrans.html">OverTrans</a></li><li><a href="module-nav.PanTrans.html">PanTrans</a></li><li><a href="module-nav.PixelateTrans.html">PixelateTrans</a></li><li><a href="module-scaler-ArtboardProjection.html">ArtboardProjection</a></li><li><a href="physics.jgsap.html">jgsap</a></li><li><a href="physics.JRender.html">JRender</a></li><li><a href="physics.JRunner.html">JRunner</a></li><li><a href="physics.JSyncLink.html">JSyncLink</a></li><li><a href="physics.JWireframeRender.html">JWireframeRender</a></li><li><a href="PIXI.AnimatedSprite.html">AnimatedSprite</a></li><li><a href="PIXI.DisplayObject.html">DisplayObject</a></li><li><a href="PIXI.Graphics.html">Graphics</a></li><li><a href="PIXI.Texture.html">Texture</a></li><li><a href="Scene.html">Scene</a></li><li><a href="SFX.html">SFX</a></li></ul><h3>Events</h3><ul><li><a href="module-scaler.html#event:fullscreenchange">fullscreenchange</a></li><li><a href="module-scaler.html#event:resize">resize</a></li><li><a href="module-scaler.html#event:resize_immediate">resize_immediate</a></li><li><a href="SFX.html#event:bgloop_enabled_change">bgloop_enabled_change</a></li><li><a href="SFX.html#event:bgready">bgready</a></li><li><a href="SFX.html#event:sfx_enabled_change">sfx_enabled_change</a></li><li><a href="SFX.html#event:sfxready">sfxready</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.10</a> on Wed Jun 01 2022 16:14:02 GMT+1000 (Australian Eastern Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

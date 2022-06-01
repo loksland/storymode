@@ -1,6 +1,10 @@
-/** @module storymode */
+
+/** 
+  * @module storymode 
+  */
 
 // PixiJS convenience aliases 
+
 window.Sprite = PIXI.Sprite;
 window.AnimatedSprite = PIXI.AnimatedSprite;
 window.Point = PIXI.Point;
@@ -12,16 +16,47 @@ window.Texture = PIXI.Texture;
 window.loader = PIXI.Loader.shared; //PIXI.Loader.shared; //.  new PIXI.Loader(); // Using shared was causing bug with hot reload.
 window.resources = loader.resources;
 window.ticker = PIXI.Ticker.shared;
+
+/*
+let Sprite,
+    AnimatedSprite,
+    Point,
+    Rectangle,
+    Text,
+    Graphics,
+    Container,
+    Texture,
+    loader,
+    resources,
+    ticker;
+
+if (typeof window['PIXI'] !== 'undefined'){
+  Sprite = PIXI.Sprite;
+  AnimatedSprite = PIXI.AnimatedSprite;
+  Point = PIXI.Point;
+  Rectangle = PIXI.Rectangle;
+  Text = PIXI.Text
+  Graphics = PIXI.Graphics
+  Container = PIXI.Container;
+  Texture = PIXI.Texture;
+  loader = PIXI.Loader.shared; //PIXI.Loader.shared; //.  new PIXI.Loader(); // Using shared was causing bug with hot reload.
+  resources = loader.resources;
+  ticker = PIXI.Ticker.shared;
+} 
+*/
  
 const appEmitter = new PIXI.utils.EventEmitter(); 
 
 import * as _ext from './utils/extensions.js';
+// import * as _extDep from './depreciated/extensions.js';
+
+
 import * as utils from './utils/utils.js';
 import * as mutils from './utils/mutils.js';
 
-import Scene from './class/scene.js';
-import Camera from './class/camera.js';
-import Btn from './class/btn.js'; 
+import Scene from './core/scene.js';
+//import Camera from './depreciated/camera.js';
+//import Btn from './depreciated/btn.js'; 
 
 import * as nav from './core/nav.js';
 import * as scaler from './core/scaler.js';
@@ -50,14 +85,12 @@ for (let _filter of _filters) {
   filters[_filter.id] = _filter.default;
 }
 
-
 /**
  * Called after initial assets are loaded.
  *
  * @callback AppLoadCallback
  * @param {PIXI.Application} pixiApp The PIXI Application 
  */
- 
  
 /**
  * Creates a new PIXI Application, wrapper for `new PIXI.Application(...)`
@@ -146,7 +179,6 @@ function setup(bgAlpha){
   }
 }
 
-// export {stageW, stageH} from './core/scaler.js'; // Convenience alias
 export {pixiApp, filters, htmlEle}; // Internal access to these properties.
 export {Scene, Camera, Btn}; // Classes
 export {appEmitter}; // Emitter events

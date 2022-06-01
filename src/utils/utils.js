@@ -4,8 +4,8 @@
  */
 
 
-import objectAssignDeep from './objectAssignDeep.js';
-export {objectAssignDeep}
+//import objectAssignDeep from './objectAssignDeep.js';
+//export {objectAssignDeep}
 
 
 /**
@@ -119,7 +119,7 @@ export function cloneObj(obj){
 /**
  * Given a 1-2 character description of a horizontal and/or vertical alignment, will return the alignment as a vector representation.
  * @param {string} alignmentDescription - The alignment description as initials. Eg. `CT` for center / top. Case independent.
- * @param {boolean} [defineSingleAxisMode=false] - If true: C means centered on x axis, M means centered on y axis and any unset axis will return null. If false: Both x and y will resolve, C applies to both x and y, M means centered on y axis, will default to 0 (centered).
+ * @param {boolean} [defineSingleAxisMode=false] - If true: `C` means centered on x axis,`M` means centered on y axis and any unset axes will return `null`. If false: Both x and y will resolve, `C` applies to both x and y, `M` means centered on y axis, will default to 0 (centered).
  * @returns {vector} alignment - The alignment as a vector. A value of -1 means left/top, a value of 0 means centered and a value of 1 means right/bottom.
  */
 export function alignmentStringToXY(alignmentStr, defineSingleAxisMode = false){

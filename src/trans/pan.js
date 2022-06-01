@@ -18,6 +18,15 @@ export const id = ['pan','parallax'];
 
 let parallaxOffset = 600.00;
 
+/**
+ * Pan in new scene from any direction.
+ * <br>- Set the *camera* direction using colon separator. Eg.`pan:up`,`pan:down`,`pan:left`,`pan:right`.
+ * <br>- Alternatively use `parallax:%direction%' and scene elements will move relative to their `z` properties (defined in PSD).
+ * @memberof module:nav
+ * @hideconstructor
+ * @example
+nav.openScene(myScene, false, 'pan:up')
+ */
 class PanTrans {
   
   constructor(scene, scenePrev = null, isModal = false, transConfigStr = null, transID = null){

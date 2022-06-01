@@ -3,292 +3,19 @@ import { utils, mutils, Scene, scaler } from './../storymode.js';
 // Extensions
 // ----------
 
-Object.defineProperty(PIXI.Sprite.prototype, 'localWidth', {
-    get: function () {
-        return this.width/this.scale.x;
-    }
-});
 
-Object.defineProperty(PIXI.Sprite.prototype, 'localHeight', {
-    get: function () {
-        return this.height/this.scale.y;
-    }
-});
-
-// Gets the local coord of the center point. 
-// Calculation takes into account anchor position.
-// - `pt` optional point to assign values to 
-PIXI.Sprite.prototype.getLocalCenter = function(pt = null){
-  
-  pt = pt ? pt : new Point();
-  pt.x = this.localWidth*0.5 - this.anchor.x * this.localWidth;
-  pt.y = this.localHeight*0.5 - this.anchor.y * this.localHeight;
-  return pt;
-  
-};
-
-// Gets the local coord of the specified corner of sprite.
-// Calculation takes into account anchor position.
-// - `hoz` (-1,0,1) -1 = left, 0 = center, 1 = right
-// - `vert` (-1,0,1) -1 = top, 0 = middle, 1 = bottom
-// - `pt` optional point to assign values to 
-PIXI.Sprite.prototype.getLocalCornerPos = function(hozAlign, vertAlign, pt = null){
-  
-  pt = pt ? pt : new Point();
-  pt.x = this.localWidth*0.5 + hozAlign*this.localWidth*0.5  - this.anchor.x * this.localWidth;
-  pt.y = this.localHeight*0.5 + vertAlign*this.localHeight*0.5  -this.anchor.y * this.localHeight;
-  return pt;
-};
-
-PIXI.Sprite.prototype.getLocalCenter = function(pt = null){
-  
-  pt = pt ? pt : new Point();
-  pt.x = this.localWidth*0.5 - this.anchor.x * this.localWidth;
-  pt.y = this.localHeight*0.5 - this.anchor.y * this.localHeight;
-  return pt;
-  
-};
-
-PIXI.Sprite.prototype.hitTestRect = function(globalPos){
-  
-  const localPos = this.toLocal(globalPos);
-  const topLeft = this.getLocalCornerPos(-1, -1);
-  const dX = localPos.x - topLeft.x;
-  const dY = localPos.y - topLeft.y;
-  return dX >= 0.0 && dX <= this.localWidth && dY >= 0.0 && dY <= this.localHeight;
-  
-}
-
-PIXI.Sprite.prototype.hitTestEllipse = function(globalPos){
-  
-  let localPos = this.toLocal(globalPos);
-
-  // Un-elipticise localPos
-  if (this.width > this.height){
-    localPos.y *= this.width/this.height
-  } else {
-    localPos.x *= this.height/this.width
-  }
-  
-  return mutils.distanceBetweenPoints(localPos, this.getLocalCenter()) < 0.5*Math.max(this.localWidth, this.localHeight)
-  
-}
-
+/**
+ * Returns `true` if the display object is a `PIXI.AnimatedSprite`.
+ * @returns {boolean} result 
+ */
 PIXI.AnimatedSprite.prototype.isAnimatedSprite = function(){
   return true;
 }
 
-// Note: will not work with sprites with scale flipped 
-PIXI.Sprite.prototype.enterTestRect = function(startPosGlobal, endPosGlobal, globalResults = true, checkMidpoint = false){
-  
-  // If end pos is not over rect then test mid/quarter point etc.
-  let endIsHit = this.hitTestRect(endPosGlobal);
-  if (!endIsHit && checkMidpoint){   
-    if (!this.ptMids){
-      this.ptMids = [0.5]; // [0.5, 0.25, 0.75]
-    }
-    for (const mid of this.ptMids){     
-      let _epX = endPosGlobal.x
-      let _epY = endPosGlobal.y
-      endPosGlobal.x = startPosGlobal.x + (endPosGlobal.x-startPosGlobal.x)*mid;
-      endPosGlobal.y = startPosGlobal.y + (endPosGlobal.y-startPosGlobal.y)*mid;
-      endIsHit = this.hitTestRect(endPosGlobal);
-      if (endIsHit){
-        break;
-      } else {
-        endPosGlobal.x = _epX;
-        endPosGlobal.y = _epY;        
-      }
-    }
-  }
-  if (!endIsHit){
-    return {hit:false};
-  }
-  
-  let localStartPos = this.toLocal(startPosGlobal); //.clone()
-  let localEndPos = this.toLocal(endPosGlobal); //.clone()
 
-  const cornerTL = this.getLocalCornerPos(-1, -1);
-    
-  const dX = localEndPos.x - cornerTL.x;
-  const dY = localEndPos.y - cornerTL.y;
-
-  let intersectionPosInternal;
-  let surfaceNormalAngleInternal;
-
-  //if (dX >= 0.0 && dX <= this.localWidth && dY >= 0.0 && dY <= this.localHeight){
-  
-  const cornerTR = new Point(cornerTL.x+this.localWidth, cornerTL.y);
-  const cornerBL = new Point(cornerTL.x, cornerTL.y+this.localHeight);
-  const cornerBR = new Point(cornerTL.x+this.localWidth, cornerTL.y+this.localHeight);
-  
-  if (localStartPos.x < cornerTL.x) { 
-    
-    // Left hand side
-    intersectionPosInternal = mutils.intersectSegmentSegment(localStartPos, localEndPos, cornerTL, cornerBL) 
-    surfaceNormalAngleInternal = 180.0;
-    
-  } else if (localStartPos.x > cornerTR.x) { 
-    
-    // Right hand side
-    intersectionPosInternal = mutils.intersectSegmentSegment(localStartPos, localEndPos, cornerTR, cornerBR) 
-    surfaceNormalAngleInternal = 0.0;
-    
-  } 
-  
-  if (!intersectionPosInternal){
-    if (localStartPos.y > cornerTL.y) { 
-      
-      // Bottom
-      intersectionPosInternal = mutils.intersectSegmentSegment(localStartPos, localEndPos, cornerBL, cornerBR) 
-      surfaceNormalAngleInternal = 90.0;
-      
-    } else if (localStartPos.y < cornerBL.y) { 
-      
-      // Top
-      intersectionPosInternal = mutils.intersectSegmentSegment(localStartPos, localEndPos, cornerTL, cornerTR) 
-      surfaceNormalAngleInternal = -90.0;
-      
-    }
-  }
-  
-  if (intersectionPosInternal){
-  
-    if (globalResults){
-      return {hit:true, intersectionPos:this.toGlobal(intersectionPosInternal), surfaceNormalAngle:this.angleToGlobal(surfaceNormalAngleInternal)};
-    } else {
-      return {hit:true, intersectionPos:intersectionPosInternal, surfaceNormalAngle:surfaceNormalAngleInternal};
-    }
-    
-  }
-  
-  //}
-
-  return {hit:false};
-  
-}
-
-PIXI.Sprite.prototype.enterTestEllipse = function(startPosGlobal, endPosGlobal, globalResults = true, checkMidpoint = false){
-  
-  // If end pos is not over ellipse then test mid/quarter point etc.
-  let endIsHit = this.hitTestEllipse(endPosGlobal);
-  if (!endIsHit && checkMidpoint){   
-    if (!this.ptMids){
-      this.ptMids = [0.5]; // [0.5, 0.25, 0.75]
-    }
-    for (const mid of this.ptMids){     
-      let _epX = endPosGlobal.x
-      let _epY = endPosGlobal.y
-      endPosGlobal.x = startPosGlobal.x + (endPosGlobal.x-startPosGlobal.x)*mid;
-      endPosGlobal.y = startPosGlobal.y + (endPosGlobal.y-startPosGlobal.y)*mid;
-      endIsHit = this.hitTestEllipse(endPosGlobal);
-      if (endIsHit){
-        break;
-      } else {
-        endPosGlobal.x = _epX;
-        endPosGlobal.y = _epY;        
-      }
-    }
-  }
-  if (!endIsHit){
-    return {hit:false};
-  }
-  
-  let localStartPos = this.toLocal(startPosGlobal); //.clone()
-  let localEndPos = this.toLocal(endPosGlobal); //.clone()
-   
-  // Un-elipticise localEndPos
-  let scaleFactorX = 1.0;
-  let scaleFactorY = 1.0;
-  if (this.height > this.width){
-    scaleFactorX = this.height/this.width
-  } else {
-    scaleFactorY = this.width/this.height
-  } 
-
-  localEndPos.x *= scaleFactorX
-  localEndPos.y *= scaleFactorY
-
-  localStartPos.x *= scaleFactorX
-  localStartPos.y *= scaleFactorY
-
-  const rad = 0.5*Math.max(this.localWidth, this.localHeight);
-  const c = this.getLocalCenter()
-  // const dist = mutils.distanceBetweenPoints(c, localEndPos);
-
-  //if (dist < rad){
- 
-  const result = mutils.intersectionPtsBetweenCircleAndLineSeg(localStartPos, localEndPos, c, rad);
-  
-  if (result.length > 0){
-    let intersectionPosInternal = result[0];
-          
-    let surfaceNormalAngleInternal = mutils.angleDegsBetweenPoints(c, intersectionPosInternal); 
-          
-    // Convert to eliptical position
-    intersectionPosInternal.x*=(1.0/scaleFactorX)
-    intersectionPosInternal.y*=(1.0/scaleFactorY)
-    
-    if (globalResults){
-      return {hit:true, intersectionPos:this.toGlobal(intersectionPosInternal), surfaceNormalAngle:this.angleToGlobal(surfaceNormalAngleInternal)};
-    } else {
-      return {hit:true, intersectionPos:intersectionPosInternal, surfaceNormalAngle:surfaceNormalAngleInternal};
-    }
-    
-  }
-    
-  //} 
-
-  return {hit:false};
-  
-}
-
-Math.sinDeg = function(deg){
-  
-  return Math.sin(deg / 180.0 * Math.PI);   
-  
-}
-
-Math.cosDeg = function(deg){
-  
-  return Math.cos(deg / 180.0 * Math.PI);   
-  
-}
-
-PIXI.DisplayObject.prototype.angleToGlobal = function(localAngle){
-  
-  if (!this._angleLocalGlobalOrigin){
-    this._angleLocalGlobalOrigin = new Point(0.0,0.0);
-    this._angleLocalGlobalTarget = new Point(0.0,0.0);
-  }
-  
-  this._angleLocalGlobalOrigin.set(0.0, 0.0)
-  this._angleLocalGlobalTarget.set(1.0 * Math.cosDeg(localAngle), 0.0 + 1.0 * Math.sinDeg(localAngle))
-  
-  this.toGlobal(this._angleLocalGlobalOrigin, this._angleLocalGlobalOrigin)
-  this.toGlobal(this._angleLocalGlobalTarget, this._angleLocalGlobalTarget)
-  
-  return mutils.angleDegsBetweenPoints(this._angleLocalGlobalOrigin, this._angleLocalGlobalTarget);
-  
-}
-
-PIXI.DisplayObject.prototype.angleToLocal = function(globalAngle){
-  
-  if (!this._angleLocalGlobalOrigin){
-    this._angleLocalGlobalOrigin = new Point(0.0,0.0);
-    this._angleLocalGlobalTarget = new Point(0.0,0.0);
-  }
-  
-  this._angleLocalGlobalOrigin.set(0.0, 0.0);
-  this._angleLocalGlobalTarget.set(1.0 * Math.cosDeg(globalAngle), 0.0 + 1.0 * Math.sinDeg(globalAngle));
-  
-  this.toLocal(this._angleLocalGlobalOrigin, null, this._angleLocalGlobalOrigin);
-  this.toLocal(this._angleLocalGlobalTarget, null, this._angleLocalGlobalTarget);
-  
-  return mutils.angleDegsBetweenPoints(this._angleLocalGlobalOrigin, this._angleLocalGlobalTarget);
-  
-}
-
+/**
+ * Removes display object from parent.
+ */
 PIXI.DisplayObject.prototype.removeFromParent = function(){
   
   if (this.parent){
@@ -297,18 +24,29 @@ PIXI.DisplayObject.prototype.removeFromParent = function(){
   
 }
 
+/**
+ * Brings display object to the top of the display stack.
+ * <br>- Will throw an error if display object doesn't have a parent.
+ */
 PIXI.DisplayObject.prototype.bringToFront = function(){
   
   this.parent.setChildIndex(this, this.parent.children.length - 1)
   
 }
 
+/**
+ * Sends display object to the back of the display stack.
+ * <br>- Will throw an error if display object doesn't have a parent.
+ */
 PIXI.DisplayObject.prototype.sendToBack = function(){
   
   this.parent.setChildIndex(this, 0)
   
 }
 
+/**
+ * Outputs to console a representation of children of the given display object.
+ */
 PIXI.DisplayObject.prototype.debugStack = function(level = 0){
   
   let output = [];
@@ -334,7 +72,11 @@ PIXI.DisplayObject.prototype.debugStack = function(level = 0){
   }
 }
 
-
+/**
+ * Applies the supplied pivot to the display object without moving the position, even if rotated.
+ * @param {number} pivotX 
+ * @param {number} pivotY 
+ */
 PIXI.DisplayObject.prototype.setPivotWithoutMoving = function(pivotX, pivotY){
   
   const pivotOffset = new Point(pivotX-this.pivot.x,pivotY-this.pivot.y);
@@ -348,9 +90,18 @@ PIXI.DisplayObject.prototype.setPivotWithoutMoving = function(pivotX, pivotY){
   
   this.position = mutils.projectFromPointDeg(this.position, pivotOffsetAng+this.angle, pivotOffsetDist);
 
-  
 }
 
+
+  
+/**
+ * A drop in replacement for `Graphics.lineTo` that plots dashed lines.
+ * @param {Vector} from - Starting point.
+ * @param {Vector} to - End point.
+ * @param {number} [dash=16.0] - Dash distance, in points.
+ * @param {number} [gap=8.0] - Gap distance, in points.
+ * @param {number} [offsetPerc=0.0] - Optional offset percentage (0.0-1.0) of dash pattern. Percentage is applied to the sum of `dash` + `gap`.
+ */
 PIXI.Graphics.prototype.dashedLineTo = function(fromPt, toPt, dash = 16.0, gap = 8.0, offsetPerc = 0.0) {
   
   let penDist = (gap + dash) * offsetPerc;
@@ -380,49 +131,52 @@ PIXI.Graphics.prototype.dashedLineTo = function(fromPt, toPt, dash = 16.0, gap =
       this.moveTo(penPt.x, penPt.y);
     }
   }
-  
 };
 
+/**
+ * Will adjust child display object to retain the same scale despite the scale applied to its parent.
+ * <br>- Will throw an error if display object has not got a parent.
+ */
 PIXI.DisplayObject.prototype.adjustForParentScale = function(){
   this.scale.x *= Math.abs(1.0/this.parent.scale.x);
   this.scale.y *= Math.abs(1.0/this.parent.scale.y);
 }
 
-PIXI.Point.prototype.plus = function(pt){
-  
-  this.x += pt.x
-  this.y += pt.y
-  return this;
-}
-
-PIXI.Point.prototype.minus = function(pt){
-  this.x -= pt.x
-  this.y -= pt.y
-  return this;
-}
-
-// Display object will remain in place from one parent to another
-// https://pixijs.download/dev/docs/PIXI.AnimatedSprite.html#toGlobal
+/**
+ * Display object will remain in place from one parent coord space o another
+ * <br>- See {@link https://pixijs.download/dev/docs/PIXI.AnimatedSprite.html#toGlobal}
+ */
 PIXI.DisplayObject.prototype.translateToCoordSpace = function(oldParent, newParent){
   
   return newParent.toLocal(this.position, oldParent, this.position);
   
-  
 }
+
+/**
+ * Point will remain in place from one parent coord space to another
+ * <br>- See {@link https://pixijs.download/dev/docs/PIXI.AnimatedSprite.html#toGlobal}
+ */
 PIXI.Point.prototype.translateToCoordSpace = function(oldParent, newParent){
   
   return newParent.toLocal(this, oldParent, this);
   
-  
 }
+
+/**
+ * Point will remain in place from one parent coord space to another
+ * <br>- See {@link https://pixijs.download/dev/docs/PIXI.AnimatedSprite.html#toGlobal}
+ */
 PIXI.ObservablePoint.prototype.translateToCoordSpace = function(oldParent, newParent){
 
   return newParent.toLocal(this, oldParent, this);
   
 }
 
-// Removes filters and masks to display object and all children recursively 
-// Called by scene on exit
+/**
+ * Removes filters and masks to display object and all children recursively.
+ * <br>- Called by scene on exit.
+ * @param {boolean} recursive - Whether to call on children and their children.
+ */
 PIXI.DisplayObject.prototype.destroyFiltersAndMasks = function(recursive = true){
   
   if (this.mask){
@@ -442,7 +196,11 @@ PIXI.DisplayObject.prototype.destroyFiltersAndMasks = function(recursive = true)
   
 }
 
-// Will play the animated sprite until it gets to the target frame
+/**
+ * Will play the animated sprite until it gets to the target frame.
+ * @param {integer} targetFrame - The target frame index.
+ * @param {boolean} [animateAlways=true] - If `true` then will animate even if currently on the target frame.
+ */
 PIXI.AnimatedSprite.prototype.playUntil = function(targetFrame, animateAlways = false){
   this.loop = true;
   if (this.currentFrame == targetFrame && !animateAlways){
@@ -460,13 +218,21 @@ PIXI.AnimatedSprite.prototype.playUntil = function(targetFrame, animateAlways = 
 // Screen shake 
 // ------------
 
-// https://youtu.be/tu-Qe66AvtY?t=660
-
+// 
 const MAX_SHAKE_ROT = 2.0;
 const MAX_SHAKE_OFFSET_ART = 15.0*0.5;
 
-// - `maxFactor` is a factor applied to built in properties defined above
 
+/**
+ * Will apply a cumulative screen shake and rotation.
+ * <br>- Primarily developed to be applied to the current scene.
+ * <br>- See: {@link https://youtu.be/tu-Qe66AvtY?t=660}
+ * @param {number} traumaPerc - How much trauma/impact to apply in the range of 0.0 to 1.0.
+ * @param {number} [maxFactor=1.0] - The shake limits will be multipled by this factor.
+ * @param {number} [options=null] - Options
+ * @param {boolean} [options.rotateOnly=false] - If true then position will not be animated.
+ * @param {Array|DisplayObject} [extraTargets=false] - Any additional display objects that will be affected by the animation.
+ */
 PIXI.DisplayObject.prototype.applyShake = function(traumaPerc, maxFactor = 1.0, options = null, extraTargets = null){
   
   let defaults = {
@@ -509,7 +275,6 @@ PIXI.DisplayObject.prototype.applyShake = function(traumaPerc, maxFactor = 1.0, 
     }
   }
 
-  
   this._shake.trauma = Math.min(1.0, this._shake.trauma + traumaPerc); // Linear ease down 
   gsap.killTweensOf(this._shake);
   gsap.to(this._shake, 1.0, {trauma:0.0, ease:Linear.easeNone, onUpdateParams:[targets], onUpdate:(targets)=>{
@@ -525,6 +290,9 @@ PIXI.DisplayObject.prototype.applyShake = function(traumaPerc, maxFactor = 1.0, 
   
 }
 
+/**
+ * Stops and disposes of any screenshake in progress.
+ */
 PIXI.DisplayObject.prototype.killShake = function(){
 
   if (typeof this._shake !== 'undefined'){

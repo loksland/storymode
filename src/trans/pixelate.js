@@ -2,7 +2,15 @@ import { nav } from './../storymode.js';
 
 export const id = 'pixelate';
 
-export default class PixelateTrans {
+/**
+ * Will use a blocky pixel transition reminiscent of early Mario games.
+ * <br>- Evoked with 'pixelate' transition ID.
+ * @memberof module:nav
+ * @hideconstructor
+ * @example
+nav.openScene(myScene, false, 'pixelate')
+ */
+class PixelateTrans {
   
   constructor(scene, scenePrev = null, isModal = false, transConfigStr = null){
     
@@ -88,5 +96,6 @@ export default class PixelateTrans {
     
   }
   
-  
 }
+
+export default PixelateTrans

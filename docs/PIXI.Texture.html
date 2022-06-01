@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Class: Texture</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Class: Texture</h1>
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        <h2><span class="attribs"><span class="type-signature"></span></span>
+            <span class="ancestors"><a href="PIXI.html">PIXI</a>.</span>Texture</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="tools_docs-generate_extra-docs_PixiClasses.js.html">tools/docs-generate/extra-docs/PixiClasses.js</a>, <a href="tools_docs-generate_extra-docs_PixiClasses.js.html#line13">line 13</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id=".fromTx"><span class="type-signature">(static) </span>fromTx<span class="signature">(texturePath, frame<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {<a href="PIXI.Texture.html">PIXI.Texture</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Returns a texture from given sprite path. 
+<br>- Textures inside spritesheets are supported.
+<br>- Optionally supply a clipping frame - which is handly for cutting up a sprite at runtime.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>texturePath</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">A reference to the containing PSD document and layer name, separated by a forward slash. Eg. `mydoc.psd/mysprite`.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>frame</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">PIXI.Rectangle</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    null
+                
+                </td>
+            
+
+            <td class="description last">Clip the texture to the supplied frame. Not compatible with spritesheet assets. Will be taken into account with `dispo.applyProj()`.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="src_core_ui.js.html">src/core/ui.js</a>, <a href="src_core_ui.js.html#line189">line 189</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    texture - Texture instance
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="PIXI.Texture.html">PIXI.Texture</a></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>PIXI.Texture.fromTx(`mydoc.psd/mysprite`)</code></pre>
+
+
+
+        
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-mutils.html">mutils</a></li><li><a href="module-nav.html">nav</a></li><li><a href="module-scaler.html">scaler</a></li><li><a href="module-store.html">store</a></li><li><a href="module-storymode.html">storymode</a></li><li><a href="module-ui.html">ui</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Namespaces</h3><ul><li><a href="physics.html">physics</a></li><li><a href="PIXI.html">PIXI</a></li></ul><h3>Classes</h3><ul><li><a href="-_PhysicsNotes.html">_PhysicsNotes</a></li><li><a href="-_PsdConfiguration.html">_PsdConfiguration</a></li><li><a href="-_Snippets.html">_Snippets</a></li><li><a href="-_WindowScope.html">_WindowScope</a></li><li><a href="kb.html">kb</a></li><li><a href="module-nav.FadeTrans.html">FadeTrans</a></li><li><a href="module-nav.MarioTrans.html">MarioTrans</a></li><li><a href="module-nav.OverTrans.html">OverTrans</a></li><li><a href="module-nav.PanTrans.html">PanTrans</a></li><li><a href="module-nav.PixelateTrans.html">PixelateTrans</a></li><li><a href="module-scaler-ArtboardProjection.html">ArtboardProjection</a></li><li><a href="physics.jgsap.html">jgsap</a></li><li><a href="physics.JRender.html">JRender</a></li><li><a href="physics.JRunner.html">JRunner</a></li><li><a href="physics.JSyncLink.html">JSyncLink</a></li><li><a href="physics.JWireframeRender.html">JWireframeRender</a></li><li><a href="PIXI.AnimatedSprite.html">AnimatedSprite</a></li><li><a href="PIXI.DisplayObject.html">DisplayObject</a></li><li><a href="PIXI.Graphics.html">Graphics</a></li><li><a href="PIXI.Texture.html">Texture</a></li><li><a href="Scene.html">Scene</a></li><li><a href="SFX.html">SFX</a></li></ul><h3>Events</h3><ul><li><a href="module-scaler.html#event:fullscreenchange">fullscreenchange</a></li><li><a href="module-scaler.html#event:resize">resize</a></li><li><a href="module-scaler.html#event:resize_immediate">resize_immediate</a></li><li><a href="SFX.html#event:bgloop_enabled_change">bgloop_enabled_change</a></li><li><a href="SFX.html#event:bgready">bgready</a></li><li><a href="SFX.html#event:sfx_enabled_change">sfx_enabled_change</a></li><li><a href="SFX.html#event:sfxready">sfxready</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.10</a> on Wed Jun 01 2022 16:14:02 GMT+1000 (Australian Eastern Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

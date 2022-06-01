@@ -1,5 +1,7 @@
 /**
  * Handles scene transitions and modal display.
+ * <br>- A modally presented scene can be replaced with a non-modal scene then dismissed to return to original scene.
+ * <br>- A modal can be presented over an existing modal.
  * @module nav
  */
 
@@ -159,12 +161,16 @@ function openDefaultScene(){
 }
 
 /**
+ * @typedef {'fade'|'over'|'pan:%direction%'|'parallax:%direction%'|'mario:%bgColor%'|'pixelate'} TransitionID
+ */
+
+/**
  * Transition to a scene.
  * @param {string} sceneID - Scene identifier.
  * @param {boolean} [isModal=false] - Whether scene should be loaded modally (over the top).
- * @param {string} [transID='fade'] - Transition identifier.
+ * @param {TransitionID} [transID='fade'] - Transition identifier.
  * @param {Object} [sceneData=null] - Optional data to be passed to scene.
- */
+ */ 
 function openScene(sceneID, isModal = false, transID = 'fade', sceneData = null){
   
   if (locked){

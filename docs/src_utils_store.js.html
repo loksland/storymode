@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: src/utils/store.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: src/utils/store.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * This class provides a convenience wrapper around basic local storage support testing, saving and retrieving. 
+ * &lt;br>- Values are expected to be strings, return values will always be strings.
+ * &lt;br>- If local storage is not supported the data will be saved for the life of the `store` instance as a fallback.
+ * &lt;br>- See {@link https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API}
+ * @module store
+ */
+
+/**
+ * Will be added as a prefix to local storage variables.
+ * &lt;br>- Use `store.setPrefix()` to set this variable before app initialises.
+ * @type {string}
+ * @readonly
+ * @private
+ */
+let prefix = 'stm';
+const STORAGE_ENABLED = true;
+
+if(!STORAGE_ENABLED){
+  console.log('WARNING: Local Storage is disabled');
+}
+
+let sessionData = {}; // Fallback just for this session
+
+/**
+ * Will be true if local storage is supported / enabled on the current device.
+ * @type {boolean}
+ * @readonly
+ */
+export const enabled = _localStorageAvailable();
+
+/**
+ * Override the default storage prefix.
+ * &lt;br>- To be called before `storymode.createApp()`.
+ * @param {string} prefix - Will be added as a prefix to local storage variables.
+ */
+export function setPrefix(_prefix){
+  prefix = _prefix;
+}
+
+/**
+ * Save a value in local storage.
+ * @param {string} key - The storage key.
+ * @param {string} val - The string value to set.
+ * @returns {boolean} success - If false then data was saved to the `store` instance until the page is reloaded.
+ */
+export function save(key, val){  
+  key = prefix + '.' + key;
+  if (!enabled){    
+    sessionData[key] = val;
+    return false;
+  }
+  localStorage.setItem(key, val);    
+  return true;
+}
+
+/**
+ * Retrieve a value from local storage.
+ * @param {string} key - The storage key.
+ * @returns {string|null} value - If data for the key is not found then will return null.
+ */
+export function load(key){
+  key = prefix + '.' + key;
+  if (!enabled){    
+    if (typeof sessionData[key] !== 'undefined'){
+      return sessionData[key];
+    }    
+    return null;
+  }  
+  let data = localStorage.getItem(key);
+  return data ? data : null;
+}
+
+/**
+ * Removes a key from local storage.
+ * @param {string} key - The storage key.
+ */
+export function remove(key){
+  if (!enabled){
+    if (typeof sessionData[key] !== 'undefined'){
+      sessionData[key] = null;
+      delete sessionData[key];
+    }
+    return;
+  }
+  key = prefix + '.' + key;
+  localStorage.removeItem(key);
+}
+
+/**
+ * Removes all storage data from the store instance.
+ */
+export function removeAll(){
+  if (!enabled){
+    sessionData = {}
+    return null;
+  }
+  localStorage.clear();
+}
+
+/**
+ * Check if the device supports local storage.
+ * @private
+ */
+function _localStorageAvailable() {
+    if (!STORAGE_ENABLED){
+      return false;
+    }
+    let storage;
+    try {
+        storage = window['localStorage'];
+        let x = '__storage_test__';
+        storage.setItem(x, x);
+        storage.removeItem(x);
+        return true;
+    }
+    catch(e) {
+        return e instanceof DOMException &amp;&amp; (
+            // everything except Firefox
+            e.code === 22 ||
+            // Firefox
+            e.code === 1014 ||
+            // test name field too, because code might not be present
+            // everything except Firefox
+            e.name === 'QuotaExceededError' ||
+            // Firefox
+            e.name === 'NS_ERROR_DOM_QUOTA_REACHED') &amp;&amp;
+            // acknowledge QuotaExceededError only if there's something already stored
+            (storage &amp;&amp; storage.length !== 0);
+    }
+}</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-mutils.html">mutils</a></li><li><a href="module-nav.html">nav</a></li><li><a href="module-scaler.html">scaler</a></li><li><a href="module-store.html">store</a></li><li><a href="module-storymode.html">storymode</a></li><li><a href="module-ui.html">ui</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Namespaces</h3><ul><li><a href="physics.html">physics</a></li><li><a href="PIXI.html">PIXI</a></li></ul><h3>Classes</h3><ul><li><a href="-_PhysicsNotes.html">_PhysicsNotes</a></li><li><a href="-_PsdConfiguration.html">_PsdConfiguration</a></li><li><a href="-_Snippets.html">_Snippets</a></li><li><a href="-_WindowScope.html">_WindowScope</a></li><li><a href="kb.html">kb</a></li><li><a href="module-nav.FadeTrans.html">FadeTrans</a></li><li><a href="module-nav.MarioTrans.html">MarioTrans</a></li><li><a href="module-nav.OverTrans.html">OverTrans</a></li><li><a href="module-nav.PanTrans.html">PanTrans</a></li><li><a href="module-nav.PixelateTrans.html">PixelateTrans</a></li><li><a href="module-scaler-ArtboardProjection.html">ArtboardProjection</a></li><li><a href="physics.jgsap.html">jgsap</a></li><li><a href="physics.JRender.html">JRender</a></li><li><a href="physics.JRunner.html">JRunner</a></li><li><a href="physics.JSyncLink.html">JSyncLink</a></li><li><a href="physics.JWireframeRender.html">JWireframeRender</a></li><li><a href="PIXI.AnimatedSprite.html">AnimatedSprite</a></li><li><a href="PIXI.DisplayObject.html">DisplayObject</a></li><li><a href="PIXI.Graphics.html">Graphics</a></li><li><a href="PIXI.Texture.html">Texture</a></li><li><a href="Scene.html">Scene</a></li><li><a href="SFX.html">SFX</a></li></ul><h3>Events</h3><ul><li><a href="module-scaler.html#event:fullscreenchange">fullscreenchange</a></li><li><a href="module-scaler.html#event:resize">resize</a></li><li><a href="module-scaler.html#event:resize_immediate">resize_immediate</a></li><li><a href="SFX.html#event:bgloop_enabled_change">bgloop_enabled_change</a></li><li><a href="SFX.html#event:bgready">bgready</a></li><li><a href="SFX.html#event:sfx_enabled_change">sfx_enabled_change</a></li><li><a href="SFX.html#event:sfxready">sfxready</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.10</a> on Wed Jun 01 2022 16:14:02 GMT+1000 (Australian Eastern Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

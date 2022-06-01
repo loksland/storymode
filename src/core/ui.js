@@ -1,14 +1,33 @@
-// Layout helpers
-// --------------
-// - Projection / scale aware extensions of Pixi display object classes
+/**
+ * Manages texture data as it relates to loading and laying out assets.
+ * <br>- Asset, projection and scale aware convenience extensions of Pixi display object classes. Relies on exported PSD data.
+ * <br>- Recieves PSD json data used to layout visuals in the app
+ * <br>- Handles initial loading of assets through `PIXI.Loader.shared`, including images, spritesheets, webfonts and audio.
+ * <br>- Webfont loading requires this js script: `&lt;script src="https://ajax.googleapis.com/ajax/libs/webfont/1.6.26/webfont.js"&gt;&lt;/script&gt;`.
+ * @module ui 
+ */
 
 import { Scene, Btn, scaler, Camera, utils } from './../storymode.js';
 
 // Index textures
-
 let psdInfo;
+
+/**
+ * Contains all text data.
+ * @type {number}
+ * @readonly
+ * @example 
+const boxArtW = ui.txInfo[this.psdID + '/' + 'box'].width;
+ */
 let txInfo;
 
+/**
+ * Pass the exported PSD JSON data to the `ui` class.
+ * <br>- To be called before {@link storymode#createApp}
+ * @param {Array.<Object>} documentContent - Each entry in the array represents the content of a PSD's .json.
+ * @example 
+ui.registerPsdInfo(utils.requireAll(require.context('./ui', false, /.json$/)))
+ */
 function registerPsdInfo(_psdInfo){
   
   psdInfo = {}
@@ -53,25 +72,53 @@ function registerPsdInfo(_psdInfo){
 
 let spritesheetPath = 'img/'
 const SPRITESHEET_RESOURCE_SUFFIX = '.ss';
+/**
+ * Register the path to sprite sheet assets.
+ * <br>- To be called before {@link storymode#createApp}
+ * @param {string} [relativePath='img/'] - web path to sprite sheet directory from app root.
+ */
 function registerSpritesheetPath(_spritesheetPath){
   spritesheetPath = _spritesheetPath;
 }
 
 let _crispTextMode = false;
+/**
+ * Control the aliasing of text fields added via `displayObject.fromTx(...)` and `displayObject.addArt(...)`. 
+ * <br>- Will default to `false` if not called.
+ * <br>-  If set to true then text fields added by the platform will have `texture.baseTexture.scaleMode` set to `PIXI.SCALE_MODES.NEAREST`
+ * @param {boolean} [enable=false]
+ */
 export function crispTextMode(enable){
   _crispTextMode = enable;
 }
-
 
 let totLoadsComplete = 0;
 let initialLoadItemCount = 0;
 let loadAssetCallback;
 
 let onLoaderQueueCallback = null;
+
+/**
+ * Make a single callback immediately before app assets are loaded. 
+ * <br>- Manually queue any additional assets to be loaded.
+ * <br>- Needs to be called before {@link storymode#createApp}
+ * @param {Function} callback  
+ * @example 
+ ui.onLoaderQueue((loader)=>{
+   loader.add('my_bmp_font', 'fonts/mybmp.fnt');
+ })
+ */
 export function onLoaderQueue(_onLoaderQueueCallback){
   onLoaderQueueCallback = _onLoaderQueueCallback
 }
 
+/**
+ * `storymode` will call this method as part of the initialisation of {@link storymode#createApp}.
+ * <br>- Manually queue any additional assets to be loaded.
+ * <br>- Needs to be called before 
+ * @param {Function} loadAssetCallback  
+ * @private
+ */
 export function loadAssets(_loadAssetCallback){
   
   if (!psdInfo){
@@ -116,7 +163,6 @@ export function loadAssets(_loadAssetCallback){
   
 }
 
-// Wait for webfonts and assets to both load before starting
 
 function onLoadComplete(){
   totLoadsComplete++;
@@ -128,6 +174,18 @@ function onLoadComplete(){
 }
 
 
+
+/**
+ * Returns a texture from given sprite path. 
+ * <br>- Textures inside spritesheets are supported.
+ * <br>- Optionally supply a clipping frame - which is handly for cutting up a sprite at runtime.
+ * @param {string} texturePath -  A reference to the containing PSD document and layer name, separated by a forward slash. Eg. `mydoc.psd/mysprite`.   
+ * @param {PIXI.Rectangle} [frame=null] - Clip the texture to the supplied frame. Not compatible with spritesheet assets. Will be taken into account with `dispo.applyProj()`.
+ * @returns {PIXI.Texture} texture - Texture instance
+ * @memberof PIXI.Texture
+ * @example
+ * PIXI.Texture.fromTx(`mydoc.psd/mysprite`)
+ */
 PIXI.Texture.fromTx = function(txPath, frame = null){
   
   if (!txInfo[txPath]){
@@ -147,10 +205,24 @@ PIXI.Texture.fromTx = function(txPath, frame = null){
     throw new Error('Spritesheet textures not supported `'+txPath+'`')
   }
    
-  
 }
 
-// For calls on Text, the |frame| param defines the text content of the field
+
+
+
+/**
+ * Loads supplied texture to target class automatically scaled and positioned based on the projection properties of the `scaler` class.
+ * <br>- Optionally supply a clipping frame - which is handly for cutting up a sprite at runtime.
+ * <br>- Supports `PIXI.Text`, `PIXI.Graphics`, Btn, `PIXI.AnimatedSprite`, `PIXI.Sprite`, `PIXI.Container`.
+ * @param {string} texturePath -  A reference to the containing PSD document and layer name, separated by a forward slash. Eg. `mydoc.psd/mysprite`.   
+ * @param {boolean} [addChildren=true] -  If `true` then the display object's nested children will be added as well.
+ * @param {PIXI.Rectangle|string} [frame|textContent=null] - For a sprite will clip the texture to the supplied frame rect. Not compatible with spritesheet assets. Will be taken into account with `dispo.applyProj()`. For text this paramer will overwrite the containing text of the field.
+ * @returns {PIXI.DisplayObject} displayObject - Display object instance. 
+ * @memberof PIXI.DisplayObject
+ * @example
+ * let mySpr = Sprite.fromTx(this.psdID + '/' + 'mysprite');
+ * this.addChild(mySpr); // Sprite will be at projected scale and position.
+ */
 PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
   
   let isAnimSprite = this == AnimatedSprite || this.prototype instanceof AnimatedSprite
@@ -167,7 +239,7 @@ PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
   } else if (this == Graphics){
     
     dispo = new Graphics();
-    
+  
   } else if (this == Text){
   
     let font = fonts[fontClassForPsdFont[txInfo[txPath].tfParams.font]]
@@ -190,7 +262,6 @@ PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
       dispo.texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
     }
     
-  
   } else if (isAnimSprite){
     
     let psdID = txPath.split('/')[0];
@@ -312,59 +383,17 @@ PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
   
 }
 
-// gfxParams
-// - line
-//  - width
-//  - color
-//  - alpha
-//  - alignment (0 = inner, 0.5 = middle, 1 = outter)
-// - fill
-//  - color
-//  - alpha
-// - bevel (corner radius)
-// Optionally send width/height overrides
-//PIXI.Graphics.prototype.setup = function(){
-//  this.renderRect();
-//}
-PIXI.Graphics.prototype.init = function(){
-  this.renderRect();
-}
 
-PIXI.Graphics.prototype.renderRect = function(x = null, y = null, width = null, height = null){
-  
-  const gfxParams = this.txInfo.gfxParams ? this.txInfo.gfxParams : {
-    line: {
-      width: 0,
-      color: 0x000000,
-      alpha: 1.0,
-      alignment: 0
-    },
-    fill: {
-      color: 0xffffff,
-      alpha: 0.5
-    },
-    bevel: 3.0
-  }
-  
-  this.clear();
-  if (gfxParams.line.width > 0.0 && gfxParams.line.alpha > 0.0){
-    this.lineStyle(gfxParams.line.width,gfxParams.line.color,gfxParams.line.alpha,gfxParams.line.alignment);
-  }
-  this.beginFill(gfxParams.fill.color, gfxParams.fill.alpha);
-  const _x = x ? x : this.txInfo._proj.tlX - this.txInfo._proj.x;
-  const _y = y ? y : this.txInfo._proj.tlY - this.txInfo._proj.y;
-  const _w = width ? width : this.txInfo._proj.width;
-  const _h = height ? height : this.txInfo._proj.height;
-  if (gfxParams.bevel > 0.0){
-    this.drawRoundedRect(_x,_y,_w,_h,gfxParams.bevel);
-  } else {
-    this.drawRect(_x,_y,_w,_h);
-  }
-  this.endFill();
-  
-}
-
-
+/**
+ * Syncs the position relative to another, as defined in the PSD.
+ * @param {PIXI.DisplayObject} targetDispo - The display object to sync relative to. 
+ * @param {boolean} [syncX=true] - Whether to sync x position.
+ * @param {boolean} [syncX=true] - Whether to sync y position.
+ * @memberof PIXI.DisplayObject
+ * @example 
+this.art.targetSprite.position.set(scaler.stageW*0.5, scaler.stageH*0.5);
+this.art.followerSprite.syncRelative(this.art.targetSprite)
+ */
 PIXI.DisplayObject.prototype.syncRelative = function(targetDispo, syncX = true, syncY = true, round = false){
   
   if (syncX){
@@ -381,9 +410,14 @@ PIXI.DisplayObject.prototype.syncRelative = function(targetDispo, syncX = true, 
   
 }
 
-// Updates a dispo's txInfo object to reflect it's current stage position/scale
-// - *syncProps* (various, default=true) - Optional array of props: `width`,`height`,`x`,`y`,'pos','scale',
-// - *usePrevious* Assumes the dispos's current position is relative to scaler.prev (the previous stage dimension info)
+/**
+ * Attempts to update the `txInfo` property of a `PIXI.DisplayObject` to match its current stage position and scale.
+ * <br>- The `usePrevious` is needed in a scenario when the stage has already resized and the scaler already updated and we need to go back to see the previous scaler state to work out the Display Object's relative stage position and scale.
+ * @param {boolean|Array.<string>} [syncProps=true] - Optional array of props: `width`,`height`,`x`,`y`,'pos','scale'. Eg. ['x','y'].
+ * @param {boolean} [usePrevious=false] - Assumes the dispos's current position is relative to scaler.prev (the previous stage dimension info).
+ * @memberof PIXI.DisplayObject
+ * @expermimental
+ */
 PIXI.DisplayObject.prototype.syncTxInfoToStage = function(syncProps = true, usePrevious = false){
   
   let _scaler ;
@@ -418,156 +452,16 @@ PIXI.DisplayObject.prototype.syncTxInfoToStage = function(syncProps = true, useP
     this.txInfo.height = (1.0/_scaler.proj[projID].scale) * this.height;
   }
   
-  // Update gsap tweens
-  
-  let tws = gsap.getTweensOf(this);
-  if (tws.length > 0){
-    
-    let posProps = ['x','y'];
-    let dimProps = ['width','height']
-    let scaleProps = ['scale','scaleX','scaleY']
-    let scaleAccessProps = {scale:'x',scaleX:'x',scaleY:'y'};
-    
-    for (let tw of tws){ 
-      let progress = tw.progress();      
-      let requiresInvalidation = false;
-      let requiresRestart = false;
-      if (progress < 1){ // Ignore completed tweens 
-        
-        for (let prop of posProps){
-          if (tw.vars[prop] && (syncPos || syncProps.includes(prop))){
-            let twInfo = getTwInfo(tw.vars[prop]);
-            if (twInfo.isRel){
-              twInfo.val = scaler.proj[projID].positionScale *  (1.0/_scaler.proj[projID].positionScale)*twInfo.val; // Convert val to art via scaler.prev then convert art to screen via new scaler
-              twInfo.val *= progress > 0 ? (1.0-tw.vars.ease(progress)) : 1.0; // Take into account current position / ease & progress
-              if (tw.vars.runBackwards){ 
-                twInfo.val *= -1.0; // This only works for relative - reversing the relative value
-              }
-            } else if (tw.vars.runBackwards){ // gsap.from()              
-            
-              // WARNING: If progress=0 below will skip any pending delay
-              tw.progress(1.0, true) // Jump to end - get the end value
-              twInfo.val = prop == 'x' ? scaler.proj[projID].transArtX(_scaler.proj[projID].transScreenX(this[prop])) : scaler.proj[projID].transArtY(_scaler.proj[projID].transScreenY(this[prop])); // Save target position
-              tw.progress(progress, true) // Jump to end - get the end value
-              if (!(progress > 0)){
-                requiresRestart = true;
-              }
-              
-            } else {
-              twInfo.val = prop === 'x' ? scaler.proj[projID].transArtX(_scaler.proj[projID].transScreenX(twInfo.val)) : scaler.proj[projID].transArtY(_scaler.proj[projID].transScreenY(twInfo.val));  // Convert val to art via scaler.prev then convert art to screen via new scaler                                        
-            }
-            if (tw.vars.startAt && tw.vars.startAt[prop]){ // gsap.fromTo()
-              delete tw.vars.startAt[prop];              
-            }
-            requiresInvalidation = true;
-            tw.vars[prop] = buildTwCmd(twInfo);
-          }
-        }
-        
-        for (let prop of dimProps){
-          if (tw.vars[prop] && (syncScale || syncProps.includes(prop))){
-            let twInfo = getTwInfo(tw.vars[prop]);
-            if (!twInfo.isRel && tw.vars.runBackwards) { // from() absolute
-              // WARNING: If progress=0 below will skip any pending delay
-              tw.progress(1.0, true) // Jump to end - get the end value
-              twInfo.val = scaler.proj[projID].scale * (1.0/_scaler.proj[projID].scale)*this[prop]; // Save target position
-              tw.progress(progress, true) // Reset progress
-            } else {              
-              twInfo.val = scaler.proj[projID].scale * (1.0/_scaler.proj[projID].scale)*twInfo.val;
-              if (twInfo.isRel){
-                twInfo.val *= progress > 0 ? (1.0-tw.vars.ease(progress)) : 1.0; // Take into account current position / ease & progress              
-                if (tw.vars.runBackwards){ // gsap.from()
-                  twInfo.val *= -1.0; // This only works for relative - reversing the relative value
-                }
-              }
-            } 
-            if (tw.vars.startAt && tw.vars.startAt[prop]){ // gsap.fromTo()
-              delete tw.vars.startAt[prop];
-            }
-            requiresInvalidation = true;
-            tw.vars[prop] = buildTwCmd(twInfo);
-          }
-        }
-        
-        if (tw.vars.pixi){
-          for (let prop of scaleProps){
-            if (tw.vars.pixi[prop] && (syncScale || syncProps.includes(prop))){
-              let twInfo = getTwInfo(tw.vars.pixi[prop]);
-              if (!twInfo.isRel && tw.vars.runBackwards) { // from() absolute
-                // Make value target            
-                // WARNING: If progress=0 below will skip any pending delay
-                tw.progress(1.0) // Jump to end - get the end value
-                twInfo.val = scaler.proj[projID].scale * (1.0/_scaler.proj[projID].scale)*this.scale[scaleAccessProps[prop]]; // Save target position                
-                tw.progress(progress) // Reset progress     
-              } else {              
-                twInfo.val = scaler.proj[projID].scale * (1.0/_scaler.proj[projID].scale)*twInfo.val;
-                if (twInfo.isRel){
-                  twInfo.val *= progress > 0 ? (1.0-tw.vars.ease(progress)) : 1.0; // Take into account current position / ease & progress              
-                  if (tw.vars.runBackwards){ // gsap.from()
-                    twInfo.val *= -1.0; // This only works for relative - reversing the relative value
-                  }
-                }
-              } 
-              if (tw.vars.startAt && tw.vars.startAt.pixi && tw.vars.startAt.pixi[prop]){ // gsap.fromTo()
-                delete tw.vars.startAt.pixi[prop];
-              }
-              requiresInvalidation = true;
-              tw.vars.pixi[prop] = buildTwCmd(twInfo);
-            }
-          }
-        }
-      }
-      if (requiresInvalidation){
-        if (tw.vars.runBackwards){ // gsap.from()
-          tw.vars.runBackwards = false;
-        }
-        tw.invalidate();
-      }
-    }
-  }
 }
 
-function isTwRel(twCmd){
-  if (typeof twCmd === 'string'){
-    return twCmd.split('+=').length > 1 || twCmd.split('-=').length > 1;
-  }
-  return false;
-}
 
-// Converts a gsap value command. Eg. '+=23.3' into constituent parts
-function getTwInfo(twCmd){  
-  let info = {}
-  info.isRel = false;
-  info.original = twCmd;
-  if (typeof twCmd === 'string'){
-    let parts = twCmd.split('+=')
-    if (parts.length == 2){
-      info.isRel = true;
-      info.relOp = '+=';
-      info.val = Number(parts[1]);
-      return info;
-    } else {
-      parts = twCmd.split('-=');
-      if (parts.length == 2){
-        info.isRel = true;
-        info.relOp = '-=';
-        info.val = Number(parts[1]);
-        return info;
-      }
-    }
-    twCmd = Number(twCmd)
-  }
-  info.val = twCmd;
-  return info;  
-}
-
-function buildTwCmd(info){  
-  if (info.isRel){
-    return info.relOp + String(info.val);
-  }
-  return info.val;
-}
-
+/**
+ * Applys the size and position based on the current stage dimensions and scaler projection.
+ * <br>- Called on each instance that `storymode` creates.
+ * <br>- Suitable to be called after a stage resize event.
+ * @param {boolean|Array.<string>} [syncProps=false] - If not `false` will call `syncTxInfoToStage(...)` to update the `txInfo` first. Optional array of props: `width`,`height`,`x`,`y`,'pos','scale'. Eg. ['x','y'].
+ * @memberof PIXI.DisplayObject
+ */
 PIXI.DisplayObject.prototype.applyProj = function(syncProps = false){
   
   if (syncProps !== false){
@@ -664,40 +558,43 @@ PIXI.DisplayObject.prototype.applyProj = function(syncProps = false){
   
 }
 
-// Scenes can update texture info with dynamic content 
-Scene.prototype.mapTxInfo = function(txInfoMapping, _psdID = null){
-  
-  if (!_psdID){
-    _psdID = this.psdID; // Remove extension
-  }
-  
-  // Update paths to include path to texture info 
-  
-  let del = [];
-  for (const writePath in txInfoMapping){
-    del.push(writePath);
-    txInfoMapping['txInfo.' + _psdID + '/' + writePath] = txInfoMapping[writePath];    
-  }
-  for (const delPath of del){
-    delete txInfoMapping[delPath]
-  }
-  
-  performValuePathMapping(txInfoMapping)
-  
-}
 
-// Returns texture names only for given pattern
+/**
+ * Will return an array of texture names that match the supplied globs.
+ * <br>- Same as a dry run of `displayObject.addArt()`.
+ * @param {...string} [textureNameGlob=null] - Optional texture names or wildcard pattern Eg. `*_tx_suffix`, `!tf_match*`, `tx_prefix_*`
+ * @memberof PIXI.DisplayObject
+ */ 
 PIXI.DisplayObject.prototype.getArt = function(txNameGlob){
   let args = Array.from(arguments);  
   return this.addArt.apply(this, ['_GETNAMESONLY'].concat(args));
 }
 
-// If caller is a scene then all top level items are added 
-// otherwise will add chidren
+// 
+// 
 // |txNameGlob| is an optional texture name pattern, can add multiple arguments, will add textures that match any condition
 // Accepts wildcard filtering Eg. `*_tx_suffix`, `!tf_match*`, `tx_prefix_*`
 // Display objects can optionally declare a method called `addArtTxNameGlobs` that returns an array of txNameGlobs.
 // This will be used if none are sent to this method.
+
+/**
+ * Will add all matching textures to the calling instance according to nesting, scale and position settings in the PSD export data and `scaler` class.
+ * <br>- This method is usually called by a `scene` (or `camera`) and will load textures found in the PSD associated with the scene via the `psdID` property.
+ * <br>- Nested display objects (display objects within display objects) are automatically added as well.
+ * <br>- If caller is a scene then all top level items are added otherwise will add chidren only.
+ * <br>- All display objects added will also be appended to a property called `art` of the calling instance, in a lookup object by texture name.
+ * @param {...string} [textureNameGlob=null] - Optional texture names or wildcard pattern to include and/or exclude. Eg. `*_tx_suffix`, `!tf_match*`, `tx_prefix_*`
+ * @returns {Array.<PIXI.DisplayObject>} added - An array of display objects added to the calling instance.
+ * @memberof PIXI.DisplayObject
+ * @example 
+// Adding art on scene load
+didLoad(ev){
+ super.didLoad(ev);
+ const added = this.addArt('!healthbar', 'player_*', '!mountains*');
+ const head = this.art.player_head; // Access added display object
+ // ...
+}
+ */ 
 PIXI.DisplayObject.prototype.addArt = function(txNameGlob){
   
   if (!((this instanceof Scene) || (this instanceof Camera)) && this.txInfo && this.txInfo.children.length == 0){   
@@ -755,8 +652,6 @@ PIXI.DisplayObject.prototype.addArt = function(txNameGlob){
     // Use caller's custom txNameGlobs list
     txNameGlobs = this.addArtTxNameGlobs();
   }
-  
-  
   
   // Put ! criterea first to optimise pattern matching later
   txNameGlobs.sort(function(a, b) {
@@ -881,6 +776,198 @@ PIXI.DisplayObject.prototype.addArt = function(txNameGlob){
   
 }
 
+/**
+ * Postition a `PIXI.DisplayObject` relative to edge or center of stage or supplied dimension object, with the same offset as defined in the art PSD. 
+ * <br>- This method takes the reg point into consideration when positioning.
+ * @param {string} hugAlignment - A 1-2 chracter string configuring hug alignment. `T` means top aligned, `B` means bottom aligned, `L` means left aligned,  `R` means right aligned. `C` means centered on x axis,`M` means centered on y axis and any unset axes will return `null`.
+ * @param {Object} [hugDimensions=null] - The dimensions to hug to. Will default to the stage dimensions.
+ * @param {number} hugDimensions.width 
+ * @param {number} hugDimensions.height 
+ * @memberof PIXI.DisplayObject
+ * @example 
+ * myDispo.hug('BR'); // Positions display object bottom right of screen.
+ */
+PIXI.DisplayObject.prototype.hug = function(hugStr, hugBounds = null){
+  
+  const hugAlign = utils.alignmentStringToXY(hugStr, true); // Result may have null for undefined
+  
+  hugBounds = !hugBounds ? {width:scaler.stageW, height:scaler.stageH} : hugBounds; // May be extended for artboard in future
+  const retainLayoutPadding = true;
+  const applyProjScaleToPadding = false;
+  
+  const paddingScale = applyProjScaleToPadding ? proj.default.scale : 1.0;
+  if (hugAlign.x !== null){
+    if (hugAlign.x == -1){
+      const paddingLeftX = retainLayoutPadding ? paddingScale * (this.txInfo.x - this.txInfo.regPercX*this.txInfo.width) : 0.0;
+      this.x =  this.txInfo._proj.x - this.txInfo._proj.tlX + paddingLeftX;
+    } else if (hugAlign.x == 0){
+      this.x = hugBounds.width*0.5 - (this.txInfo._proj.brX - this.txInfo._proj.x) + this.txInfo._proj.width*0.5;
+    } else if (hugAlign.x == 1){
+      const paddingRightX = retainLayoutPadding ? paddingScale * (scaler.artboardDims.width - (this.txInfo.x + (1.0-this.txInfo.regPercX)*this.txInfo.width)) : 0.0;
+      this.x = hugBounds.width - (this.txInfo._proj.brX - this.txInfo._proj.x + paddingRightX)  
+    }
+  }
+  
+  if (hugAlign.y !== null){
+    if (hugAlign.y == -1){
+      const paddingTopY = retainLayoutPadding ? paddingScale * (this.txInfo.y - this.txInfo.regPercY*this.txInfo.height) : 0.0;
+      this.y =  this.txInfo._proj.y - this.txInfo._proj.tlY + paddingTopY;
+    } else if (hugAlign.y == 0){
+      this.y = hugBounds.height*0.5 - (this.txInfo._proj.brY - this.txInfo._proj.y) + this.txInfo._proj.height*0.5;
+    } else if (hugAlign.y == 1){
+      const paddingBtmY = retainLayoutPadding ? paddingScale * (scaler.artboardDims.height - (this.txInfo.y + (1.0-this.txInfo.regPercY)*this.txInfo.height)) : 0.0;
+      this.y = hugBounds.height - (this.txInfo._proj.brY - this.txInfo._proj.y + paddingBtmY)  
+    }
+  }
+  
+} 
+
+
+
+// gfxParams
+// - line
+//  - width
+//  - color
+//  - alpha
+//  - alignment (0 = inner, 0.5 = middle, 1 = outter)
+// - fill
+//  - color
+//  - alpha
+// - bevel (corner radius)
+// Optionally send width/height overrides
+//PIXI.Graphics.prototype.setup = function(){
+//  this.renderRect();
+//}
+
+/**
+ * Ensure `PIXI.Graphic` instances render when they are first created.
+ * @private
+ */
+PIXI.Graphics.prototype.init = function(){
+  this.renderRect();
+}
+
+/**
+ * Render a Graphic, optionally with given position and size. 
+ * <br>- Will take into account the `this.txInfo.gfxParams` supplied by PSD data.
+ * @param {number} [x=null] - Left screen position, in pts.
+ * @param {number} [y=null] - Top screen position, in pts.
+ * @param {number} [width=null] - Width, in pts.
+ * @param {number} [height=null] - Height, in pts.
+ * @private
+ * @example 
+ Default gfxParams:
+ {
+   line: {
+     width: 0,
+     color: 0x000000,
+     alpha: 1.0,
+     alignment: 0
+   },
+   fill: {
+     color: 0xffffff,
+     alpha: 0.5
+   },
+   bevel: 3.0
+ }
+ */
+PIXI.Graphics.prototype.renderRect = function(x = null, y = null, width = null, height = null){
+  
+  const gfxParams = this.txInfo.gfxParams ? this.txInfo.gfxParams : {
+    line: {
+      width: 0,
+      color: 0x000000,
+      alpha: 1.0,
+      alignment: 0
+    },
+    fill: {
+      color: 0xffffff,
+      alpha: 0.5
+    },
+    bevel: 3.0
+  }
+  
+  this.clear();
+  if (gfxParams.line.width > 0.0 && gfxParams.line.alpha > 0.0){
+    this.lineStyle(gfxParams.line.width,gfxParams.line.color,gfxParams.line.alpha,gfxParams.line.alignment);
+  }
+  this.beginFill(gfxParams.fill.color, gfxParams.fill.alpha);
+  const _x = x ? x : this.txInfo._proj.tlX - this.txInfo._proj.x;
+  const _y = y ? y : this.txInfo._proj.tlY - this.txInfo._proj.y;
+  const _w = width ? width : this.txInfo._proj.width;
+  const _h = height ? height : this.txInfo._proj.height;
+  if (gfxParams.bevel > 0.0){
+    this.drawRoundedRect(_x,_y,_w,_h,gfxParams.bevel);
+  } else {
+    this.drawRect(_x,_y,_w,_h);
+  }
+  this.endFill();
+  
+}
+
+// Scenes can update texture info with dynamic content 
+
+
+/**
+ * Overwrite PSD texture info with supplied values.
+ * @param {Object} mappingData - An object representing property paths within `txInfo` with associated values.
+ * @param {string} [psdID=null] - Optionally specify the psd, will default to the `scene.psdID`.
+ * @memberof Scene
+ * @example 
+ export default class MyScene extends Scene {
+     
+     constructor(sceneData){
+       
+       super(sceneData, 'mypsd.psd', 0xff3300); 
+       
+       const hozGfxParams = {
+         line: {
+           width: 0,
+           color: 0x000000,
+           alpha: 1.0,
+           alignment: 0
+         },
+         fill: {
+           color: 0x222222,
+           alpha: 1.0
+         },
+         bevel: 0.0
+       }
+       
+       // Map textures to any dynamic content
+       this.mapTxInfo({
+         'headline.tfParams.text' : 'Welcome text',
+         'hozgfx.gfxParams' : hozGfxParams
+       })
+       
+     }  
+ */
+Scene.prototype.mapTxInfo = function(txInfoMapping, _psdID = null){
+  
+  if (!_psdID){
+    _psdID = this.psdID; 
+  }
+  
+  // Update paths to include path to texture info 
+  
+  let del = [];
+  for (const writePath in txInfoMapping){
+    del.push(writePath);
+    txInfoMapping['txInfo.' + _psdID + '/' + writePath] = txInfoMapping[writePath];    
+  }
+  for (const delPath of del){
+    delete txInfoMapping[delPath]
+  }
+  
+  performValuePathMapping(txInfoMapping);
+  
+}
+
+/**
+ * TxInfo mapping helper.
+ * @param {mapping} [psdID=null] - Optionally specify the psd, will default to the `scene.psdID`.
+ * @private
+ */
 function performValuePathMapping(mapping){
 
   for (let writePath in mapping){
@@ -922,41 +1009,6 @@ function performValuePathMapping(mapping){
 }
 
 
-PIXI.DisplayObject.prototype.hug = function(hugStr, hugBounds = null){
-  
-  const hugAlign = utils.alignmentStringToXY(hugStr, true); // Result may have null for undefined
-  
-  hugBounds = !hugBounds ? {width:scaler.stageW, height:scaler.stageH} : hugBounds; // May be extended for artboard in future
-  const retainLayoutPadding = true;
-  const applyProjScaleToPadding = false;
-  
-  const paddingScale = applyProjScaleToPadding ? proj.default.scale : 1.0;
-  if (hugAlign.x !== null){
-    if (hugAlign.x == -1){
-      const paddingLeftX = retainLayoutPadding ? paddingScale * (this.txInfo.x - this.txInfo.regPercX*this.txInfo.width) : 0.0;
-      this.x =  this.txInfo._proj.x - this.txInfo._proj.tlX + paddingLeftX;
-    } else if (hugAlign.x == 0){
-      this.x = hugBounds.width*0.5 - (this.txInfo._proj.brX - this.txInfo._proj.x) + this.txInfo._proj.width*0.5;
-    } else if (hugAlign.x == 1){
-      const paddingRightX = retainLayoutPadding ? paddingScale * (scaler.artboardDims.width - (this.txInfo.x + (1.0-this.txInfo.regPercX)*this.txInfo.width)) : 0.0;
-      this.x = hugBounds.width - (this.txInfo._proj.brX - this.txInfo._proj.x + paddingRightX)  
-    }
-  }
-  
-  if (hugAlign.y !== null){
-    if (hugAlign.y == -1){
-      const paddingTopY = retainLayoutPadding ? paddingScale * (this.txInfo.y - this.txInfo.regPercY*this.txInfo.height) : 0.0;
-      this.y =  this.txInfo._proj.y - this.txInfo._proj.tlY + paddingTopY;
-    } else if (hugAlign.y == 0){
-      this.y = hugBounds.height*0.5 - (this.txInfo._proj.brY - this.txInfo._proj.y) + this.txInfo._proj.height*0.5;
-    } else if (hugAlign.y == 1){
-      const paddingBtmY = retainLayoutPadding ? paddingScale * (scaler.artboardDims.height - (this.txInfo.y + (1.0-this.txInfo.regPercY)*this.txInfo.height)) : 0.0;
-      this.y = hugBounds.height - (this.txInfo._proj.brY - this.txInfo._proj.y + paddingBtmY)  
-    }
-  }
-  
-} 
-
 
 // Webfonts
 // --------
@@ -973,12 +1025,38 @@ let fonts = {
 */
 let fontClassForPsdFont; 
 
+/**
+ * @typedef module:ui#WebFontProps
+ * @type {Object}
+ * @property {Array.<string>} psdFontNames - A list of PSD font names to target. (eg. `Montserrat`)
+ * @property {string} googleFontName - The corresponding Google Font name. (eg. `Montserrat`)
+ * @property {Array.<string>} additionalStyles - Any additional styles to load in the format as outputted in PSD data. Eg. `['bold italic','thin','italic','900','900 italic']`. This is not usually required as the platform will load all styles referenced in the PSD data.
+ * @property {Array.<string>} fallbacks - A list of fallback fonts to be queued. Eg. `['sans-serif']`
+ */
+
+/**
+ * Optionally configure webfonts to be used within the app. Google Fonts is the only supported webfont provider.
+ * <br>- To be called before {@link storymode#createApp}
+ * <br>- This method is optional, if the font family is not configured the platform will attempt to automatically load the Google Fonts referenced in the PSDs. This assumes the font name is identical between Google Fonts and the Photoshop output.
+ * <br>- Font styles will be loaded automatically based on those defined in the PSDs and optional *additionalStyles* properties. 
+ * @param {Object.<string, module:ui#WebFontProps>} webfonts - The fonts to preload, with top level key of a unique class name to reference the font, eg `heading`, `serif`, `button` etc.
+ * @example 
+ ui.registerFonts({
+   standard: {psdFontNames: ['Montserrat'], googleFontName: 'Montserrat', additionalStyles:['bold italic','thin','italic'], fallbacks:['sans-serif']}
+ });
+ */ 
 export function registerFonts(_fonts){
   
   fonts = _fonts;  
   
 }
 
+/**
+ * Given a font from Photoshop data, return the registered font class.
+ * @param {string} psdFontName 
+ * @returns {string} className 
+ * @private
+ */ 
 function getfontClassForPsdFont(psdFontName){
   
   const _psdFontName = psdFontName.trim().toLowerCase()
@@ -1005,11 +1083,22 @@ function getfontClassForPsdFont(psdFontName){
   fonts[className] = {psdFontNames: [psdFontName], googleFontName:psdFontName , fallbacks:['sans-serif']};
   return className;
     
-  // return psdFontName; 
-  
 }
 
-// Returns the font style: eigther 'normal','italic','oblique'
+
+/**
+ * @typedef {Object} FontStyleComponents
+ * @property {'italic'|'oblique'|'normal'} style 
+ * @property {number} [weight=400] 
+ * @private
+ */
+ 
+/**
+ * Returns the font style components of a PSD font string.
+ * @param {string} psdFontName 
+ * @returns {FontStyleComponents} fontStyleComponents
+ * @private
+ */
 function psdFontStyleComponents(psdFontStyle){
   
   psdFontStyle = psdFontStyle.trim().toLowerCase();
@@ -1017,14 +1106,17 @@ function psdFontStyleComponents(psdFontStyle){
   let style = (parts[parts.length-1] == 'italic' || parts[parts.length-1] == 'oblique') ? parts[parts.length-1] : 'normal';  
   let weight = utils.fontWeightStrToNum(parts[0]); // Will default to 400
   
-  return {style:style, weight:weight}
+  return {style:style, weight:weight};
   
 }
 
+
+/**
+ * Called internally to find all non-duplicate font family and styles referenced in PSD data to load via the webfont API.
+ * @private
+ */
 function queueWebFonts(){
 
-  // Find all non-duplicate font family and styles to load via the webfont API
-  
   let googleFonts = {}; // A store of all required google font families, weights & styles
   fontClassForPsdFont = {};
   let classAdditionalsQueued = {};
@@ -1115,6 +1207,17 @@ function queueWebFonts(){
 // Class <-> texture registration
 let txClassLookup = {};
 let txClassSuffixes = null;
+/**
+ * Associates a class with a text name or pattern. 
+ * <br>- Display Objects will automatically be created with the supplied class rather than the default display object class.
+ * @param {Class} class
+ * @param {string} textureNameGlob - Texture name or pattern to associate with the class. Only prefix patterns are supported.
+ * @returns {FontStyleComponents} fontStyleComponents
+ * @example 
+ui.registerClassForTx(Button, 'mypsd.psd/my_btn'); // A specific texture.
+ui.registerClassForTx(Button, '*'+'/my_btn'); // Any texture with the name `my_btn` across all PSDs.
+ui.registerClassForTx(Button, '*'+'/*_btn'); // Any instances with suffix `_btn` across all PSDs.
+ */
 function registerClassForTx(_class, txPath){
   let parts = txPath.split('/');
   if (parts.length == 2 && parts[1].charAt(0) === '*'){
@@ -1137,6 +1240,7 @@ function registerClassForTx(_class, txPath){
 }
 
 
-
-
 export { txInfo, registerPsdInfo, registerClassForTx, registerSpritesheetPath} // Temporary?
+
+
+

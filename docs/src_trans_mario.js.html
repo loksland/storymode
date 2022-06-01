@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: src/trans/mario.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: src/trans/mario.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { scaler,nav,config } from './../storymode.js';
+
+export const id = 'mario';
+
+// Usage: 
+// - `mario`
+// - `mario:ff3300`
+
+// Configuring:
+// `trans.mario.setDefaultBgCol(0x00ff00);`
+
+
+let defaultBgCol = 0x000000;
+/**
+ * Will close in a telescope/spot light effect as seen in early Mario games.
+ * &lt;br>- Evoked with 'mario' transition ID.
+ * &lt;br>- Optionally overwrite the background colour by using a colon paramer, eg. '`mario:ff3300'.
+ * &lt;br>- Use the scene subclass method {@link Scene#getMarioTransFocusRad} to configure the spotlight size.
+ * &lt;br>- Use the scene subclass method {@link Scene#getMarioTransPt} to configure the spotlight position.
+ * @memberof module:nav
+ * @hideconstructor
+ * @example
+nav.openScene(myScene, false, 'mario')
+ */
+class MarioTrans {
+  
+  constructor(scene, scenePrev = null, isModal = false, transConfigStr = null){
+    
+    this.scene = scene;
+    this.scenePrev = scenePrev; 
+    this.isModal = isModal;
+    this.isTransparent = false;
+    
+    this.dur = 0.6;
+    
+    this.focusDelay = 0.2;
+    this.focusDurPerc = 0.3;
+    this.midwayDelay = 0.3;
+    
+    this.bgCol = transConfigStr ? PIXI.utils.string2hex(transConfigStr) : defaultBgCol;
+    
+  }
+  
+  /**
+   * Set default background color for the transition.
+   * @param {int} defaultBgCol - Color, eg. 0xff3300.
+   * @example 
+   nav.trans.mario.setDefaultBgCol(0xff3300)
+   */
+  static setDefaultBgCol(_defaultBgCol){
+    defaultBgCol = _defaultBgCol;
+  }
+  
+  performIn(onInCallback, reverse = false){
+    
+    const sceneIn = reverse ? this.scenePrev : this.scene;
+    const sceneOut = reverse ? this.scene : this.scenePrev;
+    
+    sceneIn.visible = false;
+
+    this.maxRad = Math.sqrt(Math.pow(scaler.stageW,2)+Math.pow(scaler.stageH,2))*0.5;
+
+    this.posIn = sceneIn.getMarioTransPt(false)
+    this.posOut = sceneOut ? sceneOut.getMarioTransPt(true) : new PIXI.Point(scaler.stageW*0.5, scaler.stageH*0.5); 
+
+    this.focusRadIn = sceneIn.getMarioTransFocusRad(false)
+    this.focusRadOut = sceneOut ? sceneOut.getMarioTransFocusRad(true) : 100.0;
+
+    this.screen = new PIXI.Graphics()
+    this.screen.x = scaler.stageW*0.5-this.maxRad;
+    this.screen.y = scaler.stageH*0.5-this.maxRad;
+
+    nav.sceneHolder.parent.addChildAt(this.screen, nav.sceneHolder.parent.getChildIndex(nav.sceneHolder)+1)
+
+    this.props = {};
+    this.props.posX = scaler.stageW*0.5;
+    this.props.posY = scaler.stageH*0.5;
+    this.props.rad = this.maxRad; // this.maxRad
+
+    const dur = this.focusRadIn != 0 ? this.dur*(1.0-this.focusDurPerc) : this.dur;
+    const rad = this.focusRadIn != 0 ? this.focusRadIn : 0.0;
+    const onCompleteFn = this.focusRadIn != 0 ? this.onQuarterWay : this.onHalfWay;
+    TweenMax.to(this.props, dur, {rad:rad, posX:this.posIn.x, posY:this.posIn.y, ease:Power3.easeOut, delay:0.0, onUpdate:this.render.bind(this), onComplete:onCompleteFn.bind(this), onCompleteParams:[onInCallback,reverse]});
+
+  }
+  
+  render() {
+    
+    this.screen.clear()
+      .lineStyle(0) // draw a circle, set the lineStyle to zero so the circle doesn't have an outline
+      .beginFill(this.bgCol, 1)
+      .drawRect(0, 0, this.maxRad*2.0, this.maxRad*2.0)
+      
+    if (this.props.rad > 1.0){
+      this.screen.beginHole()
+        .drawCircle(this.maxRad - scaler.stageW*0.5 + this.props.posX, this.maxRad - scaler.stageH*0.5 + this.props.posY, Math.max(this.props.rad, 1.0))
+        .endHole()
+    }
+    
+    this.screen.endFill()
+    
+  }
+  
+  onQuarterWay(onInCallback, reverse = false){
+    
+    TweenMax.to(this.props, this.dur*this.focusDurPerc, {rad:0.0, ease:Power3.easeIn, delay:this.focusDelay, onUpdate:this.render.bind(this), onComplete:this.onHalfWay.bind(this), onCompleteParams:[onInCallback,reverse]});
+    
+  }
+  
+  onHalfWay(onInCallback, reverse = false){
+
+    const sceneIn = reverse ? this.scenePrev : this.scene;
+    const sceneOut = reverse ? this.scene : this.scenePrev;
+    
+    if (!nav.isScenePresentedWithTransparentBg()){
+      TweenMax.set(nav.bg, {pixi: {tint:sceneIn.bgColor}});
+    }
+    
+    sceneIn.visible = true;
+    if (sceneOut){
+      sceneOut.visible = false;
+    }
+    
+    this.props.posX = this.posOut.x;
+    this.props.posY = this.posOut.y;
+
+    const dur = this.focusRadOut != 0 ? this.dur*this.focusDurPerc : this.dur;
+    const rad = this.focusRadOut != 0 ? this.focusRadOut : this.maxRad;
+    const onCompleteFn = this.focusRadOut != 0 ? this.on2QuarterWay : this.onIn;
+    const ease = this.focusRadOut != 0 ? Power3.easeOut : Power3.easeIn;
+    let tw = {rad:rad, ease:ease, delay:this.midwayDelay, onUpdate:this.render.bind(this), onComplete:onCompleteFn.bind(this), onCompleteParams:[onInCallback,reverse]}
+    
+    if (this.focusRadOut == 0){
+      tw.posX = scaler.stageW*0.5;
+      tw.posY = scaler.stageH*0.5;      
+    }
+        
+    TweenMax.to(this.props, dur, tw);
+    
+  }
+  
+  on2QuarterWay(onInCallback, reverse = false){
+    
+    TweenMax.to(this.props, this.dur*(1.0-this.focusDurPerc), {rad:this.maxRad, posX:scaler.stageW*0.5, posY:scaler.stageH*0.5, ease:Power3.easeIn, delay:this.focusDelay, onUpdate:this.render.bind(this), onComplete:this.onIn.bind(this), onCompleteParams:[onInCallback,reverse]});
+    
+  }
+  
+  onIn(onInCallback, reverse = false){
+    
+    this.screen.destroy();
+    nav.sceneHolder.parent.removeChild(this.screen)
+    this.screen = null;
+    
+    onInCallback();    
+    
+  }
+  
+  performOut(onOutCallback){
+    
+    this.performIn(onOutCallback, true)
+    
+  }
+  
+}
+export default MarioTrans</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-mutils.html">mutils</a></li><li><a href="module-nav.html">nav</a></li><li><a href="module-scaler.html">scaler</a></li><li><a href="module-store.html">store</a></li><li><a href="module-storymode.html">storymode</a></li><li><a href="module-ui.html">ui</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Namespaces</h3><ul><li><a href="physics.html">physics</a></li><li><a href="PIXI.html">PIXI</a></li></ul><h3>Classes</h3><ul><li><a href="-_PhysicsNotes.html">_PhysicsNotes</a></li><li><a href="-_PsdConfiguration.html">_PsdConfiguration</a></li><li><a href="-_Snippets.html">_Snippets</a></li><li><a href="-_WindowScope.html">_WindowScope</a></li><li><a href="kb.html">kb</a></li><li><a href="module-nav.FadeTrans.html">FadeTrans</a></li><li><a href="module-nav.MarioTrans.html">MarioTrans</a></li><li><a href="module-nav.OverTrans.html">OverTrans</a></li><li><a href="module-nav.PanTrans.html">PanTrans</a></li><li><a href="module-nav.PixelateTrans.html">PixelateTrans</a></li><li><a href="module-scaler-ArtboardProjection.html">ArtboardProjection</a></li><li><a href="physics.jgsap.html">jgsap</a></li><li><a href="physics.JRender.html">JRender</a></li><li><a href="physics.JRunner.html">JRunner</a></li><li><a href="physics.JSyncLink.html">JSyncLink</a></li><li><a href="physics.JWireframeRender.html">JWireframeRender</a></li><li><a href="PIXI.AnimatedSprite.html">AnimatedSprite</a></li><li><a href="PIXI.DisplayObject.html">DisplayObject</a></li><li><a href="PIXI.Graphics.html">Graphics</a></li><li><a href="PIXI.Texture.html">Texture</a></li><li><a href="Scene.html">Scene</a></li><li><a href="SFX.html">SFX</a></li></ul><h3>Events</h3><ul><li><a href="module-scaler.html#event:fullscreenchange">fullscreenchange</a></li><li><a href="module-scaler.html#event:resize">resize</a></li><li><a href="module-scaler.html#event:resize_immediate">resize_immediate</a></li><li><a href="SFX.html#event:bgloop_enabled_change">bgloop_enabled_change</a></li><li><a href="SFX.html#event:bgready">bgready</a></li><li><a href="SFX.html#event:sfx_enabled_change">sfx_enabled_change</a></li><li><a href="SFX.html#event:sfxready">sfxready</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.10</a> on Wed Jun 01 2022 16:14:02 GMT+1000 (Australian Eastern Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -3,7 +3,17 @@ import { nav } from './../storymode.js';
 
 export const id = 'fade';
 
-export default class FadeTrans {
+
+/**
+ * Simple fade transition.
+ * <br>- Evoked with 'fade' transition ID.
+ * <br>- Uses `AlphaFilter` to fade contents as a whole rather than individually.
+ * @memberof module:nav
+ * @hideconstructor
+ * @example
+nav.openScene(myScene, false, 'fade')
+ */
+class FadeTrans {
   
   constructor(scene, scenePrev = null, isModal = false, transConfigStr = null){
     
@@ -75,3 +85,5 @@ export default class FadeTrans {
   }
   
 }
+
+export default FadeTrans

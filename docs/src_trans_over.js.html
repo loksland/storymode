@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: src/trans/over.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: src/trans/over.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { nav,scaler,utils} from './../storymode.js';
+
+export const id = 'over';
+
+const BLUR_FG = false;
+const APPLY_BG_ALPHA = false;
+
+
+/**
+ * This transition is designed for scenes displayed modally. The new scene will arrive over the existing scene.
+ * &lt;br>- Evoked with 'over' transition ID.
+ * &lt;br>- The background scene will be blurred by default, use 'over:noblur' to disable this.
+ * @memberof module:nav
+ * @hideconstructor
+ * @example
+nav.openScene(myScene, true, 'over')
+ */
+class OverTrans {
+  
+  constructor(scene, scenePrev = null, isModal = false, transConfigStr = null){
+    
+    this.scene = scene;
+    this.scenePrev = scenePrev;
+    this.isModal = isModal;
+    this.isTransparent = this.isModal;
+    
+    this.blurEnabled = transConfigStr === 'noblur' ? false : true;
+    this.maxBlur = 5.0
+    
+  }
+  
+  performIn(onInCallback){
+    
+    const dur = 0.4;
+    
+    this.scene.visible = true;
+    
+    if (this.scenePrev){
+      if (APPLY_BG_ALPHA){
+        const filterOut = new PIXI.filters.AlphaFilter(1.0);
+        this.scenePrev.filters = [filterOut];
+        gsap.to(filterOut, dur, {pixi:{alpha: this.isModal ? 0.5 : 0.0}, ease: Linear.easeNone});      
+      }
+      if (this.blurEnabled){
+        gsap.to(this.scenePrev, dur, {pixi: {blur:this.maxBlur}, ease:Power3.easeIn});
+      }
+      
+    }
+
+    if (!this.isModal &amp;&amp; !nav.isScenePresentedWithTransparentBg()){
+      
+      gsap.to(nav.bg, dur, {pixi: {tint:this.scene.bgColor}, ease:Linear.easeNone});
+      
+    }
+    
+    const filterIn = new PIXI.filters.AlphaFilter(0.0);
+    this.scene.filters = [filterIn];
+    gsap.to(filterIn, dur, {pixi:{alpha:1.0}, ease:Linear.easeNone});
+    
+    this.scene.position.set(scaler.stageW*0.5, scaler.stageH*0.5)
+    this.scene.pivot.set(scaler.stageW*0.5, scaler.stageH*0.5)
+    
+    let tw = {scale: 1.3};
+    if (this.blurEnabled &amp;&amp; BLUR_FG){
+      tw.blur = this.maxBlur;
+    }
+    gsap.from(this.scene, dur, {pixi: tw, ease:Power3.easeOut, onComplete:this.onIn.bind(this), onCompleteParams: [onInCallback]});
+    
+  }
+  
+  onIn(onInCallback){
+    
+    this.scene.filters = null;
+    
+    this.scene.position.set(0.0, 0.0)
+    this.scene.pivot.set(0.0, 0.0)
+    
+    if (this.scenePrev &amp;&amp; !this.isModal){
+        this.scenePrev.filters = null;
+    }
+    
+    onInCallback();    
+    
+  }
+  
+  performOut(onOutCallback){
+    
+    let dur = 0.3;
+        
+    this.scene.position.set(scaler.stageW*0.5, scaler.stageH*0.5)
+    this.scene.pivot.set(scaler.stageW*0.5, scaler.stageH*0.5)
+    
+    const filterOut = new PIXI.filters.AlphaFilter(1.0);
+    this.scene.filters = [filterOut];
+    gsap.to(filterOut, dur, {pixi:{alpha:0.0}, ease:Linear.easeNone});
+    
+    if (this.blurEnabled &amp;&amp; BLUR_FG){
+      gsap.to(this.scene, dur, {pixi: {blur:this.maxBlur}, ease:Power3.easeOut});
+    }
+    gsap.to(this.scene, dur, {pixi: {scale: 0.9}, ease:Sine.easeIn});
+    
+      
+    const delay = 0.0;
+    dur = 0.5;
+    if (APPLY_BG_ALPHA){
+      gsap.to(this.scenePrev.filters[0], dur, {pixi:{alpha:1.0}, ease:Linear.easeNone, delay:delay});
+    }
+    if (this.blurEnabled){
+      gsap.to(this.scenePrev, dur, {pixi: {blur:0.0}, ease:Power3.easeIn, delay:delay, onComplete:this.onOut.bind(this), onCompleteParams: [onOutCallback]});
+    } else {
+      utils.wait(this, dur+delay, this.onOut, [onOutCallback]);
+    }
+    
+    
+  }
+  
+  onOut(onOutCallback){
+    
+    this.scene.position.set(0.0, 0.0)
+    this.scene.pivot.set(0.0, 0.0)
+    
+    this.scene.filters = null;
+    this.scenePrev.filters = null;
+    
+    onOutCallback();    
+    
+  }
+  
+}
+
+export default OverTrans</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-mutils.html">mutils</a></li><li><a href="module-nav.html">nav</a></li><li><a href="module-scaler.html">scaler</a></li><li><a href="module-store.html">store</a></li><li><a href="module-storymode.html">storymode</a></li><li><a href="module-ui.html">ui</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Namespaces</h3><ul><li><a href="physics.html">physics</a></li><li><a href="PIXI.html">PIXI</a></li></ul><h3>Classes</h3><ul><li><a href="-_PhysicsNotes.html">_PhysicsNotes</a></li><li><a href="-_PsdConfiguration.html">_PsdConfiguration</a></li><li><a href="-_Snippets.html">_Snippets</a></li><li><a href="-_WindowScope.html">_WindowScope</a></li><li><a href="kb.html">kb</a></li><li><a href="module-nav.FadeTrans.html">FadeTrans</a></li><li><a href="module-nav.MarioTrans.html">MarioTrans</a></li><li><a href="module-nav.OverTrans.html">OverTrans</a></li><li><a href="module-nav.PanTrans.html">PanTrans</a></li><li><a href="module-nav.PixelateTrans.html">PixelateTrans</a></li><li><a href="module-scaler-ArtboardProjection.html">ArtboardProjection</a></li><li><a href="physics.jgsap.html">jgsap</a></li><li><a href="physics.JRender.html">JRender</a></li><li><a href="physics.JRunner.html">JRunner</a></li><li><a href="physics.JSyncLink.html">JSyncLink</a></li><li><a href="physics.JWireframeRender.html">JWireframeRender</a></li><li><a href="PIXI.AnimatedSprite.html">AnimatedSprite</a></li><li><a href="PIXI.DisplayObject.html">DisplayObject</a></li><li><a href="PIXI.Graphics.html">Graphics</a></li><li><a href="PIXI.Texture.html">Texture</a></li><li><a href="Scene.html">Scene</a></li><li><a href="SFX.html">SFX</a></li></ul><h3>Events</h3><ul><li><a href="module-scaler.html#event:fullscreenchange">fullscreenchange</a></li><li><a href="module-scaler.html#event:resize">resize</a></li><li><a href="module-scaler.html#event:resize_immediate">resize_immediate</a></li><li><a href="SFX.html#event:bgloop_enabled_change">bgloop_enabled_change</a></li><li><a href="SFX.html#event:bgready">bgready</a></li><li><a href="SFX.html#event:sfx_enabled_change">sfx_enabled_change</a></li><li><a href="SFX.html#event:sfxready">sfxready</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.10</a> on Wed Jun 01 2022 16:14:02 GMT+1000 (Australian Eastern Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

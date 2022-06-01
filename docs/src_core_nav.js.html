@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: src/core/nav.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: src/core/nav.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Handles scene transitions and modal display.
+ * &lt;br>- A modally presented scene can be replaced with a non-modal scene then dismissed to return to original scene.
+ * &lt;br>- A modal can be presented over an existing modal.
+ * @module nav
+ */
+
+import { utils,scaler } from './../storymode.js';
+
+//import AlphaFilter from './../filters/alphafilter.js';
+
+let locked = false; // Nav is locked
+let transStack = [];
+let pendingModalTrans = null;
+
+let sceneHolder;
+let inputScreen;
+let bg; // Tinted screen for background color
+let scenes;
+
+// Load all transitions
+let trans = {};
+const _trans = utils.requireAll(require.context('./../trans', false, /.js$/));
+for (let transMod of _trans) {
+  if (transMod.id){
+    let ids = Array.isArray(transMod.id) ? transMod.id : [transMod.id];
+    for (var id of ids) {
+      trans[id] = transMod.default;
+    }
+  }
+}
+
+
+/**
+ * Registers all scenes to be loaded.
+ * @param {Object} scenes - Scene configuration object
+ * @example 
+// app.js 
+const scenes = {
+  home: {class: Home, sceneData: {}, default:true}, 
+  play: {class: Play, sceneData: {}}
+}
+nav.setScenes(scenes);
+ */
+function setScenes(_scenes){
+  scenes = _scenes;
+}
+
+/**
+ * Called by `storymode` during setup.
+ * @param {Pixi.Stage} stage 
+ * @param {number} bgAlpha
+ * @private
+ */
+function setupStage(stage, bgAlpha){
+  
+  //ticker.add(function(time) {
+  //  gsap.set(pixiApp.view, {opacity:1.0});
+  //});
+  
+  // Add background 
+  bg = new PIXI.Sprite(PIXI.Texture.WHITE);﻿
+  bg.width = scaler.stageW;
+  bg.height = scaler.stageH;
+  bg.tint = 0x000000; // Set in the index css
+  stage.addChild(bg);
+  gsap.fromTo(bg, 0.6, {pixi:{alpha:0.0}},{pixi:{alpha:bgAlpha}, ease:Linear.easeNone})
+
+  // Create a container for scenes
+  sceneHolder = new Container();  
+  
+  // stage.filters = [new PIXI.filters.CrossHatchFilter()]; // new PIXI.filters.TiltShiftFilter(27, 1000)]; //[new PIXI.filters.CRTFilter()]
+  stage.addChild(sceneHolder);
+  
+  inputScreen = new PIXI.Sprite(PIXI.Texture.EMPTY);﻿
+  inputScreen.interactive = true;
+  inputScreen.width = scaler.stageW;
+  inputScreen.height = scaler.stageH;
+  //inputScreen.cursor = 'auto' 'not-allowed';
+  
+  stage.addChild(inputScreen);
+  inputScreen.visible = false;
+  
+  scaler.on('resize_immediate', onResizeImmediate);
+  scaler.on('resize', onResize);
+  
+}
+
+/**
+ * Listener for stage resize, called continously.
+ * @param {number} stageW - Stage width in points.
+ * @param {number} stageH - Stage height in points.
+ * @private
+ */
+function onResizeImmediate(_stageW,_stageH){
+  
+  bg.width = _stageW;
+  bg.height = _stageH;
+  
+  inputScreen.width = scaler.stageW;
+  inputScreen.height = scaler.stageH;
+  
+}
+
+/**
+ * Listener for stage resize, debounced.
+ * @param {number} stageW - Stage width in points.
+ * @param {number} stageH - Stage height in points.
+ * @private
+ */
+function onResize(stageW,stageH){
+  reloadSceneStack();
+}
+
+/**
+ * Toggle input for entire stage.
+ * @param {boolean} enable 
+ */
+function enableInput(enable){
+  inputScreen.visible = !enable;
+}
+
+
+
+/**
+ * Will return if current scene has a transparent background.
+ * @returns {boolean} sceneIsTransparent
+ */
+function isScenePresentedWithTransparentBg(){
+  
+  if (pendingModalTrans &amp;&amp; pendingModalTrans.isTransparent){
+    return true;
+  }
+  for (let i = transStack.length - 1; i >= 0; i--){
+    if (transStack[transStack.length-1].isTransparent){
+      return true;
+    }
+  }
+  return false;  
+  
+}
+
+/**
+ * Opens default scene. Called internally by `storymode` on startup.
+ * @returns {boolean} success
+ * @private
+ */
+function openDefaultScene(){
+  
+  if (!scenes){
+    throw new Error('Scenes never set. Call `nav.setScenes(..)` before initiating app.')
+  }
+  
+  for (const sceneID in scenes){
+    if (scenes[sceneID].default){
+      openScene(sceneID);
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * @typedef {'fade'|'over'|'pan:%direction%'|'parallax:%direction%'|'mario:%bgColor%'|'pixelate'} TransitionID
+ */
+
+/**
+ * Transition to a scene.
+ * @param {string} sceneID - Scene identifier.
+ * @param {boolean} [isModal=false] - Whether scene should be loaded modally (over the top).
+ * @param {TransitionID} [transID='fade'] - Transition identifier.
+ * @param {Object} [sceneData=null] - Optional data to be passed to scene.
+ */ 
+function openScene(sceneID, isModal = false, transID = 'fade', sceneData = null){
+  
+  if (locked){
+    return;
+  }
+  
+  locked = true;
+  enableInput(false);
+  
+  if (!scenes[sceneID]){
+    throw new Error('Scene not found `'+sceneID+'`');
+  }
+  
+  // Param can be supplied in format `transID:transConfigStr`
+  const transIDParts = transID.split(':');
+  const transConfigStr = transIDParts.length > 1 ? transIDParts[1] : null;
+  transID = transIDParts[0];
+  
+  if (!trans[transID]){
+    throw new Error('Transition not found `'+transID+'`');
+  }
+  
+  const scene = new scenes[sceneID].class(Object.assign({sceneID:sceneID, instanceID:createInstanceID()}, scenes[sceneID].sceneData, sceneData)); // Merge sceneDatas (set in config.js and sent to this method)
+  scene.visible = false; // Hide for now.
+  scene.on('ready', onSceneReady); // Listen for custom scene `ready` event
+  
+  const scenePrev = transStack.length > 0 ? transStack[transStack.length-1].scene : null;
+  
+  const transInstance = new trans[transID](scene, scenePrev, isModal, transConfigStr, transID); 
+  
+  if (!transInstance.isModal &amp;&amp; transStack.length > 1){
+    // Remove previous 
+    let prevModalTrans = transStack.splice(transStack.length-1,1)[0];
+    if (prevModalTrans.isModal) {
+      // When this transition arrives it will be replaced with this modal.
+      pendingModalTrans = prevModalTrans; 
+    } else {
+      prevModalTrans.scene = null;
+    }
+  }
+  
+  transStack.push(transInstance);
+  
+  sceneHolder.addChild(scene); // Wait for on ready
+  
+}
+
+/**
+ * Creates a 7 character integer.
+ * @returns {integer} id
+ * @private
+ */
+function createInstanceID(){
+  return 1000000 + Math.round(Math.random()*8999999); // 7 char integer
+}
+
+/**
+ * Called when scene being loaded is ready to be presented.
+ * &lt;br>Triggers entry transition to begin.
+ * @param {Scene} scene
+ * @private
+ */
+function onSceneReady(scene){
+  
+  scene.off('ready', onSceneReady);
+  
+  if (transStack[transStack.length-1].scenePrev){
+    transStack[transStack.length-1].scenePrev.onWillExit(transStack[transStack.length-1].isModal); // Exit to modal
+  }
+  transStack[transStack.length-1].scene.onWillArrive(false); // First scene arrival will never be modal
+  transStack[transStack.length-1].performIn(onSceneIn);  
+  
+}
+
+/**
+ * Will return if current scene is presented modally.
+ * @returns {boolean} sceneIsModal
+ */
+function isScenePresentedModally(){
+  return transStack[transStack.length-1].isModal || pendingModalTrans; // If `pendingModalTrans` is set scene is not modal yet though will be 
+}
+
+/**
+ * Will return if current scene is presented modally.
+ * @returns {boolean} sceneIsModal
+ * @private
+ */
+function isPresentingModal(){
+  return !(transStack.length &lt; 2 || !transStack[transStack.length-1].isModal || !transStack[transStack.length-1].scenePrev);
+}
+
+/**
+ * Dismiss currently presented modal scene.
+ * @param {Object} [dismissData=null] - Optionally supply an object to be passed to parent scene's `onWillArrive()` method
+ */
+function dismissScene(dismissData = null){
+  
+  if (locked){
+    return;
+  }
+  locked = true;
+  enableInput(false);
+  
+  if (!this.isPresentingModal()){
+    throw new Error('Cannot dismiss scene');
+  }
+  
+  transStack[transStack.length-1].scene.onWillExit(false); // Exit to be destroyed
+  if (transStack[transStack.length-1].scenePrev){
+    transStack[transStack.length-1].scenePrev.onWillArrive(true, dismissData); // Re-arrive modally
+  }
+  
+  transStack[transStack.length-1].performOut(onSceneOut);
+    
+}
+
+/**
+ * Called when arriving scene transition is complete.
+ * @private
+ */
+function onSceneIn(){
+  
+  if (transStack[transStack.length-1].scenePrev){
+
+    transStack[transStack.length-1].scenePrev.onDidExit(transStack[transStack.length-1].isModal); 
+    
+    // Remove old scene if no longer required
+    if (!transStack[transStack.length-1].isModal){
+      let scenePrev = transStack[transStack.length-1].scenePrev
+      sceneHolder.removeChild(transStack[transStack.length-1].scenePrev); // Destroy will be called by scene class
+      transStack[transStack.length-1].scenePrev = null; // Don't retain reference to scene
+      if (transStack[transStack.length-2].scene == scenePrev){
+        transStack.splice(transStack.length-2,1);
+      }
+    }
+    
+  }
+  
+  if (pendingModalTrans){
+    
+    // Scene replaces previous modal scene. Swap them in trans stack.
+    
+    pendingModalTrans.scene = transStack[transStack.length-1].scene;
+    transStack[transStack.length-1].scene = null;
+    transStack.splice(transStack.length-1,1);
+    transStack.push(pendingModalTrans);
+    pendingModalTrans = null;
+    
+  }
+  
+  locked = false;
+  enableInput(true);
+  
+  transStack[transStack.length-1].scene.onDidArrive(transStack[transStack.length-1].isModal);
+  
+  checkForReloadOnNextArrive();
+  
+}
+
+/**
+ * Called when exiting scene transition is complete.
+ * @private
+ */
+function onSceneOut(){
+  
+  transStack[transStack.length-1].scene.onDidExit(false); // Not modal, about to be destroyed
+  
+  // Scene has dismissed 
+  sceneHolder.removeChild(transStack[transStack.length-1].scene); // Destroy will be called by scene class
+  transStack[transStack.length-1].scene = null; // Don't retain reference to scene
+  if (transStack[transStack.length-1].scenePrev) {
+    transStack[transStack.length-1].scenePrev = null; // Don't retain reference to scene
+  }
+  
+  transStack.splice(transStack.length-1,1);
+  
+  locked = false;
+  enableInput(true);
+  
+  transStack[transStack.length-1].scene.onDidArrive(true); // Return from modal dismissal
+  
+  checkForReloadOnNextArrive();
+  
+}
+
+/**
+ * Reload scene stack if `nav` was waiting to scene to arrive first.
+ * @private
+ */
+function checkForReloadOnNextArrive(){
+  if (transStack[transStack.length-1].reloadOnNextArrive){
+    delete transStack[transStack.length-1].reloadOnNextArrive;
+    reloadSceneStack();
+  }
+}
+
+/**
+ * Reload all scene instances with new instances.
+ * @param {boolean} [force=false] - To ignore the scene's `shouldReloadOnStageResize()`.
+ */
+function reloadSceneStack(force = false){
+  
+  // Called during a scene transition, wait for arrival.
+  if (locked){
+    transStack[transStack.length-1].reloadOnNextArrive = true;
+    return;
+  }
+  
+  // If scene is presented modally over other scenes 
+  // Hide them until they can reload themselved when next presented. 
+  for (let i = 0; i &lt; transStack.length -1; i++){    
+    if (transStack[i].scene._shouldReloadOnStageResize(scaler.stageW, scaler.stageH)){
+      transStack[i].scene.visible = false; // Optional
+      transStack[i].reloadOnNextArrive = true;
+    }
+  }
+  
+  let _scene = transStack[transStack.length-1].scene;
+  if (force || _scene._shouldReloadOnStageResize(scaler.stageW, scaler.stageH)){
+    
+    let sceneID = _scene.sceneData.sceneID;
+    let sceneData = utils.cloneObj(_scene.sceneData);
+    delete sceneData.sceneID;
+    delete sceneData.instanceID;
+    openScene(sceneID, false, 'fade', sceneData);  
+  }
+    
+}
+
+/**
+ * Write to the console a basic outline of child display objects.
+ */
+function debugTransStack(){
+  for (let i = transStack.length - 1; i >= 0; i--){   
+    console.log(String(i) + ') `'+transStack[i].scene.name+'` ' + (i == transStack.length - 1 ? '*top*' : ''));
+  }
+}
+
+export { scenes }
+export { isPresentingModal, openDefaultScene,setupStage,isScenePresentedModally,isScenePresentedWithTransparentBg,openScene,dismissScene,bg,inputScreen,sceneHolder,setScenes,reloadSceneStack }
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-mutils.html">mutils</a></li><li><a href="module-nav.html">nav</a></li><li><a href="module-scaler.html">scaler</a></li><li><a href="module-store.html">store</a></li><li><a href="module-storymode.html">storymode</a></li><li><a href="module-ui.html">ui</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Namespaces</h3><ul><li><a href="physics.html">physics</a></li><li><a href="PIXI.html">PIXI</a></li></ul><h3>Classes</h3><ul><li><a href="-_PhysicsNotes.html">_PhysicsNotes</a></li><li><a href="-_PsdConfiguration.html">_PsdConfiguration</a></li><li><a href="-_Snippets.html">_Snippets</a></li><li><a href="-_WindowScope.html">_WindowScope</a></li><li><a href="kb.html">kb</a></li><li><a href="module-nav.FadeTrans.html">FadeTrans</a></li><li><a href="module-nav.MarioTrans.html">MarioTrans</a></li><li><a href="module-nav.OverTrans.html">OverTrans</a></li><li><a href="module-nav.PanTrans.html">PanTrans</a></li><li><a href="module-nav.PixelateTrans.html">PixelateTrans</a></li><li><a href="module-scaler-ArtboardProjection.html">ArtboardProjection</a></li><li><a href="physics.jgsap.html">jgsap</a></li><li><a href="physics.JRender.html">JRender</a></li><li><a href="physics.JRunner.html">JRunner</a></li><li><a href="physics.JSyncLink.html">JSyncLink</a></li><li><a href="physics.JWireframeRender.html">JWireframeRender</a></li><li><a href="PIXI.AnimatedSprite.html">AnimatedSprite</a></li><li><a href="PIXI.DisplayObject.html">DisplayObject</a></li><li><a href="PIXI.Graphics.html">Graphics</a></li><li><a href="PIXI.Texture.html">Texture</a></li><li><a href="Scene.html">Scene</a></li><li><a href="SFX.html">SFX</a></li></ul><h3>Events</h3><ul><li><a href="module-scaler.html#event:fullscreenchange">fullscreenchange</a></li><li><a href="module-scaler.html#event:resize">resize</a></li><li><a href="module-scaler.html#event:resize_immediate">resize_immediate</a></li><li><a href="SFX.html#event:bgloop_enabled_change">bgloop_enabled_change</a></li><li><a href="SFX.html#event:bgready">bgready</a></li><li><a href="SFX.html#event:sfx_enabled_change">sfx_enabled_change</a></li><li><a href="SFX.html#event:sfxready">sfxready</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.10</a> on Wed Jun 01 2022 16:14:02 GMT+1000 (Australian Eastern Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
