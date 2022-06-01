@@ -985,6 +985,13 @@ physics.jgsap.to(this.box, 2.0, {scale:0.5, x:this.jrender.screenXToPhysMtrs(thi
  */
 class Jgsap {
   
+  constructor(){
+   this.c = 0;
+   this.tweens = {};
+   this.delays = {};
+   this._tweenBind = this._tween.bind(this)
+  }
+ 
   /**
    * Replacement for `gsap.fromTo` for targeting `Matter.js` bodies, with the same arguments.
    * @param {Matter.Body|Matter.Composite} target - The body or composite to animate.
@@ -1306,7 +1313,7 @@ class Jgsap {
    * @param {Matter.Body|Matter.Composite} target - The body or composite to target.
    */ 
   killTweensOf(target){
-        
+      
     if (this.delays[target.id]){
       for (let delayID in this.delays[target.id]){
         this.delays[target.id][delayID].kill();

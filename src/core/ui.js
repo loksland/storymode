@@ -7,7 +7,7 @@
  * @module ui 
  */
 
-import { Scene, Btn, scaler, Camera, utils } from './../storymode.js';
+import { Scene, scaler, utils } from './../storymode.js';
 
 // Index textures
 let psdInfo;
@@ -213,7 +213,7 @@ PIXI.Texture.fromTx = function(txPath, frame = null){
 /**
  * Loads supplied texture to target class automatically scaled and positioned based on the projection properties of the `scaler` class.
  * <br>- Optionally supply a clipping frame - which is handly for cutting up a sprite at runtime.
- * <br>- Supports `PIXI.Text`, `PIXI.Graphics`, Btn, `PIXI.AnimatedSprite`, `PIXI.Sprite`, `PIXI.Container`.
+ * <br>- Supports `PIXI.Text`, `PIXI.Graphics`, `PIXI.AnimatedSprite`, `PIXI.Sprite`, `PIXI.Container`.
  * @param {string} texturePath -  A reference to the containing PSD document and layer name, separated by a forward slash. Eg. `mydoc.psd/mysprite`.   
  * @param {boolean} [addChildren=true] -  If `true` then the display object's nested children will be added as well.
  * @param {PIXI.Rectangle|string} [frame|textContent=null] - For a sprite will clip the texture to the supplied frame rect. Not compatible with spritesheet assets. Will be taken into account with `dispo.applyProj()`. For text this paramer will overwrite the containing text of the field.
@@ -232,11 +232,13 @@ PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
   
   let dispo;
   
-  if (this == Btn){
-    
-    dispo = new Btn(txPath);
-      
-  } else if (this == Graphics){
+  //if (this == Btn){
+  //  
+  //  dispo = new Btn(txPath);
+  //    
+  //} else 
+  
+  if (this == Graphics){
     
     dispo = new Graphics();
   
@@ -579,7 +581,7 @@ PIXI.DisplayObject.prototype.getArt = function(txNameGlob){
 
 /**
  * Will add all matching textures to the calling instance according to nesting, scale and position settings in the PSD export data and `scaler` class.
- * <br>- This method is usually called by a `scene` (or `camera`) and will load textures found in the PSD associated with the scene via the `psdID` property.
+ * <br>- This method is usually called by a `scene` and will load textures found in the PSD associated with the scene via the `psdID` property.
  * <br>- Nested display objects (display objects within display objects) are automatically added as well.
  * <br>- If caller is a scene then all top level items are added otherwise will add chidren only.
  * <br>- All display objects added will also be appended to a property called `art` of the calling instance, in a lookup object by texture name.
@@ -597,7 +599,7 @@ didLoad(ev){
  */ 
 PIXI.DisplayObject.prototype.addArt = function(txNameGlob){
   
-  if (!((this instanceof Scene) || (this instanceof Camera)) && this.txInfo && this.txInfo.children.length == 0){   
+  if (!(this instanceof Scene) && this.txInfo && this.txInfo.children.length == 0){   
     // No children to add
     return
   }
@@ -609,7 +611,7 @@ PIXI.DisplayObject.prototype.addArt = function(txNameGlob){
   let endIndex = null;
   let addTopLevelOnly;
   
-  if (!((this instanceof Scene) || (this instanceof Camera)) && this.txInfo){
+  if (!(this instanceof Scene) && this.txInfo){
     
     psdID = this.txInfo.psdID;    
     // Only loop the subset of textures for this item. May include children of children that will not be added.
@@ -620,7 +622,7 @@ PIXI.DisplayObject.prototype.addArt = function(txNameGlob){
   } else {
     
     // Use scene psdID property 
-    if (!psdID && ((this instanceof Scene) || (this instanceof Camera))){
+    if (!psdID && (this instanceof Scene)){
       psdID = this.psdID; 
     }
     
@@ -731,8 +733,8 @@ PIXI.DisplayObject.prototype.addArt = function(txNameGlob){
               dispo = Sprite.fromTx(psdID + '/' + txs[i].name);      
             } else if (txs[i].type == 'tf'){      
               dispo = Text.fromTx(psdID + '/' + txs[i].name);   
-            } else if (txs[i].type == 'btn'){
-              dispo = Btn.fromTx(psdID + '/' + txs[i].name);
+            //} else if (txs[i].type == 'btn'){
+            //  dispo = Btn.fromTx(psdID + '/' + txs[i].name);
             } else if (txs[i].type == 'rect'){
               dispo = Graphics.fromTx(psdID + '/' + txs[i].name);  
             }
@@ -1122,7 +1124,7 @@ function queueWebFonts(){
   let classAdditionalsQueued = {};
   
   for (let txPath in txInfo){
-    if (txInfo[txPath].type == 'tf' || txInfo[txPath].type == 'btn'){
+    if (txInfo[txPath].type == 'tf'){ //  || txInfo[txPath].type == 'btn'
       
       let fontStyle = psdFontStyleComponents(txInfo[txPath].tfParams.fontStyle)
       

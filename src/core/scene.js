@@ -1,5 +1,5 @@
 
-import { scaler, Camera} from './../storymode.js';
+import { scaler} from './../storymode.js';
 
 
 
@@ -96,9 +96,8 @@ class Scene extends PIXI.Container {
    * @param {Object} [sceneData=null] - Optional parameters sent along to the scene construction. 
    * @param {string} [psdID=null] - The associated PSD, if any. Eg. `mypsd.psd`
    * @param {integer} [bgColor=0x000000] - Solid background color of the scene, used by some transitions.
-   * @param {boolean} [createCamera=false] - Whether a camera should be created and added to the new scene.
    */
-  constructor(sceneData, psdID = null, bgColor = 0x000000, createCamera = false){   
+  constructor(sceneData, psdID = null, bgColor = 0x000000){   
      
     super();
     
@@ -129,17 +128,6 @@ class Scene extends PIXI.Container {
      * @public
      */
     this.bgColor = bgColor;
-    
-    /**
-     * The camera, if any.
-     * @type {?storymode.camera} 
-     * @public
-     */
-    this.camera = null; // createCamera ? : null;
-    if (createCamera){
-      this.camera = new Camera(psdID);
-      this.addChild(this.camera);
-    }
     
     this.on('added', this.didLoad);
     

@@ -301,3 +301,110 @@ PIXI.DisplayObject.prototype.killShake = function(){
 }
 
 
+// Simple Button 
+// -------------
+
+/**
+ * Converts the display object into a simple button.
+ * @param {number} [clickCallback=null] - The function to call on click. If not set will fire `parent.onBtn()` or `parent.parent.onBtn()` if preset.
+ * @param {number} [stateChangeCallback=null] - Will trigger callback on state change.
+ */
+
+PIXI.DisplayObject.prototype.makeBtn = function(clickCallback = null, stateChangeCallback = null){
+  
+  const tintOn = 0x000000;;
+  this.interactive = true;
+  this.buttonMode = true;
+  
+  const isContainer = !this.isSprite && !(this instanceof Graphics) && !(this instanceof Btn);
+  if (!stateChangeCallback){
+    if (isContainer){
+      const debugHitBtn = false;
+      // Add a layer to collect hit events for the button, as containers have no bounds.
+      const hit = new Sprite(debugHitBtn ? PIXI.Texture.WHITE : PIXI.Texture.EMPTY);﻿
+      hit.name = '__btnhit';
+      hit.width = this.txInfo._proj.width;
+      hit.height = this.txInfo._proj.height;
+      hit.x = this.txInfo._proj.tlX - this.txInfo._proj.x;
+      hit.y = this.txInfo._proj.tlY - this.txInfo._proj.y;
+      this.addChild(hit);
+    }
+  }
+  
+  this 
+  .on('pointerdown', function(){    
+    
+    if (stateChangeCallback){
+      stateChangeCallback(true, this);
+    } else {
+      this.tint = tintOn;
+      if (isContainer){
+        for (const child of this.children){
+          if (child.isSprite){
+            child.tint = tintOn;
+          }
+        }
+      }
+    }
+    
+    this.on('pointerupoutside', function(){
+      this.off('pointerup');
+      this.off('pointerupoutside');
+      if (stateChangeCallback){
+        stateChangeCallback(false, this);
+        return;
+      }
+      this.tint = 0xffffff;
+      if (isContainer){
+        for (const child of this.children){
+          if (child.isSprite){
+            child.tint = 0xffffff;
+          }
+        }
+      }
+    }, this)
+    
+    this.on('pointerup', function(){
+      this.off('pointerup');
+      this.off('pointerupoutside');
+      if (stateChangeCallback){
+        stateChangeCallback(false, this);
+      } else {
+        this.tint = 0xffffff;
+        if (isContainer){
+          for (const child of this.children){
+            if (child.isSprite){
+              child.tint = 0xffffff;
+            }
+          }
+        }
+      }
+      if (clickCallback){
+        clickCallback(this);
+      } else if (typeof this.parent.onBtn === 'function'){
+        this.parent.onBtn.bind(this.parent)(this);
+      } else if (typeof this.parent.parent.onBtn === 'function'){
+        this.parent.parent.onBtn.bind(this.parent.parent)(this);
+      }
+    }, this)
+    
+  }, this)
+
+}
+
+/**
+ * Resets and cleans up display object that was converted to button with `makeBtn()`.
+ */
+PIXI.DisplayObject.prototype.killBtn = function(){
+  this.off('pointerdown');
+  this.off('pointerupoutside');
+  this.off('pointerup');
+  this.interactive = false;
+  this.buttonMode = false;
+  let hit = this.getChildByName('__btnhit');
+  if (hit){
+    this.removeChild(hit);
+  }
+  
+}
+

@@ -9,7 +9,7 @@
  * @module scaler 
  */
  
-import { pixiApp, utils, mutils, nav, htmlEle } from './../storymode.js';
+import { pixiApp, utils, mutils, nav, htmlEle} from './../storymode.js';
 import fscreen from 'fscreen';
 
 let proj; // Artboard projections 

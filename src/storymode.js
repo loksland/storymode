@@ -79,8 +79,7 @@ let htmlEle; // The element containing the game
 
 // Load all transitions
 let filters = {};
-
-const _filters = utils.requireAll(require.context('./filters', false, /.js$/));
+const _filters = utils.requireAll(require.context('./utils/filters', false, /.js$/));
 for (let _filter of _filters) {
   filters[_filter.id] = _filter.default;
 }
@@ -177,11 +176,10 @@ function setup(bgAlpha){
   if (!nav.openDefaultScene()){
     throw new Error('Default scene not found.')
   }
-}
+} 
 
 export {pixiApp, filters, htmlEle}; // Internal access to these properties.
-export {Scene, Camera, Btn}; // Classes
 export {appEmitter}; // Emitter events
 export {kb, sfx, store, physics} // Helpers 
-export {utils, mutils,nav, ui, scaler}; // Core 
+export {utils, mutils,nav, ui, scaler, Scene}; // Core 
 
