@@ -12,7 +12,7 @@ Primary features include:
 
 ### Docs
 
-- Check out the [storymode documentation here](https://github.com/loksland/storymode/wiki).
+- Check out the [storymode documentation here](https://loksland.github.io/storymode/).
 
 ### Dependencies
 
