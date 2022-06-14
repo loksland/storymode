@@ -142,7 +142,7 @@ function setup(){ // Called once on init for now
 
   // Points to pixel conversion factors
   initResizeListener();
-  onResizeThrottled();
+  onResizeThrottled(true);
   initFullScreenListener();
   
 }
@@ -399,12 +399,12 @@ function onResizeImmediate(){
  * <br>- Triggers stage resize logic.
  * @private
  */  
-function onResizeThrottled(){
+function onResizeThrottled(force = false){
   
   let _stageW = pixiApp.renderer.view.width/window.devicePixelRatio;
   let _stageH = pixiApp.renderer.view.height/window.devicePixelRatio;
   
-  if (_stageW == stageW && _stageH == stageH){
+  if (!force && _stageW == stageW && _stageH == stageH){
     return;
   }
   

@@ -136,14 +136,25 @@ PIXI.Graphics.prototype.dashedLineTo = function(fromPt, toPt, dash = 16.0, gap =
 /**
  * Will adjust child display object to retain the same scale despite the scale applied to its parent.
  * <br>- Will throw an error if display object has not got a parent.
+ * @param {boolean} [updatePosition=true] - If true will updated the child's position as well.
  */
-PIXI.DisplayObject.prototype.adjustForParentScale = function(){
+PIXI.DisplayObject.prototype.adjustForParentScale = function(updatePosition = false){
+  
   this.scale.x *= Math.abs(1.0/this.parent.scale.x);
   this.scale.y *= Math.abs(1.0/this.parent.scale.y);
+  
+  if (updatePosition){
+    this.x *= Math.abs(1.0/this.parent.scale.x);
+    this.y *= Math.abs(1.0/this.parent.scale.y);
+  }
+  
 }
 
+
+
+
 /**
- * Display object will remain in place from one parent coord space o another
+ * Display object will remain in place from one parent coord space to another
  * <br>- See {@link https://pixijs.download/dev/docs/PIXI.AnimatedSprite.html#toGlobal}
  */
 PIXI.DisplayObject.prototype.translateToCoordSpace = function(oldParent, newParent){

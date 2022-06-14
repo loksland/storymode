@@ -405,9 +405,7 @@ export function rotatePtAroundPtDeg(centerPt, pt, angDegs, overwrite = false){
 * @returns {number} offsetAngleRadians - The offset in radians.
 */
 export function angularDeltaFromAnglesRad(sourceAngRads, targetAngRads){
-  
   return Math.atan2(Math.sin(targetAngRads-sourceAngRads), Math.cos(targetAngRads-sourceAngRads)); 
-  
 }
 
 /**
@@ -417,12 +415,27 @@ export function angularDeltaFromAnglesRad(sourceAngRads, targetAngRads){
  * @param {number} targetAngleDegrees - The target angle in degrees.
  * @returns {number} offsetAngleDegrees - The offset in degrees.
  */
-export function angularDeltaFromAnglesDeg(sourceAngDegs, targetAngDegs){
-  
-  return radToDeg(angularDeltaFromAnglesRad(degToRad(sourceAngDegs), degToRad(targetAngDegs)));
-  
+export function angularDeltaFromAnglesDeg(sourceAngDegs, targetAngDegs){  
+  return radToDeg(angularDeltaFromAnglesRad(degToRad(sourceAngDegs), degToRad(targetAngDegs)));  
 }
 
+/**
+ * Return the shortest angular offset (in degrees) in the given direction of travel from a source angle (in degrees) to a target angle (in degrees).
+ * <br>The result may be negative.
+ * @param {number} sourceAngleDegrees - The source angle in degrees.
+ * @param {number} targetAngleDegrees - The target angle in degrees.
+ * @param {number} direction - The direction (under 0 for CCW, over 0 for CW)
+ * @returns {number} offsetAngleDegrees - The offset in degrees.
+ */
+export function angularDeltaFromAnglesForceDirDeg(sourceAngDegs, targetAngDegs, dir){  
+  let delta = radToDeg(angularDeltaFromAnglesRad(degToRad(sourceAngDegs), degToRad(targetAngDegs)));    
+  if (delta < 0.0 && dir > 0.0){
+    return 360 + delta;
+  } else if (delta > 0.0 && dir < 0.0){
+    return -360 + delta;
+  }  
+  return delta;
+}
 
 /**
  * Given source dimensions, returns the scale needed to completely cover the given bounds while maintaining aspect ratio.

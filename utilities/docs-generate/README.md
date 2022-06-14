@@ -6,3 +6,14 @@ Primary features include:
 - Scene controller class with display life-cycle methods
 - Adaptive scaling and retina aware automatic layout driven from Photoshop, utilising the [Choppy PSD publishing library](https://www.npmjs.com/package/choppy)
 - Library of 2d maths functions
+
+### Dependencies
+
+- PixiJS (v6.1.2)
+- GSAP with PixiPlugin (v3.7.1)
+- Google Webfont API (v1.6.26)
+
+**Also:**
+- Webpack (v5+)
+- Photoshop 2022
+- [Choppy - command line PSD publishing utility](https://www.npmjs.com/package/choppy)

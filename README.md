@@ -1,7 +1,7 @@
 
 # storymode
 
-`storymode` is a layout and transition helper for [PixiJS](https://www.pixijs.com/) featuring responsive layout, a scene class with lifecycle methods, a camera, and PSD exporting.
+`storymode` is a layout and transition helper for [PixiJS](https://www.pixijs.com/) featuring responsive layout, a scene class with lifecycle methods, and PSD exporting.
 
 Primary features include: 
 
@@ -13,17 +13,6 @@ Primary features include:
 ### Docs
 
 - Check out the [storymode documentation here](https://loksland.github.io/storymode/).
-
-### Dependencies
-
-- PixiJS (v6.1.2)
-- GSAP with PixiPlugin (v3.7.1)
-- Google Webfont API (v1.6.26)
-
-**Also:**
-- Webpack (v5+)
-- Photoshop 2022
-- [Choppy - command line PSD publishing utility](https://www.npmjs.com/package/choppy)
 
 ### Release History 
 

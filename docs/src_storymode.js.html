@@ -32,7 +32,6 @@
   */
 
 // PixiJS convenience aliases 
-
 window.Sprite = PIXI.Sprite;
 window.AnimatedSprite = PIXI.AnimatedSprite;
 window.Point = PIXI.Point;
@@ -41,50 +40,18 @@ window.Text = PIXI.Text
 window.Graphics = PIXI.Graphics
 window.Container = PIXI.Container;
 window.Texture = PIXI.Texture;
-window.loader = PIXI.Loader.shared; //PIXI.Loader.shared; //.  new PIXI.Loader(); // Using shared was causing bug with hot reload.
+window.loader = PIXI.Loader.shared;
 window.resources = loader.resources;
 window.ticker = PIXI.Ticker.shared;
 
-/*
-let Sprite,
-    AnimatedSprite,
-    Point,
-    Rectangle,
-    Text,
-    Graphics,
-    Container,
-    Texture,
-    loader,
-    resources,
-    ticker;
-
-if (typeof window['PIXI'] !== 'undefined'){
-  Sprite = PIXI.Sprite;
-  AnimatedSprite = PIXI.AnimatedSprite;
-  Point = PIXI.Point;
-  Rectangle = PIXI.Rectangle;
-  Text = PIXI.Text
-  Graphics = PIXI.Graphics
-  Container = PIXI.Container;
-  Texture = PIXI.Texture;
-  loader = PIXI.Loader.shared; //PIXI.Loader.shared; //.  new PIXI.Loader(); // Using shared was causing bug with hot reload.
-  resources = loader.resources;
-  ticker = PIXI.Ticker.shared;
-} 
-*/
- 
 const appEmitter = new PIXI.utils.EventEmitter(); 
 
 import * as _ext from './utils/extensions.js';
-import * as _extDep from './depreciated/extensions.js';
-
 
 import * as utils from './utils/utils.js';
 import * as mutils from './utils/mutils.js';
 
 import Scene from './core/scene.js';
-import Camera from './depreciated/camera.js';
-import Btn from './depreciated/btn.js'; 
 
 import * as nav from './core/nav.js';
 import * as scaler from './core/scaler.js';
@@ -107,12 +74,10 @@ let htmlEle; // The element containing the game
 
 // Load all transitions
 let filters = {};
-
-const _filters = utils.requireAll(require.context('./filters', false, /.js$/));
+const _filters = utils.requireAll(require.context('./utils/filters', false, /.js$/));
 for (let _filter of _filters) {
   filters[_filter.id] = _filter.default;
 }
-
 
 /**
  * Called after initial assets are loaded.
@@ -121,13 +86,11 @@ for (let _filter of _filters) {
  * @param {PIXI.Application} pixiApp The PIXI Application 
  */
  
- 
- 
 /**
  * Creates a new PIXI Application, wrapper for `new PIXI.Application(...)`
  * @param {DOMElement} htmlEle - The DOM element in which to add the Pixi canvas.
  * @param {boolean} [fullScreen=false] - If true will base the canvas dimensions on the window size rather than the containing element.
- * @param {Object} [pixiOptions=null] - Option object to override defaults sent to PIXI. See: http://pixijs.download/release/docs/PIXI.Application.html#Application
+ * @param {Object} [pixiOptions=null] - Option object to override defaults sent to PIXI. See: {@link http://pixijs.download/release/docs/PIXI.Application.html#Application}
  * @param {AppLoadCallback} [onLoadCallback=null] - Called after initial assets are loaded.
  */
 export function createApp(_htmlEle, fullScreen = false, pixiOptions = null, onLoadCallback = null) {
@@ -153,12 +116,10 @@ export function createApp(_htmlEle, fullScreen = false, pixiOptions = null, onLo
     
     // Docs: http://pixijs.download/release/docs/PIXI.Application.html#Application
     pixiApp = new PIXI.Application(pixiOptions);
-    
     pixiApp.render()
-
     scaler.setup();
     
-    ui.loadAssets(function(){
+    ui.autoloadAssets(function(){
       
       setup(pixiOptions.backgroundAlpha);
       
@@ -208,13 +169,12 @@ function setup(bgAlpha){
   if (!nav.openDefaultScene()){
     throw new Error('Default scene not found.')
   }
-}
+} 
 
 export {pixiApp, filters, htmlEle}; // Internal access to these properties.
-export {Scene, Camera, Btn}; // Classes
 export {appEmitter}; // Emitter events
 export {kb, sfx, store, physics} // Helpers 
-export {utils, mutils,nav, ui, scaler}; // Core 
+export {utils, mutils,nav, ui, scaler, Scene}; // Core 
 
 </code></pre>
         </article>
@@ -226,13 +186,13 @@ export {utils, mutils,nav, ui, scaler}; // Core
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-mutils.html">mutils</a></li><li><a href="module-nav.html">nav</a></li><li><a href="module-scaler.html">scaler</a></li><li><a href="module-store.html">store</a></li><li><a href="module-storymode.html">storymode</a></li><li><a href="module-ui.html">ui</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Namespaces</h3><ul><li><a href="physics.html">physics</a></li><li><a href="PIXI.html">PIXI</a></li></ul><h3>Classes</h3><ul><li><a href="-_PhysicsNotes.html">_PhysicsNotes</a></li><li><a href="-_PsdConfiguration.html">_PsdConfiguration</a></li><li><a href="-_Snippets.html">_Snippets</a></li><li><a href="-_WindowScope.html">_WindowScope</a></li><li><a href="kb.html">kb</a></li><li><a href="module-nav.FadeTrans.html">FadeTrans</a></li><li><a href="module-nav.MarioTrans.html">MarioTrans</a></li><li><a href="module-nav.OverTrans.html">OverTrans</a></li><li><a href="module-nav.PanTrans.html">PanTrans</a></li><li><a href="module-nav.PixelateTrans.html">PixelateTrans</a></li><li><a href="module-scaler-ArtboardProjection.html">ArtboardProjection</a></li><li><a href="physics.jgsap.html">jgsap</a></li><li><a href="physics.JRender.html">JRender</a></li><li><a href="physics.JRunner.html">JRunner</a></li><li><a href="physics.JSyncLink.html">JSyncLink</a></li><li><a href="physics.JWireframeRender.html">JWireframeRender</a></li><li><a href="PIXI.AnimatedSprite.html">AnimatedSprite</a></li><li><a href="PIXI.DisplayObject.html">DisplayObject</a></li><li><a href="PIXI.Graphics.html">Graphics</a></li><li><a href="PIXI.Texture.html">Texture</a></li><li><a href="Scene.html">Scene</a></li><li><a href="SFX.html">SFX</a></li></ul><h3>Events</h3><ul><li><a href="module-scaler.html#event:fullscreenchange">fullscreenchange</a></li><li><a href="module-scaler.html#event:resize">resize</a></li><li><a href="module-scaler.html#event:resize_immediate">resize_immediate</a></li><li><a href="SFX.html#event:bgloop_enabled_change">bgloop_enabled_change</a></li><li><a href="SFX.html#event:bgready">bgready</a></li><li><a href="SFX.html#event:sfx_enabled_change">sfx_enabled_change</a></li><li><a href="SFX.html#event:sfxready">sfxready</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-mutils.html">mutils</a></li><li><a href="module-nav.html">nav</a></li><li><a href="module-scaler.html">scaler</a></li><li><a href="module-store.html">store</a></li><li><a href="module-storymode.html">storymode</a></li><li><a href="module-ui.html">ui</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Namespaces</h3><ul><li><a href="physics.html">physics</a></li><li><a href="PIXI.html">PIXI</a></li></ul><h3>Classes</h3><ul><li><a href="-_PhysicsNotes.html">_PhysicsNotes</a></li><li><a href="-_PsdConfiguration.html">_PsdConfiguration</a></li><li><a href="-_Snippets.html">_Snippets</a></li><li><a href="-_Subclassing.html">_Subclassing</a></li><li><a href="-_WindowScope.html">_WindowScope</a></li><li><a href="kb.html">kb</a></li><li><a href="module-nav.FadeTrans.html">FadeTrans</a></li><li><a href="module-nav.MarioTrans.html">MarioTrans</a></li><li><a href="module-nav.OverTrans.html">OverTrans</a></li><li><a href="module-nav.PanTrans.html">PanTrans</a></li><li><a href="module-nav.PixelateTrans.html">PixelateTrans</a></li><li><a href="module-scaler-ArtboardProjection.html">ArtboardProjection</a></li><li><a href="physics.jgsap.html">jgsap</a></li><li><a href="physics.JRender.html">JRender</a></li><li><a href="physics.JRunner.html">JRunner</a></li><li><a href="physics.JSyncLink.html">JSyncLink</a></li><li><a href="physics.JWireframeRender.html">JWireframeRender</a></li><li><a href="PIXI.AnimatedSprite.html">AnimatedSprite</a></li><li><a href="PIXI.DisplayObject.html">DisplayObject</a></li><li><a href="PIXI.Graphics.html">Graphics</a></li><li><a href="PIXI.Texture.html">Texture</a></li><li><a href="Scene.html">Scene</a></li><li><a href="SFX.html">SFX</a></li></ul><h3>Events</h3><ul><li><a href="module-scaler.html#event:fullscreenchange">fullscreenchange</a></li><li><a href="module-scaler.html#event:resize">resize</a></li><li><a href="module-scaler.html#event:resize_immediate">resize_immediate</a></li><li><a href="SFX.html#event:bgloop_enabled_change">bgloop_enabled_change</a></li><li><a href="SFX.html#event:bgready">bgready</a></li><li><a href="SFX.html#event:sfx_enabled_change">sfx_enabled_change</a></li><li><a href="SFX.html#event:sfxready">sfxready</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.10</a> on Wed Jun 01 2022 16:14:02 GMT+1000 (Australian Eastern Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.10</a> on Tue Jun 07 2022 12:39:26 GMT+1000 (Australian Eastern Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

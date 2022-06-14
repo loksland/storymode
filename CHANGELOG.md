@@ -1,5 +1,6 @@
 # Changelog
 
+- v1.1.40 - (14-06-2022) Docs update, multi-res spritesheet support added, minor mutils updates.
 - v1.1.39 - (06-05-2022) Docs, maths utils added
 - v1.1.38 - (29-04-2022) sfx: added mixer config obj support
 - v1.1.37 - (27-04-2022) Added clipboard copy to utils

@@ -35,7 +35,7 @@
  * @module ui 
  */
 
-import { Scene, Btn, scaler, Camera, utils } from './../storymode.js';
+import { Scene, scaler, utils } from './../storymode.js';
 
 // Index textures
 let psdInfo;
@@ -109,6 +109,16 @@ function registerSpritesheetPath(_spritesheetPath){
   spritesheetPath = _spritesheetPath;
 }
 
+/**
+ * Register a file base name suffix to be appended to spritsheet loads.
+ * &lt;br>- To be called before {@link storymode#createApp}
+ * @param {string} [spritesheetSuffix=''] - Suffix, eg `@2x` for retina+ resolution.
+ */
+let spritesheetSuffix = '';
+function setSpritesheetSuffix(_spritesheetSuffix){
+  spritesheetSuffix = _spritesheetSuffix;
+}
+
 let _crispTextMode = false;
 /**
  * Control the aliasing of text fields added via `displayObject.fromTx(...)` and `displayObject.addArt(...)`. 
@@ -143,11 +153,10 @@ export function onLoaderQueue(_onLoaderQueueCallback){
 /**
  * `storymode` will call this method as part of the initialisation of {@link storymode#createApp}.
  * &lt;br>- Manually queue any additional assets to be loaded.
- * &lt;br>- Needs to be called before 
  * @param {Function} loadAssetCallback  
  * @private
  */
-export function loadAssets(_loadAssetCallback){
+export function autoloadAssets(_loadAssetCallback){
   
   if (!psdInfo){
     throw new Error('PSD info never registered. Call `ui.registerPsdInfo(..)` before initiating app.')
@@ -170,13 +179,13 @@ export function loadAssets(_loadAssetCallback){
   for (let psdID in psdInfo){
     if (psdInfo[psdID].doc.spritesheet){ // Load spritesheets associated with PSD once
       let spritesheetBaseName = psdInfo[psdID].doc.spritesheet;
-      if (!queuedSpritesheets[spritesheetBaseName]){
+      if (!queuedSpritesheets[spritesheetBaseName] &amp;&amp; !disabledSpritesheetBaseNames[spritesheetBaseName]){
         queuedSpritesheets[spritesheetBaseName] = true;
-        loader.add(spritesheetBaseName + SPRITESHEET_RESOURCE_SUFFIX, spritesheetPath+spritesheetBaseName + '.json'); 
+        loader.add(spritesheetBaseName + SPRITESHEET_RESOURCE_SUFFIX, spritesheetPath+spritesheetBaseName + spritesheetSuffix+'.json'); 
       }
     } else {
       for (let tx of psdInfo[psdID].doc.txs){  // Load individual images
-        if (tx.type == 'img' &amp;&amp; !tx.txOverride &amp;&amp; !tx.clone){ 
+        if (tx.type === 'img' &amp;&amp; !tx.txOverride &amp;&amp; !tx.clone){ 
           loader.add(tx.path, tx.src);
         }
       }
@@ -187,21 +196,106 @@ export function loadAssets(_loadAssetCallback){
     onLoaderQueueCallback(loader);
   }
   
-  loader.load(onLoadComplete);
+  loader.load(onAutoLoadComplete);
   
 }
 
-
-function onLoadComplete(){
+/**
+ * Called after an asset class (webfont or textures) has finished autoloading.
+ * @private
+ */
+function onAutoLoadComplete(){
   totLoadsComplete++;
-  if (totLoadsComplete == initialLoadItemCount){
+  if (totLoadsComplete === initialLoadItemCount){
     if (loadAssetCallback){
       loadAssetCallback();
     }
   }
 }
 
+// On demand sprite sheets
+// -----------------------
 
+let disabledSpritesheetBaseNames = {};
+
+/**
+ * Disable autoloading the given spritesheet at startup.
+ * &lt;br>- To be called before {@link storymode#createApp}.
+ * @param {...string} spritesheetBasename - Spritesheet name without extension.
+ * @example 
+ 
+// On startup:
+ui.registerOnDemandLoadMode('lazy')
+
+// In scene:
+
+onDidArrive(fromModal){
+
+  super.onDidArrive(fromModal);
+
+  ui.queueOnDemandLoad('lazy', function(){ // Will fire instantly if already loaded,
+    // Add lazy loaded sprites...
+  })
+  
+}
+
+onWillExit(fromModal){
+
+  super.onWillExit(fromModal){;
+
+  ui.removeOnDemandListeners(); // Prevent lost callbacks
+  
+}
+ 
+ */
+export function registerOnDemandLoadMode(...spritesheetBasenames){
+  for (let spritesheetBasename of spritesheetBasenames){
+    disabledSpritesheetBaseNames[spritesheetBasename] = true;
+  }
+}
+
+/**
+ * Checks if sprite sheet is loaded and ready to use.
+ * @param {string} spritesheetBasename - Spritesheet name without extension.
+ * @returns {boolean} isLoaded
+ */
+export function isSpritesheetLoaded(spritesheetBasename){
+  if (typeof resources[spritesheetBasename + SPRITESHEET_RESOURCE_SUFFIX] === 'undefined'){
+    return false;
+  }
+  return resources[spritesheetBasename + SPRITESHEET_RESOURCE_SUFFIX].spritesheet ? true : false;
+}
+
+/**
+ * Queue a single spritesheet or multiple spritesheets to be loaded with an `onComplete` callback.
+ * &lt;br>- Designed to be called multiple times without causing any issues.
+ * &lt;br>- Any existing on-demand load callbacks will be overwritten with the current callback.
+ * &lt;br>- If the spritesheets are already loaded the callback will be fired immediately.
+ * @param {string|Array} spritesheetBasenames - Spritesheet name without extension, or array of spritesheet base names.
+ * @param {Function} loadCallback - `Oncomplete` callback.
+ */
+export function queueOnDemandLoad(spritesheetBasenames, loadCallback){
+  removeOnDemandListeners();  
+  if (loader.loading){
+    loader.reset();
+  } 
+  spritesheetBasenames = Array.isArray(spritesheetBasenames) ? spritesheetBasenames : [spritesheetBasenames]
+  for (let spritesheetBasename of spritesheetBasenames){
+    if (!isSpritesheetLoaded(spritesheetBasename)){
+      loader.add(spritesheetBasename + SPRITESHEET_RESOURCE_SUFFIX, spritesheetPath+spritesheetBasename + spritesheetSuffix+'.json'); 
+    }
+  }
+  // loader.onError.add(onLoaderError); 
+  loader.onComplete.add(loadCallback)
+  loader.load();
+}
+
+/**
+ * Remove all listeners to the shared loader.
+ */
+export function removeOnDemandListeners(){
+  loader.onComplete.detachAll();  
+}
 
 /**
  * Returns a texture from given sprite path. 
@@ -236,12 +330,10 @@ PIXI.Texture.fromTx = function(txPath, frame = null){
 }
 
 
-
-
 /**
  * Loads supplied texture to target class automatically scaled and positioned based on the projection properties of the `scaler` class.
  * &lt;br>- Optionally supply a clipping frame - which is handly for cutting up a sprite at runtime.
- * &lt;br>- Supports `PIXI.Text`, `PIXI.Graphics`, Btn, `PIXI.AnimatedSprite`, `PIXI.Sprite`, `PIXI.Container`.
+ * &lt;br>- Supports `PIXI.Text`, `PIXI.Graphics`, `PIXI.AnimatedSprite`, `PIXI.Sprite`, `PIXI.Container`.
  * @param {string} texturePath -  A reference to the containing PSD document and layer name, separated by a forward slash. Eg. `mydoc.psd/mysprite`.   
  * @param {boolean} [addChildren=true] -  If `true` then the display object's nested children will be added as well.
  * @param {PIXI.Rectangle|string} [frame|textContent=null] - For a sprite will clip the texture to the supplied frame rect. Not compatible with spritesheet assets. Will be taken into account with `dispo.applyProj()`. For text this paramer will overwrite the containing text of the field.
@@ -260,11 +352,13 @@ PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
   
   let dispo;
   
-  if (this == Btn){
-    
-    dispo = new Btn(txPath);
-      
-  } else if (this == Graphics){
+  //if (this == Btn){
+  //  
+  //  dispo = new Btn(txPath);
+  //    
+  //} else 
+  
+  if (this == Graphics){
     
     dispo = new Graphics();
   
@@ -511,6 +605,7 @@ PIXI.DisplayObject.prototype.applyProj = function(syncProps = false){
   // Store a pure representation of the position and scale as it relates to the stage.
   this.txInfo._proj = {};
   
+  
   this.txInfo._proj.x = scaler.proj[projID].transArtX(this.txInfo.x);
   this.txInfo._proj.y = scaler.proj[projID].transArtY(this.txInfo.y);
   this.txInfo._proj.width = scaler.proj[projID].scale * this.txInfo.width;
@@ -607,7 +702,7 @@ PIXI.DisplayObject.prototype.getArt = function(txNameGlob){
 
 /**
  * Will add all matching textures to the calling instance according to nesting, scale and position settings in the PSD export data and `scaler` class.
- * &lt;br>- This method is usually called by a `scene` (or `camera`) and will load textures found in the PSD associated with the scene via the `psdID` property.
+ * &lt;br>- This method is usually called by a `scene` and will load textures found in the PSD associated with the scene via the `psdID` property.
  * &lt;br>- Nested display objects (display objects within display objects) are automatically added as well.
  * &lt;br>- If caller is a scene then all top level items are added otherwise will add chidren only.
  * &lt;br>- All display objects added will also be appended to a property called `art` of the calling instance, in a lookup object by texture name.
@@ -625,7 +720,7 @@ didLoad(ev){
  */ 
 PIXI.DisplayObject.prototype.addArt = function(txNameGlob){
   
-  if (!((this instanceof Scene) || (this instanceof Camera)) &amp;&amp; this.txInfo &amp;&amp; this.txInfo.children.length == 0){   
+  if (!(this instanceof Scene) &amp;&amp; this.txInfo &amp;&amp; this.txInfo.children.length == 0){   
     // No children to add
     return
   }
@@ -637,7 +732,7 @@ PIXI.DisplayObject.prototype.addArt = function(txNameGlob){
   let endIndex = null;
   let addTopLevelOnly;
   
-  if (!((this instanceof Scene) || (this instanceof Camera)) &amp;&amp; this.txInfo){
+  if (!(this instanceof Scene) &amp;&amp; this.txInfo){
     
     psdID = this.txInfo.psdID;    
     // Only loop the subset of textures for this item. May include children of children that will not be added.
@@ -648,7 +743,7 @@ PIXI.DisplayObject.prototype.addArt = function(txNameGlob){
   } else {
     
     // Use scene psdID property 
-    if (!psdID &amp;&amp; ((this instanceof Scene) || (this instanceof Camera))){
+    if (!psdID &amp;&amp; (this instanceof Scene)){
       psdID = this.psdID; 
     }
     
@@ -679,6 +774,7 @@ PIXI.DisplayObject.prototype.addArt = function(txNameGlob){
   if (txNameGlobs.length == 0 &amp;&amp; typeof this.addArtTxNameGlobs === 'function'){
     // Use caller's custom txNameGlobs list
     txNameGlobs = this.addArtTxNameGlobs();
+    console.log('GOT', txNameGlobs)
   }
   
   // Put ! criterea first to optimise pattern matching later
@@ -759,8 +855,8 @@ PIXI.DisplayObject.prototype.addArt = function(txNameGlob){
               dispo = Sprite.fromTx(psdID + '/' + txs[i].name);      
             } else if (txs[i].type == 'tf'){      
               dispo = Text.fromTx(psdID + '/' + txs[i].name);   
-            } else if (txs[i].type == 'btn'){
-              dispo = Btn.fromTx(psdID + '/' + txs[i].name);
+            //} else if (txs[i].type == 'btn'){
+            //  dispo = Btn.fromTx(psdID + '/' + txs[i].name);
             } else if (txs[i].type == 'rect'){
               dispo = Graphics.fromTx(psdID + '/' + txs[i].name);  
             }
@@ -1150,7 +1246,7 @@ function queueWebFonts(){
   let classAdditionalsQueued = {};
   
   for (let txPath in txInfo){
-    if (txInfo[txPath].type == 'tf' || txInfo[txPath].type == 'btn'){
+    if (txInfo[txPath].type == 'tf'){ //  || txInfo[txPath].type == 'btn'
       
       let fontStyle = psdFontStyleComponents(txInfo[txPath].tfParams.fontStyle)
       
@@ -1216,11 +1312,11 @@ function queueWebFonts(){
         },
         active: function() { 
           //console.log('Loaded fonts: `'+webfontIDs.join('`,`')+'`')
-          onLoadComplete(); 
+          onAutoLoadComplete(); 
         },
         inactive: function() { 
           //console.log('Failed to load fonts: `'+webfontIDs.join('`,`')+'`')
-          onLoadComplete(); // Failed load will fallback
+          onAutoLoadComplete(); // Failed load will fallback
         }
     });
     
@@ -1267,8 +1363,7 @@ function registerClassForTx(_class, txPath){
   txClassLookup[txPath] = _class;
 }
 
-
-export { txInfo, registerPsdInfo, registerClassForTx, registerSpritesheetPath} // Temporary?
+export { txInfo, registerPsdInfo, registerClassForTx, registerSpritesheetPath, setSpritesheetSuffix} // Temporary?
 
 
 
@@ -1282,13 +1377,13 @@ export { txInfo, registerPsdInfo, registerClassForTx, registerSpritesheetPath} /
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-mutils.html">mutils</a></li><li><a href="module-nav.html">nav</a></li><li><a href="module-scaler.html">scaler</a></li><li><a href="module-store.html">store</a></li><li><a href="module-storymode.html">storymode</a></li><li><a href="module-ui.html">ui</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Namespaces</h3><ul><li><a href="physics.html">physics</a></li><li><a href="PIXI.html">PIXI</a></li></ul><h3>Classes</h3><ul><li><a href="-_PhysicsNotes.html">_PhysicsNotes</a></li><li><a href="-_PsdConfiguration.html">_PsdConfiguration</a></li><li><a href="-_Snippets.html">_Snippets</a></li><li><a href="-_WindowScope.html">_WindowScope</a></li><li><a href="kb.html">kb</a></li><li><a href="module-nav.FadeTrans.html">FadeTrans</a></li><li><a href="module-nav.MarioTrans.html">MarioTrans</a></li><li><a href="module-nav.OverTrans.html">OverTrans</a></li><li><a href="module-nav.PanTrans.html">PanTrans</a></li><li><a href="module-nav.PixelateTrans.html">PixelateTrans</a></li><li><a href="module-scaler-ArtboardProjection.html">ArtboardProjection</a></li><li><a href="physics.jgsap.html">jgsap</a></li><li><a href="physics.JRender.html">JRender</a></li><li><a href="physics.JRunner.html">JRunner</a></li><li><a href="physics.JSyncLink.html">JSyncLink</a></li><li><a href="physics.JWireframeRender.html">JWireframeRender</a></li><li><a href="PIXI.AnimatedSprite.html">AnimatedSprite</a></li><li><a href="PIXI.DisplayObject.html">DisplayObject</a></li><li><a href="PIXI.Graphics.html">Graphics</a></li><li><a href="PIXI.Texture.html">Texture</a></li><li><a href="Scene.html">Scene</a></li><li><a href="SFX.html">SFX</a></li></ul><h3>Events</h3><ul><li><a href="module-scaler.html#event:fullscreenchange">fullscreenchange</a></li><li><a href="module-scaler.html#event:resize">resize</a></li><li><a href="module-scaler.html#event:resize_immediate">resize_immediate</a></li><li><a href="SFX.html#event:bgloop_enabled_change">bgloop_enabled_change</a></li><li><a href="SFX.html#event:bgready">bgready</a></li><li><a href="SFX.html#event:sfx_enabled_change">sfx_enabled_change</a></li><li><a href="SFX.html#event:sfxready">sfxready</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-mutils.html">mutils</a></li><li><a href="module-nav.html">nav</a></li><li><a href="module-scaler.html">scaler</a></li><li><a href="module-store.html">store</a></li><li><a href="module-storymode.html">storymode</a></li><li><a href="module-ui.html">ui</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Namespaces</h3><ul><li><a href="physics.html">physics</a></li><li><a href="PIXI.html">PIXI</a></li></ul><h3>Classes</h3><ul><li><a href="-_PhysicsNotes.html">_PhysicsNotes</a></li><li><a href="-_PsdConfiguration.html">_PsdConfiguration</a></li><li><a href="-_Snippets.html">_Snippets</a></li><li><a href="-_Subclassing.html">_Subclassing</a></li><li><a href="-_WindowScope.html">_WindowScope</a></li><li><a href="kb.html">kb</a></li><li><a href="module-nav.FadeTrans.html">FadeTrans</a></li><li><a href="module-nav.MarioTrans.html">MarioTrans</a></li><li><a href="module-nav.OverTrans.html">OverTrans</a></li><li><a href="module-nav.PanTrans.html">PanTrans</a></li><li><a href="module-nav.PixelateTrans.html">PixelateTrans</a></li><li><a href="module-scaler-ArtboardProjection.html">ArtboardProjection</a></li><li><a href="physics.jgsap.html">jgsap</a></li><li><a href="physics.JRender.html">JRender</a></li><li><a href="physics.JRunner.html">JRunner</a></li><li><a href="physics.JSyncLink.html">JSyncLink</a></li><li><a href="physics.JWireframeRender.html">JWireframeRender</a></li><li><a href="PIXI.AnimatedSprite.html">AnimatedSprite</a></li><li><a href="PIXI.DisplayObject.html">DisplayObject</a></li><li><a href="PIXI.Graphics.html">Graphics</a></li><li><a href="PIXI.Texture.html">Texture</a></li><li><a href="Scene.html">Scene</a></li><li><a href="SFX.html">SFX</a></li></ul><h3>Events</h3><ul><li><a href="module-scaler.html#event:fullscreenchange">fullscreenchange</a></li><li><a href="module-scaler.html#event:resize">resize</a></li><li><a href="module-scaler.html#event:resize_immediate">resize_immediate</a></li><li><a href="SFX.html#event:bgloop_enabled_change">bgloop_enabled_change</a></li><li><a href="SFX.html#event:bgready">bgready</a></li><li><a href="SFX.html#event:sfx_enabled_change">sfx_enabled_change</a></li><li><a href="SFX.html#event:sfxready">sfxready</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.10</a> on Wed Jun 01 2022 16:14:02 GMT+1000 (Australian Eastern Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.10</a> on Tue Jun 07 2022 12:39:26 GMT+1000 (Australian Eastern Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

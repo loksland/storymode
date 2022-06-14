@@ -28,7 +28,7 @@
 
 <header>
     
-        <h2><span class="attribs"><span class="type-signature"></span></span>Scene<span class="signature">(sceneData<span class="signature-attributes">opt</span>, psdID<span class="signature-attributes">opt</span>, bgColor<span class="signature-attributes">opt</span>, createCamera<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h2>
+        <h2><span class="attribs"><span class="type-signature"></span></span>Scene<span class="signature">(sceneData<span class="signature-attributes">opt</span>, psdID<span class="signature-attributes">opt</span>, bgColor<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h2>
         
             <div class="class-description">The scene class represents a distinct screen in the application. 
 This class is designed to be subclassed.
@@ -47,7 +47,7 @@ Scenes are created, loaded and displayed by the `nav`, and are closely coupled t
     
 
     
-    <h4 class="name" id="Scene"><span class="type-signature"></span>new Scene<span class="signature">(sceneData<span class="signature-attributes">opt</span>, psdID<span class="signature-attributes">opt</span>, bgColor<span class="signature-attributes">opt</span>, createCamera<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="Scene"><span class="type-signature"></span>new Scene<span class="signature">(sceneData<span class="signature-attributes">opt</span>, psdID<span class="signature-attributes">opt</span>, bgColor<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
     
 
     
@@ -209,45 +209,6 @@ Scenes are created, loaded and displayed by the `nav`, and are closely coupled t
         </tr>
 
     
-
-        <tr>
-            
-                <td class="name"><code>createCamera</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">boolean</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-                <td class="default">
-                
-                    false
-                
-                </td>
-            
-
-            <td class="description last">Whether a camera should be created and added to the new scene.</td>
-        </tr>
-
-    
     </tbody>
 </table>
 
@@ -317,82 +278,82 @@ Scenes are created, loaded and displayed by the `nav`, and are closely coupled t
     <h5>Example</h5>
     
     <pre class="prettyprint"><code>export default class MyScene extends Scene {
-     
-   static getSfxResources(){    
-     return  {
-       tap: {path: 'sfx/ui_tap.mp3'}, 
-     }
-   }
+ 
+  static getSfxResources(){    
+    return  {
+      tap: {path: 'sfx/ui_tap.mp3'}, 
+    }
+  }
 
-   constructor(sceneData){    
-     super(sceneData, 'myscene.psd', 0xff3300); 
-   }
+  constructor(sceneData){    
+    super(sceneData, 'myscene.psd', 0xff3300); 
+  }
+
+  didLoad(ev){ 
+
+    super.didLoad(ev);
+
+    this.addArt('!_*');
+
+    this.ready();
    
-   didLoad(ev){ 
-     
-     super.didLoad(ev);
-     
-     this.addArt('!_*');
-     
-     this.ready();
-     
-   }
+  }
+
+  shouldReloadOnStageResize(stageW, stageH){
    
-   shouldReloadOnStageResize(stageW, stageH){
-     
-     for (let dispoName in this.art){
-       this.art[dispoName].applyProj()
-     }    
-     
-     return false;
-     
-   }
+    for (let dispoName in this.art){
+      this.art[dispoName].applyProj()
+    }    
+
+    return false;
    
-   onBtn(btn){
-     
-   }
+  }
+
+  onBtn(btn){
    
-   onWillArrive(fromModal){
-     
-     super.onWillArrive(fromModal);
-     
-     // Perform pre enter transition operations
-     
-   }
+  }
 
-   onDidArrive(fromModal){
+  onWillArrive(fromModal){
+   
+    super.onWillArrive(fromModal);
 
-     super.onDidArrive(fromModal);
-     
-     // Perform post enter transition operations
-         
-   }
+    // Perform pre enter transition operations
+   
+  }
 
-   onWillExit(fromModal){
-     
-     super.onWillExit(fromModal);
-     
-     // Perform pre exit transition operations
-     
-   }
+  onDidArrive(fromModal){
 
-   onDidExit(fromModal){
-     
-     super.onDidExit(fromModal);
-     
-     // Perform post exit transition operations
-     
-   }
+    super.onDidArrive(fromModal);
 
-   dispose(){
-     
-     // Perform clean up before instance is destroyed  
-     // Call super method *after* clean up. 
-     
-     super.dispose();
-     
-   }
- }</code></pre>
+    // Perform post enter transition operations
+       
+  }
+
+  onWillExit(fromModal){
+
+    super.onWillExit(fromModal);
+
+    // Perform pre exit transition operations
+
+  }
+
+  onDidExit(fromModal){
+
+    super.onDidExit(fromModal);
+
+    // Perform post exit transition operations
+   
+  }
+
+  dispose(){
+
+    // Perform clean up before instance is destroyed  
+    // Call super method *after* clean up. 
+
+    super.dispose();
+
+  }
+}</code></pre>
 
 
 
@@ -481,79 +442,7 @@ Scenes are created, loaded and displayed by the `nav`, and are closely coupled t
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line131">line 131</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-        
-            
-<h4 class="name" id="camera"><span class="type-signature">(nullable) </span>camera<span class="type-signature"> :storymode.camera</span></h4>
-
-
-
-
-<div class="description">
-    The camera, if any.
-</div>
-
-
-
-    <h5>Type:</h5>
-    <ul>
-        <li>
-            
-<span class="param-type">storymode.camera</span>
-
-
-        </li>
-    </ul>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line138">line 138</a>
+        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line130">line 130</a>
     </li></ul></dd>
     
 
@@ -625,7 +514,7 @@ Scenes are created, loaded and displayed by the `nav`, and are closely coupled t
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line124">line 124</a>
+        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line123">line 123</a>
     </li></ul></dd>
     
 
@@ -697,7 +586,7 @@ Scenes are created, loaded and displayed by the `nav`, and are closely coupled t
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line117">line 117</a>
+        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line116">line 116</a>
     </li></ul></dd>
     
 
@@ -769,7 +658,7 @@ Scenes are created, loaded and displayed by the `nav`, and are closely coupled t
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line110">line 110</a>
+        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line109">line 109</a>
     </li></ul></dd>
     
 
@@ -849,7 +738,7 @@ Scenes are created, loaded and displayed by the `nav`, and are closely coupled t
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line224">line 224</a>
+        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line212">line 212</a>
     </li></ul></dd>
     
 
@@ -986,7 +875,7 @@ Scenes are created, loaded and displayed by the `nav`, and are closely coupled t
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line152">line 152</a>
+        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line140">line 140</a>
     </li></ul></dd>
     
 
@@ -1075,7 +964,7 @@ When subclassing ensure `super.dispose()` is called after performing clean up.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line282">line 282</a>
+        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line270">line 270</a>
     </li></ul></dd>
     
 
@@ -1212,7 +1101,7 @@ When subclassing ensure `super.dispose()` is called after performing clean up.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line215">line 215</a>
+        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line203">line 203</a>
     </li></ul></dd>
     
 
@@ -1371,7 +1260,7 @@ When subclassing ensure `super.dispose()` is called after performing clean up.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line206">line 206</a>
+        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line194">line 194</a>
     </li></ul></dd>
     
 
@@ -1585,7 +1474,7 @@ When subclassing ensure `super.dispose()` is called after performing clean up.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_ui.js.html">src/core/ui.js</a>, <a href="src_core_ui.js.html#line945">line 945</a>
+        <a href="src_core_ui.js.html">src/core/ui.js</a>, <a href="src_core_ui.js.html#line1041">line 1041</a>
     </li></ul></dd>
     
 
@@ -1753,7 +1642,7 @@ When subclassing ensure `super.dispose()` is called after performing clean up.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line274">line 274</a>
+        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line262">line 262</a>
     </li></ul></dd>
     
 
@@ -1892,7 +1781,7 @@ Ensure to call `super.onDidArrive(fromModal)` method when subclassing.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line249">line 249</a>
+        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line237">line 237</a>
     </li></ul></dd>
     
 
@@ -2031,7 +1920,7 @@ Ensure to call `super.onDidExit(fromModal)` method when subclassing.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line267">line 267</a>
+        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line255">line 255</a>
     </li></ul></dd>
     
 
@@ -2170,7 +2059,7 @@ Ensure to call `super.onWillArrive(fromModal)` method when subclassing.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line240">line 240</a>
+        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line228">line 228</a>
     </li></ul></dd>
     
 
@@ -2309,7 +2198,7 @@ Ensure to call `super.onWillExit(fromModal)` method when subclassing.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line258">line 258</a>
+        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line246">line 246</a>
     </li></ul></dd>
     
 
@@ -2397,7 +2286,7 @@ Ensure to call `super.onWillExit(fromModal)` method when subclassing.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line169">line 169</a>
+        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line157">line 157</a>
     </li></ul></dd>
     
 
@@ -2580,7 +2469,7 @@ Return `false` to prevent the `nav` from automatically reloading the scene when 
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line196">line 196</a>
+        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line184">line 184</a>
     </li></ul></dd>
     
 
@@ -2648,13 +2537,13 @@ Return `false` to prevent the `nav` from automatically reloading the scene when 
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-mutils.html">mutils</a></li><li><a href="module-nav.html">nav</a></li><li><a href="module-scaler.html">scaler</a></li><li><a href="module-store.html">store</a></li><li><a href="module-storymode.html">storymode</a></li><li><a href="module-ui.html">ui</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Namespaces</h3><ul><li><a href="physics.html">physics</a></li><li><a href="PIXI.html">PIXI</a></li></ul><h3>Classes</h3><ul><li><a href="-_PhysicsNotes.html">_PhysicsNotes</a></li><li><a href="-_PsdConfiguration.html">_PsdConfiguration</a></li><li><a href="-_Snippets.html">_Snippets</a></li><li><a href="-_WindowScope.html">_WindowScope</a></li><li><a href="kb.html">kb</a></li><li><a href="module-nav.FadeTrans.html">FadeTrans</a></li><li><a href="module-nav.MarioTrans.html">MarioTrans</a></li><li><a href="module-nav.OverTrans.html">OverTrans</a></li><li><a href="module-nav.PanTrans.html">PanTrans</a></li><li><a href="module-nav.PixelateTrans.html">PixelateTrans</a></li><li><a href="module-scaler-ArtboardProjection.html">ArtboardProjection</a></li><li><a href="physics.jgsap.html">jgsap</a></li><li><a href="physics.JRender.html">JRender</a></li><li><a href="physics.JRunner.html">JRunner</a></li><li><a href="physics.JSyncLink.html">JSyncLink</a></li><li><a href="physics.JWireframeRender.html">JWireframeRender</a></li><li><a href="PIXI.AnimatedSprite.html">AnimatedSprite</a></li><li><a href="PIXI.DisplayObject.html">DisplayObject</a></li><li><a href="PIXI.Graphics.html">Graphics</a></li><li><a href="PIXI.Texture.html">Texture</a></li><li><a href="Scene.html">Scene</a></li><li><a href="SFX.html">SFX</a></li></ul><h3>Events</h3><ul><li><a href="module-scaler.html#event:fullscreenchange">fullscreenchange</a></li><li><a href="module-scaler.html#event:resize">resize</a></li><li><a href="module-scaler.html#event:resize_immediate">resize_immediate</a></li><li><a href="SFX.html#event:bgloop_enabled_change">bgloop_enabled_change</a></li><li><a href="SFX.html#event:bgready">bgready</a></li><li><a href="SFX.html#event:sfx_enabled_change">sfx_enabled_change</a></li><li><a href="SFX.html#event:sfxready">sfxready</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-mutils.html">mutils</a></li><li><a href="module-nav.html">nav</a></li><li><a href="module-scaler.html">scaler</a></li><li><a href="module-store.html">store</a></li><li><a href="module-storymode.html">storymode</a></li><li><a href="module-ui.html">ui</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Namespaces</h3><ul><li><a href="physics.html">physics</a></li><li><a href="PIXI.html">PIXI</a></li></ul><h3>Classes</h3><ul><li><a href="-_PhysicsNotes.html">_PhysicsNotes</a></li><li><a href="-_PsdConfiguration.html">_PsdConfiguration</a></li><li><a href="-_Snippets.html">_Snippets</a></li><li><a href="-_Subclassing.html">_Subclassing</a></li><li><a href="-_WindowScope.html">_WindowScope</a></li><li><a href="kb.html">kb</a></li><li><a href="module-nav.FadeTrans.html">FadeTrans</a></li><li><a href="module-nav.MarioTrans.html">MarioTrans</a></li><li><a href="module-nav.OverTrans.html">OverTrans</a></li><li><a href="module-nav.PanTrans.html">PanTrans</a></li><li><a href="module-nav.PixelateTrans.html">PixelateTrans</a></li><li><a href="module-scaler-ArtboardProjection.html">ArtboardProjection</a></li><li><a href="physics.jgsap.html">jgsap</a></li><li><a href="physics.JRender.html">JRender</a></li><li><a href="physics.JRunner.html">JRunner</a></li><li><a href="physics.JSyncLink.html">JSyncLink</a></li><li><a href="physics.JWireframeRender.html">JWireframeRender</a></li><li><a href="PIXI.AnimatedSprite.html">AnimatedSprite</a></li><li><a href="PIXI.DisplayObject.html">DisplayObject</a></li><li><a href="PIXI.Graphics.html">Graphics</a></li><li><a href="PIXI.Texture.html">Texture</a></li><li><a href="Scene.html">Scene</a></li><li><a href="SFX.html">SFX</a></li></ul><h3>Events</h3><ul><li><a href="module-scaler.html#event:fullscreenchange">fullscreenchange</a></li><li><a href="module-scaler.html#event:resize">resize</a></li><li><a href="module-scaler.html#event:resize_immediate">resize_immediate</a></li><li><a href="SFX.html#event:bgloop_enabled_change">bgloop_enabled_change</a></li><li><a href="SFX.html#event:bgready">bgready</a></li><li><a href="SFX.html#event:sfx_enabled_change">sfx_enabled_change</a></li><li><a href="SFX.html#event:sfxready">sfxready</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.10</a> on Wed Jun 01 2022 16:14:02 GMT+1000 (Australian Eastern Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.10</a> on Tue Jun 07 2022 12:39:26 GMT+1000 (Australian Eastern Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

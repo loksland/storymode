@@ -81,6 +81,16 @@ function registerSpritesheetPath(_spritesheetPath){
   spritesheetPath = _spritesheetPath;
 }
 
+/**
+ * Register a file base name suffix to be appended to spritsheet loads.
+ * <br>- To be called before {@link storymode#createApp}
+ * @param {string} [spritesheetSuffix=''] - Suffix, eg `@2x` for retina+ resolution.
+ */
+let spritesheetSuffix = '';
+function setSpritesheetSuffix(_spritesheetSuffix){
+  spritesheetSuffix = _spritesheetSuffix;
+}
+
 let _crispTextMode = false;
 /**
  * Control the aliasing of text fields added via `displayObject.fromTx(...)` and `displayObject.addArt(...)`. 
@@ -115,11 +125,10 @@ export function onLoaderQueue(_onLoaderQueueCallback){
 /**
  * `storymode` will call this method as part of the initialisation of {@link storymode#createApp}.
  * <br>- Manually queue any additional assets to be loaded.
- * <br>- Needs to be called before 
  * @param {Function} loadAssetCallback  
  * @private
  */
-export function loadAssets(_loadAssetCallback){
+export function autoloadAssets(_loadAssetCallback){
   
   if (!psdInfo){
     throw new Error('PSD info never registered. Call `ui.registerPsdInfo(..)` before initiating app.')
@@ -142,13 +151,13 @@ export function loadAssets(_loadAssetCallback){
   for (let psdID in psdInfo){
     if (psdInfo[psdID].doc.spritesheet){ // Load spritesheets associated with PSD once
       let spritesheetBaseName = psdInfo[psdID].doc.spritesheet;
-      if (!queuedSpritesheets[spritesheetBaseName]){
+      if (!queuedSpritesheets[spritesheetBaseName] && !disabledSpritesheetBaseNames[spritesheetBaseName]){
         queuedSpritesheets[spritesheetBaseName] = true;
-        loader.add(spritesheetBaseName + SPRITESHEET_RESOURCE_SUFFIX, spritesheetPath+spritesheetBaseName + '.json'); 
+        loader.add(spritesheetBaseName + SPRITESHEET_RESOURCE_SUFFIX, spritesheetPath+spritesheetBaseName + spritesheetSuffix+'.json'); 
       }
     } else {
       for (let tx of psdInfo[psdID].doc.txs){  // Load individual images
-        if (tx.type == 'img' && !tx.txOverride && !tx.clone){ 
+        if (tx.type === 'img' && !tx.txOverride && !tx.clone){ 
           loader.add(tx.path, tx.src);
         }
       }
@@ -159,21 +168,106 @@ export function loadAssets(_loadAssetCallback){
     onLoaderQueueCallback(loader);
   }
   
-  loader.load(onLoadComplete);
+  loader.load(onAutoLoadComplete);
   
 }
 
-
-function onLoadComplete(){
+/**
+ * Called after an asset class (webfont or textures) has finished autoloading.
+ * @private
+ */
+function onAutoLoadComplete(){
   totLoadsComplete++;
-  if (totLoadsComplete == initialLoadItemCount){
+  if (totLoadsComplete === initialLoadItemCount){
     if (loadAssetCallback){
       loadAssetCallback();
     }
   }
 }
 
+// On demand sprite sheets
+// -----------------------
 
+let disabledSpritesheetBaseNames = {};
+
+/**
+ * Disable autoloading the given spritesheet at startup.
+ * <br>- To be called before {@link storymode#createApp}.
+ * @param {...string} spritesheetBasename - Spritesheet name without extension.
+ * @example 
+ 
+// On startup:
+ui.registerOnDemandLoadMode('lazy')
+
+// In scene:
+
+onDidArrive(fromModal){
+
+  super.onDidArrive(fromModal);
+
+  ui.queueOnDemandLoad('lazy', function(){ // Will fire instantly if already loaded,
+    // Add lazy loaded sprites...
+  })
+  
+}
+
+onWillExit(fromModal){
+
+  super.onWillExit(fromModal){;
+
+  ui.removeOnDemandListeners(); // Prevent lost callbacks
+  
+}
+ 
+ */
+export function registerOnDemandLoadMode(...spritesheetBasenames){
+  for (let spritesheetBasename of spritesheetBasenames){
+    disabledSpritesheetBaseNames[spritesheetBasename] = true;
+  }
+}
+
+/**
+ * Checks if sprite sheet is loaded and ready to use.
+ * @param {string} spritesheetBasename - Spritesheet name without extension.
+ * @returns {boolean} isLoaded
+ */
+export function isSpritesheetLoaded(spritesheetBasename){
+  if (typeof resources[spritesheetBasename + SPRITESHEET_RESOURCE_SUFFIX] === 'undefined'){
+    return false;
+  }
+  return resources[spritesheetBasename + SPRITESHEET_RESOURCE_SUFFIX].spritesheet ? true : false;
+}
+
+/**
+ * Queue a single spritesheet or multiple spritesheets to be loaded with an `onComplete` callback.
+ * <br>- Designed to be called multiple times without causing any issues.
+ * <br>- Any existing on-demand load callbacks will be overwritten with the current callback.
+ * <br>- If the spritesheets are already loaded the callback will be fired immediately.
+ * @param {string|Array} spritesheetBasenames - Spritesheet name without extension, or array of spritesheet base names.
+ * @param {Function} loadCallback - `Oncomplete` callback.
+ */
+export function queueOnDemandLoad(spritesheetBasenames, loadCallback){
+  removeOnDemandListeners();  
+  if (loader.loading){
+    loader.reset();
+  } 
+  spritesheetBasenames = Array.isArray(spritesheetBasenames) ? spritesheetBasenames : [spritesheetBasenames]
+  for (let spritesheetBasename of spritesheetBasenames){
+    if (!isSpritesheetLoaded(spritesheetBasename)){
+      loader.add(spritesheetBasename + SPRITESHEET_RESOURCE_SUFFIX, spritesheetPath+spritesheetBasename + spritesheetSuffix+'.json'); 
+    }
+  }
+  // loader.onError.add(onLoaderError); 
+  loader.onComplete.add(loadCallback)
+  loader.load();
+}
+
+/**
+ * Remove all listeners to the shared loader.
+ */
+export function removeOnDemandListeners(){
+  loader.onComplete.detachAll();  
+}
 
 /**
  * Returns a texture from given sprite path. 
@@ -206,8 +300,6 @@ PIXI.Texture.fromTx = function(txPath, frame = null){
   }
    
 }
-
-
 
 
 /**
@@ -485,6 +577,7 @@ PIXI.DisplayObject.prototype.applyProj = function(syncProps = false){
   // Store a pure representation of the position and scale as it relates to the stage.
   this.txInfo._proj = {};
   
+  
   this.txInfo._proj.x = scaler.proj[projID].transArtX(this.txInfo.x);
   this.txInfo._proj.y = scaler.proj[projID].transArtY(this.txInfo.y);
   this.txInfo._proj.width = scaler.proj[projID].scale * this.txInfo.width;
@@ -741,10 +834,9 @@ PIXI.DisplayObject.prototype.addArt = function(txNameGlob){
           }
           
           if (dispo != null){
-            
             if (txs[i].parent){
               // If parent is a spite counter act the effect of its scale on children
-              if (this.isSprite){
+              if (this.isSprite){                
                 dispo.x *= (1.0/this.scale.x);
                 dispo.y *= (1.0/this.scale.y);
                 dispo.scale.x *= (1.0/this.scale.x);
@@ -1190,11 +1282,11 @@ function queueWebFonts(){
         },
         active: function() { 
           //console.log('Loaded fonts: `'+webfontIDs.join('`,`')+'`')
-          onLoadComplete(); 
+          onAutoLoadComplete(); 
         },
         inactive: function() { 
           //console.log('Failed to load fonts: `'+webfontIDs.join('`,`')+'`')
-          onLoadComplete(); // Failed load will fallback
+          onAutoLoadComplete(); // Failed load will fallback
         }
     });
     
@@ -1241,8 +1333,7 @@ function registerClassForTx(_class, txPath){
   txClassLookup[txPath] = _class;
 }
 
-
-export { txInfo, registerPsdInfo, registerClassForTx, registerSpritesheetPath} // Temporary?
+export { txInfo, registerPsdInfo, registerClassForTx, registerSpritesheetPath, setSpritesheetSuffix} // Temporary?
 
 
 

@@ -4,7 +4,6 @@
   */
 
 // PixiJS convenience aliases 
-
 window.Sprite = PIXI.Sprite;
 window.AnimatedSprite = PIXI.AnimatedSprite;
 window.Point = PIXI.Point;
@@ -13,50 +12,18 @@ window.Text = PIXI.Text
 window.Graphics = PIXI.Graphics
 window.Container = PIXI.Container;
 window.Texture = PIXI.Texture;
-window.loader = PIXI.Loader.shared; //PIXI.Loader.shared; //.  new PIXI.Loader(); // Using shared was causing bug with hot reload.
+window.loader = PIXI.Loader.shared;
 window.resources = loader.resources;
 window.ticker = PIXI.Ticker.shared;
 
-/*
-let Sprite,
-    AnimatedSprite,
-    Point,
-    Rectangle,
-    Text,
-    Graphics,
-    Container,
-    Texture,
-    loader,
-    resources,
-    ticker;
-
-if (typeof window['PIXI'] !== 'undefined'){
-  Sprite = PIXI.Sprite;
-  AnimatedSprite = PIXI.AnimatedSprite;
-  Point = PIXI.Point;
-  Rectangle = PIXI.Rectangle;
-  Text = PIXI.Text
-  Graphics = PIXI.Graphics
-  Container = PIXI.Container;
-  Texture = PIXI.Texture;
-  loader = PIXI.Loader.shared; //PIXI.Loader.shared; //.  new PIXI.Loader(); // Using shared was causing bug with hot reload.
-  resources = loader.resources;
-  ticker = PIXI.Ticker.shared;
-} 
-*/
- 
 const appEmitter = new PIXI.utils.EventEmitter(); 
 
 import * as _ext from './utils/extensions.js';
-// import * as _extDep from './depreciated/extensions.js';
-
 
 import * as utils from './utils/utils.js';
 import * as mutils from './utils/mutils.js';
 
 import Scene from './core/scene.js';
-//import Camera from './depreciated/camera.js';
-//import Btn from './depreciated/btn.js'; 
 
 import * as nav from './core/nav.js';
 import * as scaler from './core/scaler.js';
@@ -95,7 +62,7 @@ for (let _filter of _filters) {
  * Creates a new PIXI Application, wrapper for `new PIXI.Application(...)`
  * @param {DOMElement} htmlEle - The DOM element in which to add the Pixi canvas.
  * @param {boolean} [fullScreen=false] - If true will base the canvas dimensions on the window size rather than the containing element.
- * @param {Object} [pixiOptions=null] - Option object to override defaults sent to PIXI. See: http://pixijs.download/release/docs/PIXI.Application.html#Application
+ * @param {Object} [pixiOptions=null] - Option object to override defaults sent to PIXI. See: {@link http://pixijs.download/release/docs/PIXI.Application.html#Application}
  * @param {AppLoadCallback} [onLoadCallback=null] - Called after initial assets are loaded.
  */
 export function createApp(_htmlEle, fullScreen = false, pixiOptions = null, onLoadCallback = null) {
@@ -121,12 +88,10 @@ export function createApp(_htmlEle, fullScreen = false, pixiOptions = null, onLo
     
     // Docs: http://pixijs.download/release/docs/PIXI.Application.html#Application
     pixiApp = new PIXI.Application(pixiOptions);
-    
     pixiApp.render()
-
     scaler.setup();
     
-    ui.loadAssets(function(){
+    ui.autoloadAssets(function(){
       
       setup(pixiOptions.backgroundAlpha);
       

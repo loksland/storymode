@@ -9,84 +9,84 @@ import { scaler} from './../storymode.js';
  * Scenes are created, loaded and displayed by the `nav`, and are closely coupled to this class.
  * @extends PIXI.Container
  * @example
+
+export default class MyScene extends Scene {
  
- export default class MyScene extends Scene {
-     
-   static getSfxResources(){    
-     return  {
-       tap: {path: 'sfx/ui_tap.mp3'}, 
-     }
-   }
+  static getSfxResources(){    
+    return  {
+      tap: {path: 'sfx/ui_tap.mp3'}, 
+    }
+  }
 
-   constructor(sceneData){    
-     super(sceneData, 'myscene.psd', 0xff3300); 
-   }
+  constructor(sceneData){    
+    super(sceneData, 'myscene.psd', 0xff3300); 
+  }
+
+  didLoad(ev){ 
+
+    super.didLoad(ev);
+
+    this.addArt('!_*');
+
+    this.ready();
    
-   didLoad(ev){ 
-     
-     super.didLoad(ev);
-     
-     this.addArt('!_*');
-     
-     this.ready();
-     
-   }
+  }
+
+  shouldReloadOnStageResize(stageW, stageH){
    
-   shouldReloadOnStageResize(stageW, stageH){
-     
-     for (let dispoName in this.art){
-       this.art[dispoName].applyProj()
-     }    
-     
-     return false;
-     
-   }
+    for (let dispoName in this.art){
+      this.art[dispoName].applyProj()
+    }    
+
+    return false;
    
-   onBtn(btn){
-     
-   }
+  }
+
+  onBtn(btn){
    
-   onWillArrive(fromModal){
-     
-     super.onWillArrive(fromModal);
-     
-     // Perform pre enter transition operations
-     
-   }
+  }
 
-   onDidArrive(fromModal){
+  onWillArrive(fromModal){
+   
+    super.onWillArrive(fromModal);
 
-     super.onDidArrive(fromModal);
-     
-     // Perform post enter transition operations
-         
-   }
+    // Perform pre enter transition operations
+   
+  }
 
-   onWillExit(fromModal){
-     
-     super.onWillExit(fromModal);
-     
-     // Perform pre exit transition operations
-     
-   }
+  onDidArrive(fromModal){
 
-   onDidExit(fromModal){
-     
-     super.onDidExit(fromModal);
-     
-     // Perform post exit transition operations
-     
-   }
+    super.onDidArrive(fromModal);
 
-   dispose(){
-     
-     // Perform clean up before instance is destroyed  
-     // Call super method *after* clean up. 
-     
-     super.dispose();
-     
-   }
- }
+    // Perform post enter transition operations
+       
+  }
+
+  onWillExit(fromModal){
+
+    super.onWillExit(fromModal);
+
+    // Perform pre exit transition operations
+
+  }
+
+  onDidExit(fromModal){
+
+    super.onDidExit(fromModal);
+
+    // Perform post exit transition operations
+   
+  }
+
+  dispose(){
+
+    // Perform clean up before instance is destroyed  
+    // Call super method *after* clean up. 
+
+    super.dispose();
+
+  }
+}
  */
 class Scene extends PIXI.Container {
   

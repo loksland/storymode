@@ -8,7 +8,7 @@ rm -r docs
 
 
 # See: https://jsdoc.app/about-commandline.html
-jsdoc tools/docs-generate/extra-docs src  -c tools/docs-generate/conf.json -r -d docs --readme tools/docs-generate/README.md --verbose
+jsdoc utilities/docs-generate/extra-docs src  -c utilities/docs-generate/conf.json -r -d docs --readme utilities/docs-generate/README.md --verbose
 
 
 $SHELL

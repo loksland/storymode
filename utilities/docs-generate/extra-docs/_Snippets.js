@@ -9,16 +9,6 @@
 
 let scale = dispo.txInfo.pxtopt*scaler.scale;
 
-// -------------------------------------
-// Cleaning up a Display Object subclass 
-// -------------------------------------
-
-// Called automatically when removed
-destroy(options) {
-  // Clean up before calling super
-  super.destroy(options);
-}  
-
 // -------------------------------
 // Sending scope to event emitters
 // -------------------------------
@@ -77,17 +67,6 @@ this.art.btn.hitArea = new PIXI.Rectangle(-hitArt.width*0.5, -hitArt.height*0.5,
 this.art.my_tf.updateText();
 this.art.my_tf.texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
 
-// ---------------------------------------------------------------------
-// Call subclass initialisation scripts dependant on parent and siblings
-// ---------------------------------------------------------------------
-
-// Called by addArt(), parent and siblings all present
-onAdded(){
-  
-  this.parent.art.glow.alpha = 0.0;
-
-}
-
 // -----------------------
 // Tracking mouse position 
 // -----------------------
@@ -121,7 +100,7 @@ gsap.set(clip, {pixi: {blur:7}});
 npm install file:///path/to/storymode/ --save
 
 // ---------------------
-// PIXI Performance Test
+// PIXI Performance Tips
 // ---------------------
 
 {@link https://github.com/pixijs/pixijs/wiki/v4-Performance-Tips}
