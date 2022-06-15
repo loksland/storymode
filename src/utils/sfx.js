@@ -95,6 +95,14 @@ class SFX extends PIXI.utils.EventEmitter {
     
     this._useSfxStateForBg = false;
     
+    /**
+     * A path to the pixi sound library js file. 
+     *<br>- Default is 'js/vendor/pixi-sound.js'
+     *<br>- If editing this value do so before `storymode.createApp` is called.
+     * @type {string}
+     */
+    this.pixisoundJSPath = 'js/vendor/pixi-sound.js';
+    
   }
   
   // Called after store has chance to be configured
@@ -354,7 +362,7 @@ bg_loop_sprite: {path:'audio/my-music.mp3', sprites:{
     if (PIXI.sound){
       this.onScriptLoaded();
     } else {
-      utils.loadScript('js/vendor/pixi-sound.js', this.onScriptLoaded.bind(this))
+      utils.loadScript(this.pixisoundJSPath, this.onScriptLoaded.bind(this))
     }
   }
   

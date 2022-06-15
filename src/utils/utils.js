@@ -596,6 +596,7 @@ export function removeClass(el, className){
  * loadScript('js/my-script.js', this.onScriptLoaded.bind(this))
  */
 export function loadScript(url, callback) {
+  
   // adding the script element to the head as suggested before
   var head = document.getElementsByTagName('head')[0];
   var script = document.createElement('script');
