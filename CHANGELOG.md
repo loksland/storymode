@@ -1,5 +1,6 @@
 # Changelog
 
+- v1.1.42 - (17-06-2022) 
 - v1.1.41 - (15-06-2022) Dynamic sfx PIXI sound lib path configuration.
 - v1.1.40 - (14-06-2022) Docs update, multi-res spritesheet support added, minor mutils updates.
 - v1.1.39 - (06-05-2022) Docs, maths utils added

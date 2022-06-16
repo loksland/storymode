@@ -87,63 +87,92 @@ for (let _filter of _filters) {
  */
  
 /**
- * Creates a new PIXI Application, wrapper for `new PIXI.Application(...)`
- * @param {DOMElement} htmlEle - The DOM element in which to add the Pixi canvas.
+ * Creates a new PIXI Application, wrapper for `new PIXI.Application(...)`.
+ * &lt;br>- Ideally the main app script is included in the body immediately after the container HTML element is included. In this scenario the app will be created instantly.
+ * &lt;br>- Otherwise if the app script is initialised before the container HTML element is attached to the DOM then it will load in the background before continuing.
+ * @param {string} htmlEleID - The DOM element ID in which to add the Pixi canvas. If not present yet will wait for it to arrive.
  * @param {boolean} [fullScreen=false] - If true will base the canvas dimensions on the window size rather than the containing element.
  * @param {Object} [pixiOptions=null] - Option object to override defaults sent to PIXI. See: {@link http://pixijs.download/release/docs/PIXI.Application.html#Application}
  * @param {AppLoadCallback} [onLoadCallback=null] - Called after initial assets are loaded.
  */
-export function createApp(_htmlEle, fullScreen = false, pixiOptions = null, onLoadCallback = null) {
+export function createApp(_htmlEleID, fullScreen = false, pixiOptions = null, onLoadCallback = null) {
     
-    sfx.loadPrefs()
+  let setupConfig = {};
+  setupConfig.htmlEleID = _htmlEleID;
+  setupConfig.onLoadCallback = onLoadCallback;
+
+  sfx.loadPrefs()
+          
+  let defaultOptions = {  
+      autoDensity: true, //  Adjusts the canvas using css pixels so it will scale properly (it was the default behavior in v4)
+      antialias: window.devicePixelRatio == 1, // Only anti alias from non-retina displays
+      backgroundAlpha: 1.0,
+      resolution: window.devicePixelRatio, // Resolution controls scaling of content (sprites, etc.)         
+      backgroundColor: 0x000000,
+      clearBeforeRender: true // This sets if the renderer will clear the canvas or not before the new render pass.
+  }
+
+  if (!pixiOptions){
+    pixiOptions = {};
+  }
+  pixiOptions = utils.extend(defaultOptions, pixiOptions);
+
+  // Is the html ele attached to the DOM at this point?
+  if (utils.e(setupConfig.htmlEleID) &amp;&amp; typeof utils.e(setupConfig.htmlEleID)['appendChild'] === 'function'){
+    htmlEle = utils.e(setupConfig.htmlEleID);
+  }
+
+  // Apply resize target now if element already exists.
+  // - Otherwise wait until setup to apply target.
+  if (fullScreen){
+    // Window is present even if containing DOM element is not at this point.
+    pixiOptions.resizeTo = window; 
+  } else if (htmlEle){
+    pixiOptions.resizeTo = htmlEle;
+  } 
+
+  setupConfig.pixiOptions = utils.cloneObj(pixiOptions); // A copy is retained for setup.
+
+  // Docs: http://pixijs.download/release/docs/PIXI.Application.html#Application
+  pixiApp = new PIXI.Application(pixiOptions);
+
+  ui.autoloadAssets(()=>{
+    setup(setupConfig);
+  });
     
-    htmlEle = _htmlEle;
-        
-    let defaultOptions = {                   
-        autoDensity: true, //  Adjusts the canvas using css pixels so it will scale properly (it was the default behavior in v4)
-        antialias: window.devicePixelRatio == 1, // Only anti alias from non-retina displays
-        backgroundAlpha: 1.0,
-        resolution: window.devicePixelRatio, // Resolution controls scaling of content (sprites, etc.) 
-        resizeTo: fullScreen ? window : htmlEle,
-        backgroundColor: 0x000000,
-        clearBeforeRender: true // This sets if the renderer will clear the canvas or not before the new render pass.
-    }
-    
-    if (!pixiOptions){
-      pixiOptions = {};
-    }
-    pixiOptions = utils.extend(defaultOptions, pixiOptions);
-    
-    // Docs: http://pixijs.download/release/docs/PIXI.Application.html#Application
-    pixiApp = new PIXI.Application(pixiOptions);
-    pixiApp.render()
-    scaler.setup();
-    
-    ui.autoloadAssets(function(){
-      
-      setup(pixiOptions.backgroundAlpha);
-      
-      if (onLoadCallback){
-        onLoadCallback(pixiApp);
-      }
-      
-      appEmitter.emit('ready', pixiApp.stage)
-      
-      sfx._enableLoad(); 
-      
-    })
 }
 
 
 let fpsAvg;
 // All assets are loaded by this point and the stage is empty
-function setup(bgAlpha){ 
+function setup(setupConfig){ 
+  
+  if (!utils.e(setupConfig.htmlEleID) || typeof utils.e(setupConfig.htmlEleID)['appendChild'] !== 'function'){
+    
+    // The container element needs to be present and able to appendChild.
+    utils.wait(1.0/5.0, setup, [setupConfig]);
+    return;
+  
+  }
+  
+  // DOM is attached by this point.
+  
+  if (!htmlEle){
+    htmlEle = utils.e(setupConfig.htmlEleID);
+  }
+  
+  if (!setupConfig.pixiOptions.resizeTo){ // Will already be set if fullscreen
+    pixiApp.resizeTo = htmlEle; 
+  }
+  
+  pixiApp.render(); 
+  scaler.setup();
   
   // Attach canvas to the DOM 
   htmlEle.appendChild(pixiApp.view);
 
   // Attach core display objects 
-  nav.setupStage(pixiApp.stage, bgAlpha);
+  nav.setupStage(pixiApp.stage, setupConfig.pixiOptions.backgroundAlpha);
   
   // Debug TF
   if (isProd){
@@ -169,6 +198,17 @@ function setup(bgAlpha){
   if (!nav.openDefaultScene()){
     throw new Error('Default scene not found.')
   }
+  
+  // Post setup 
+
+  if (setupConfig.onLoadCallback){
+    setupConfig.onLoadCallback(pixiApp);
+  }
+
+  appEmitter.emit('ready', pixiApp.stage)
+
+  sfx._enableLoad(); 
+  
 } 
 
 export {pixiApp, filters, htmlEle}; // Internal access to these properties.
@@ -192,7 +232,7 @@ export {utils, mutils,nav, ui, scaler, Scene}; // Core
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.10</a> on Tue Jun 07 2022 12:39:26 GMT+1000 (Australian Eastern Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.10</a> on Fri Jun 17 2022 09:33:58 GMT+1000 (Australian Eastern Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>
