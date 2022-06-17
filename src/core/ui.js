@@ -1333,7 +1333,7 @@ function registerClassForTx(_class, txPath){
   txClassLookup[txPath] = _class;
 }
 
-export { txInfo, registerPsdInfo, registerClassForTx, registerSpritesheetPath, setSpritesheetSuffix} // Temporary?
+export { txInfo, psdInfo, registerPsdInfo, registerClassForTx, registerSpritesheetPath, setSpritesheetSuffix} // Temporary?
 
 
 
