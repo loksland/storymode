@@ -436,7 +436,16 @@ PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
       let spritesheetBaseName = psdInfo[txInfo[txPath].psdID].doc.spritesheet 
       let spritesheet = resources[spritesheetBaseName + SPRITESHEET_RESOURCE_SUFFIX];
       if (spritesheet){     
-        dispo = new this(spritesheet.textures[txInfo[txPath].path]);
+        if (!spritesheet.textures){
+          console.log('A')
+          console.log(resources)
+          console.log('B')
+          console.log(spritesheetBaseName, SPRITESHEET_RESOURCE_SUFFIX)
+          console.log('C')
+          console.log(spritesheet);
+          throw new Error('Spritesheet `textures` property not defined.');
+        }
+        dispo = new this(spritesheet.textures[txInfo[txPath].path]); // Throwing IE11
       } else {
         throw new Error('Spritesheet not found `'+spritesheetBaseName+'` (via `'+txInfo[txPath].psdID+'`)')
       }

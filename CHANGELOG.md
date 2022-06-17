@@ -1,5 +1,6 @@
 # Changelog
 
+- v1.1.44 - (17-06-2022) Addition ui error handling.
 - v1.1.43 - (17-06-2022) Allowing ui.psdInfo access.
 - v1.1.42 - (17-06-2022)
 - v1.1.41 - (15-06-2022) Dynamic sfx PIXI sound lib path configuration.
