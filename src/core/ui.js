@@ -437,12 +437,6 @@ PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
       let spritesheet = resources[spritesheetBaseName + SPRITESHEET_RESOURCE_SUFFIX];
       if (spritesheet){     
         if (!spritesheet.textures){
-          console.log('A')
-          console.log(resources)
-          console.log('B')
-          console.log(spritesheetBaseName, SPRITESHEET_RESOURCE_SUFFIX)
-          console.log('C')
-          console.log(spritesheet);
           throw new Error('Spritesheet `textures` property not defined.');
         }
         dispo = new this(spritesheet.textures[txInfo[txPath].path]); // Throwing IE11

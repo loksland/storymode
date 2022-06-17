@@ -1,5 +1,6 @@
 # Changelog
 
+- v1.1.45 - (17-06-2022) Removed console logs
 - v1.1.44 - (17-06-2022) Addition ui error handling.
 - v1.1.43 - (17-06-2022) Allowing ui.psdInfo access.
 - v1.1.42 - (17-06-2022)
