@@ -93,7 +93,7 @@ function setupStage(stage, bgAlpha){
  * @private
  */
 function onResizeImmediate(_stageW,_stageH){
-  
+
   bg.width = _stageW;
   bg.height = _stageH;
   
@@ -146,7 +146,7 @@ function isScenePresentedWithTransparentBg(){
  * @private
  */
 function openDefaultScene(){
-  
+
   if (!scenes){
     throw new Error('Scenes never set. Call `nav.setScenes(..)` before initiating app.')
   }
@@ -326,7 +326,7 @@ function onSceneIn(){
   
   transStack[transStack.length-1].scene.onDidArrive(transStack[transStack.length-1].isModal);
   
-  checkForReloadOnNextArrive();
+  checkForNextArriveEvents();
   
 }
 
@@ -352,7 +352,7 @@ function onSceneOut(){
   
   transStack[transStack.length-1].scene.onDidArrive(true); // Return from modal dismissal
   
-  checkForReloadOnNextArrive();
+  checkForNextArriveEvents();
   
 }
 
@@ -360,7 +360,16 @@ function onSceneOut(){
  * Reload scene stack if `nav` was waiting to scene to arrive first.
  * @private
  */
-function checkForReloadOnNextArrive(){
+function checkForNextArriveEvents(){
+  
+  if (transStack[transStack.length-1].destroyOnNextArrive){
+    let _callback = transStack[transStack.length-1].destroyOnNextArrive;
+    transStack[transStack.length-1].destroyOnNextArrive = null;
+    delete transStack[transStack.length-1].destroyOnNextArrive
+    destroy(_callback[0],_callback[1]);
+    return;
+  }
+  
   if (transStack[transStack.length-1].reloadOnNextArrive){
     delete transStack[transStack.length-1].reloadOnNextArrive;
     reloadSceneStack();
@@ -390,7 +399,6 @@ function reloadSceneStack(force = false){
   
   let _scene = transStack[transStack.length-1].scene;
   if (force || _scene._shouldReloadOnStageResize(scaler.stageW, scaler.stageH)){
-    
     let sceneID = _scene.sceneData.sceneID;
     let sceneData = utils.cloneObj(_scene.sceneData);
     delete sceneData.sceneID;
@@ -409,5 +417,51 @@ function debugTransStack(){
   }
 }
 
+/**
+ * Called during `storymode.unmount`.
+ * @private
+ */ 
+function destroy(reset = false, callback = null){
+
+  if (!callback){
+    throw new Error('Nav destroy requires a callback argument.')
+  }
+  
+  if (locked){
+    transStack[transStack.length-1].destroyOnNextArrive = [reset,callback]; // Wait for trans to finish.
+    return;
+  }
+  
+  // Clear stack
+  for (let i = 0; i < transStack.length; i++){    
+    
+    transStack[i].scene.onWillExit(false); 
+    transStack[i].scene.onDidExit(false); 
+    
+    sceneHolder.removeChild(transStack[i].scene)
+    transStack[i].scenePrev = null; 
+    transStack[i] = null;
+    
+    transStack.splice(i, 1)
+    i--;
+  }
+  
+  if (!reset){
+    transStack = null;
+    inputScreen.parent.removeChild(inputScreen)
+    inputScreen = null;
+    bg.parent.removeChild(bg)
+    bg = null;
+    transStack = null;
+    scenes = null;
+    sceneHolder = null;
+    trans = null;
+  }
+  
+  callback();
+  
+}
+
 export { scenes }
 export { isPresentingModal, openDefaultScene,setupStage,isScenePresentedModally,isScenePresentedWithTransparentBg,openScene,dismissScene,bg,inputScreen,sceneHolder,setScenes,reloadSceneStack }
+export { destroy }

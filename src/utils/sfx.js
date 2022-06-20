@@ -312,8 +312,10 @@ bg_loop_sprite: {path:'audio/my-music.mp3', sprites:{
     
     // Ensure this method is only call once
     if (this._enableLoadCalled){
+    
       return;
     }
+    
     this._enableLoadCalled = true;
     
     // Check if any resources are loaded 
@@ -360,6 +362,7 @@ bg_loop_sprite: {path:'audio/my-music.mp3', sprites:{
    */
   beginLoad(){
     if (PIXI.sound){
+      PIXI.sound.init(); // Required after disposing
       this.onScriptLoaded();
     } else {
       utils.loadScript(this.pixisoundJSPath, this.onScriptLoaded.bind(this))
@@ -538,7 +541,8 @@ bg_loop_sprite: {path:'audio/my-music.mp3', sprites:{
    */  
   onResourcesLoaded(loader, resources){
     
-    this._loader = null;
+    this._loader = this.destroyLoaderReturnNull(this._loader);
+    
     this.resources = resources;
     this._sfxready = true;
     
@@ -632,7 +636,7 @@ onSfxReady() {
     
     delete this.spritesByParentSound;
     
-    this._loader = null;
+    this._loader = this.destroyLoaderReturnNull(this._loader);
     this.resources = utils.extend(this.resources, resources); 
     this._bgready = true;
     
@@ -892,6 +896,8 @@ onBgReady() {
     return result;
   }
   
+
+  
   /**
    * Sets the resource id to be the looping background music track.
    * @param {string} soundID - The sound identifier.
@@ -967,6 +973,81 @@ onBgReady() {
         result.sound.volume = this._bgLoopVolume*this._volume
       } 
     }
+  }
+  
+  /**
+   * Removes loader events, resets and destorys.
+   * @private
+   */
+  destroyLoaderReturnNull(loader){
+    loader.onComplete.detachAll();  
+    loader.onLoad.detachAll();  
+    loader.onError.detachAll();  
+    loader.onProgress.detachAll();  
+    loader.onStart.detachAll();  
+    loader.reset();
+    loader.destroy();
+    return null;
+  }
+  
+
+ /**
+  * Called by `storymode.destroy()`. Removes all loaded assets.
+  * @param {boolean} reset - If true then will be able to be used again after calling `fx._enableLoad()`
+  * @private
+  */
+  destroy(reset){
+    
+    // Stop playback
+    this.stopAll();
+    
+    // Reset refs 
+    if (reset){
+      this._sfxready = false; // Need these states to re-trigger
+      this._bgready = false; // Need these states to re-trigger
+      this.spritesByParentSound = {};
+      this.parentSoundBySprite = {};
+      this.multis = {};
+      this.concurrentTracking = {};
+      this.loopSfx = {};
+      this.resources = {}
+      this._enableLoadCalled = false;
+      this._waitForInteractionToLoad = false;
+    } else {
+      this.spritesByParentSound = null
+      this.parentSoundBySprite = null
+      this.multis = null
+      this.concurrentTracking =null
+      this.loopSfx = null
+      this._bgResources = null;
+      this.mixerObj = null;
+    }
+    
+    // Delete all sounds
+    
+    for (let resource in this.resources){
+      if (this.resources[resource].sound){
+        this.resources[resource].sound.stop();
+        //this.resources[resource].sound.destroy(); // Either or
+        PIXI.sound.remove(resource); // Either or
+        delete this.resources[resource]
+      }
+    }
+    this.resources = null;
+    
+    // Remove loader
+    if (this._loader){
+      this._loader = this.destroyLoaderReturnNull(this._loader);
+    }
+    
+    // Purge event listeners
+    this.removeAllListeners();
+    
+    // Closes the sound library. 
+    // This will release/destroy the AudioContext(s). 
+    // Can be used safely if you want to initialize the sound library later. Use init method.
+    PIXI.sound.close();
+      
   }
     
 }

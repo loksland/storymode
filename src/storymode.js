@@ -30,7 +30,7 @@ import * as scaler from './core/scaler.js';
 import * as ui from './core/ui.js';
 
 import KB from './utils/kb.js';
-const kb = new KB();
+let kb = new KB();
 
 import SFX from './utils/sfx.js';
 let sfx = new SFX();;
@@ -73,6 +73,7 @@ export function createApp(_htmlEleID, fullScreen = false, pixiOptions = null, on
   setupConfig.htmlEleID = _htmlEleID;
   setupConfig.onLoadCallback = onLoadCallback;
 
+  kb.init();
   sfx.loadPrefs()
           
   let defaultOptions = {  
@@ -120,13 +121,13 @@ let fpsAvg;
 function setup(setupConfig){ 
   
   if (!utils.e(setupConfig.htmlEleID) || typeof utils.e(setupConfig.htmlEleID)['appendChild'] !== 'function'){
-    
+
     // The container element needs to be present and able to appendChild.
     utils.wait(1.0/5.0, setup, [setupConfig]);
     return;
   
   }
-  
+
   // DOM is attached by this point.
   
   if (!htmlEle){
@@ -136,13 +137,12 @@ function setup(setupConfig){
   if (!setupConfig.pixiOptions.resizeTo){ // Will already be set if fullscreen
     pixiApp.resizeTo = htmlEle; 
   }
-  
+
   pixiApp.render(); 
-  scaler.setup();
+  scaler.init();
   
   // Attach canvas to the DOM 
   htmlEle.appendChild(pixiApp.view);
-
   // Attach core display objects 
   nav.setupStage(pixiApp.stage, setupConfig.pixiOptions.backgroundAlpha);
   
@@ -176,15 +176,121 @@ function setup(setupConfig){
   if (setupConfig.onLoadCallback){
     setupConfig.onLoadCallback(pixiApp);
   }
-
   appEmitter.emit('ready', pixiApp.stage)
 
   sfx._enableLoad(); 
   
 } 
 
-export {pixiApp, filters, htmlEle}; // Internal access to these properties.
-export {appEmitter}; // Emitter events
+function getPixiApp(){
+  return pixiApp;
+}
+
+
+function detachApp(){
+  destroy(true);
+}
+
+let destroyed = false;
+function destroy(reset = false){
+  
+  if (!reset){
+    if (destroyed){
+      return;
+    }
+    destroyed = true;
+  } 
+
+  nav.destroy(reset, ()=>{
+    
+    gsap.killTweensOf('*')
+    PIXI.Ticker.shared.stop();
+    
+    scaler.destroy(reset);
+    ui.destroy(reset);
+    kb.destroy(reset);
+    
+    sfx.destroy(reset);
+    if (!reset){
+      kb = null;
+      sfx = null;
+    }
+    
+    pixiApp.destroy(true, {
+      children: true, // All the children will have their destroy method called as well. 'stageOptions' will be passed on to those calls.
+      texture: true, // Should it destroy the texture of the child sprite
+      baseTexture: true // Should it destroy the base texture of the child sprite
+    })
+    
+    // Clean up this module
+    pixiApp = null;
+    htmlEle = null;
+    if (!reset){
+      filters = null;
+    }
+    appEmitter.removeAllListeners();
+    
+    // Remove base textures.
+    for (let resourceID in PIXI.Loader.shared.resources){
+      if (resourceID.endsWith('_image')){
+        PIXI.Loader.shared.resources[resourceID].texture.destroy(true);
+        delete PIXI.Loader.shared.resources[resourceID];
+      }
+    }
+    // Remove resource references.
+    for (let resourceID in PIXI.Loader.shared.resources){
+      if (PIXI.Loader.shared.resources[resourceID].texture){
+        PIXI.Loader.shared.resources[resourceID].texture.destroy(true);
+      }
+      delete PIXI.Loader.shared.resources[resourceID];
+    }
+    
+    // Reset the shared loader.
+    PIXI.Loader.shared.onComplete.detachAll();  
+    PIXI.Loader.shared.onLoad.detachAll();  
+    PIXI.Loader.shared.onError.detachAll();  
+    PIXI.Loader.shared.onProgress.detachAll();  
+    PIXI.Loader.shared.onStart.detachAll();  
+    PIXI.Loader.shared.reset(); // This removes the ref to window.resources.
+    if (reset){
+      window.resources = PIXI.Loader.shared.resources;
+    }
+    
+    // Remove any remaining textures from the cache.\
+    for (let key in PIXI.utils.TextureCache){
+      let baseTex = PIXI.utils.TextureCache[key].baseTexture
+      PIXI.Texture.removeFromCache(key);
+    }
+    
+    // Remove window references
+    if (!reset){
+      delete window.Sprite 
+      delete window.AnimatedSprite
+      delete window.Point
+      delete window.Rectangle 
+      delete window.Text
+      delete window.Graphics
+      delete window.Container 
+      delete window.Texture 
+      delete window.loader
+      delete window.resources
+      delete window.ticker
+    }
+    
+    /*
+    setTimeout(()=>{
+      console.log(window.resources, PIXI.Loader.shared.resources);
+      console.log(PIXI.utils.TextureCache)
+      console.log(PIXI.utils.BaseTextureCache)
+    }, 1000);
+    */
+    
+  });
+}
+// window.unmountStorymode = unmount;
+
+export {pixiApp, getPixiApp, filters, htmlEle}; // Internal access to these properties.
+export {appEmitter, detachApp}; // Emitter events
 export {kb, sfx, store, physics} // Helpers 
 export {utils, mutils,nav, ui, scaler, Scene}; // Core 
 

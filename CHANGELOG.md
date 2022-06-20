@@ -1,5 +1,6 @@
 # Changelog
 
+- v1.1.46 - (20-06-2022) Attach, detach, detroy added. Local webfont support added.
 - v1.1.45 - (17-06-2022) Removed console logs
 - v1.1.44 - (17-06-2022) Addition ui error handling.
 - v1.1.43 - (17-06-2022) Allowing ui.psdInfo access.

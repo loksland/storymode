@@ -4,6 +4,7 @@
  * <br>- Recieves PSD json data used to layout visuals in the app
  * <br>- Handles initial loading of assets through `PIXI.Loader.shared`, including images, spritesheets, webfonts and audio.
  * <br>- Webfont loading requires this js script: `&lt;script src="https://ajax.googleapis.com/ajax/libs/webfont/1.6.26/webfont.js"&gt;&lt;/script&gt;`.
+ * <br>- If web font loading is not required remove the above Google webfont script.
  * @module ui 
  */
 
@@ -293,7 +294,7 @@ PIXI.Texture.fromTx = function(txPath, frame = null){
     let spritesheet = resources[spritesheetBaseName + SPRITESHEET_RESOURCE_SUFFIX];
     if (spritesheet){     
       return spritesheet.textures[txInfo[txPath].path];
-    } else {
+    } else {      
       throw new Error('Spritesheet not found `'+spritesheetBaseName+'` (via `'+txInfo[txPath].psdID+'`)')
     }
     throw new Error('Spritesheet textures not supported `'+txPath+'`')
@@ -335,14 +336,14 @@ PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
     dispo = new Graphics();
   
   } else if (this == Text){
-  
-    let font = fonts[fontClassForPsdFont[txInfo[txPath].tfParams.font]]
-    let fontFamilyList = [font.googleFontName].concat(font.fallbacks)
+    
+    let font = fonts[fontClassForPsdFont[txInfo[txPath].tfParams.font]];
+    let fontFamilyList = [font.googleFontName].concat(font.fallbacks);
     
     // https://pixijs.download/dev/docs/PIXI.TextStyle.html
       
     let fontStyle = psdFontStyleComponents(txInfo[txPath].tfParams.fontStyle);
-      
+    
     dispo = new Text(frame ? frame : txInfo[txPath].tfParams.text, {
       fontFamily: fontFamilyList,
       fontSize: txInfo[txPath].tfParams.fontSize * scaler.proj[txInfo[txPath].projID].scale, // Apply projection scale to font size. 
@@ -435,6 +436,7 @@ PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
       
       let spritesheetBaseName = psdInfo[txInfo[txPath].psdID].doc.spritesheet 
       let spritesheet = resources[spritesheetBaseName + SPRITESHEET_RESOURCE_SUFFIX];
+  
       if (spritesheet){     
         if (!spritesheet.textures){
           throw new Error('Spritesheet `textures` property not defined.');
@@ -1143,9 +1145,7 @@ let fontClassForPsdFont;
  });
  */ 
 export function registerFonts(_fonts){
-  
   fonts = _fonts;  
-  
 }
 
 /**
@@ -1177,10 +1177,12 @@ function getfontClassForPsdFont(psdFontName){
     fonts = {};
   }
   let className = '_auto_'+String(Math.round(100000 + Math.random()*99999))
-  fonts[className] = {psdFontNames: [psdFontName], googleFontName:psdFontName , fallbacks:['sans-serif']};
+  fonts[className] = {psdFontNames: [psdFontName], googleFontName:psdFontName , fallbacks:['sans-serif']}; // fallbacks:['sans-serif']};
   return className;
     
 }
+
+
 
 
 /**
@@ -1205,6 +1207,18 @@ function psdFontStyleComponents(psdFontStyle){
   
   return {style:style, weight:weight};
   
+}
+
+let _webfontSource = 'google';
+/**
+ * Set how webfonts are to be loaded.
+ * @param {'google'|'local'} [webfontSource='google'] -  'google' will load the font from Google Fonts, 'local' will wait for the locally CSS loaded webfont to be ready.
+ */
+function setWebFontSource(__webfontSource){
+  if (__webfontSource !== 'google' && __webfontSource !== 'local'){
+    throw new Error('Invalid font source `'+__webfontSource+'`')
+  }
+  _webfontSource = __webfontSource;
 }
 
 
@@ -1273,14 +1287,11 @@ function queueWebFonts(){
     
   }
   
-  if (webfontIDs.length > 0){
+  if (window['WebFont'] && webfontIDs.length > 0){
     
-    // https://github.com/typekit/webfontloader
-    WebFont.load({
-        google: {
-          families: webfontIDs,
-          // text: 'Q' // Optionally define text subset
-        },
+    // See: https://github.com/typekit/webfontloader
+    
+    let params = {
         loading: function() { 
         },
         active: function() { 
@@ -1291,7 +1302,27 @@ function queueWebFonts(){
           //console.log('Failed to load fonts: `'+webfontIDs.join('`,`')+'`')
           onAutoLoadComplete(); // Failed load will fallback
         }
-    });
+    }
+    
+    if (_webfontSource === 'google'){
+      params.google = {
+        families: webfontIDs
+        //, text: 'Q' // Optionally define text subset
+      };
+    } else if (_webfontSource === 'local'){
+      /*
+      If your fonts are already included in another stylesheet you can also
+       leave out the urls array and just specify font family names to start 
+       font loading. As long as the names match those that are declared in the 
+       families array, the proper loading classes will be applied to the html element.
+      */
+      params.custom = {
+        families: webfontIDs,
+      };
+    }
+    
+    // https://github.com/typekit/webfontloader
+    WebFont.load(params);
     
     return true; // Indicates items need to load
     
@@ -1336,7 +1367,34 @@ function registerClassForTx(_class, txPath){
   txClassLookup[txPath] = _class;
 }
 
-export { txInfo, psdInfo, registerPsdInfo, registerClassForTx, registerSpritesheetPath, setSpritesheetSuffix} // Temporary?
+
+/**
+ * Called by `storymode.destroy()`.
+ * @param {boolean} reset - If true then will be able to be used again after calling `ui.autoloadAssets()`
+ * @private
+ */
+ function destroy(reset){
+   
+   removeOnDemandListeners();
+   
+   loadAssetCallback = null;
+   onLoaderQueueCallback = null;
+   if (reset){ 
+     totLoadsComplete = 0;
+     initialLoadItemCount = 0; 
+   } else {
+     txInfo = null;
+     psdInfo = null;
+     txClassLookup = null;
+     txClassSuffixes = null;
+     fonts = null;
+     fontClassForPsdFont = null;
+     disabledSpritesheetBaseNames = null;
+   }
+   
+ }
+
+export { txInfo, psdInfo, registerPsdInfo, registerClassForTx, registerSpritesheetPath, setSpritesheetSuffix, setWebFontSource, destroy} // Temporary?
 
 
 

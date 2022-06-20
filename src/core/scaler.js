@@ -138,7 +138,7 @@ export function configureArtboard(_artboardDims, _artboardScaleFactor, _artboard
  * Called once on init.
  * @private
  */
-function setup(){ // Called once on init for now
+function init(){ // Called once on init for now
 
   // Points to pixel conversion factors
   initResizeListener();
@@ -449,7 +449,6 @@ function onStageResize(stageW, stageH){
 scaler.off('resize', this.onStageResize, this); // Cancel
    */
   emitter.emit('resize', stageW, stageH);
-  
 }
 
 // https://nodejs.org/api/events.html
@@ -477,6 +476,14 @@ function on(eventName, listener, context){
  */  
 function off(eventName, listener, context){
   return emitter.off(eventName, listener, context);
+}
+
+/**
+ * Removes all event listeners.
+ * @private
+ */  
+function removeAllListeners(){
+  return emitter.removeAllListeners();
 }
 
 // Fullscreen 
@@ -536,7 +543,6 @@ function supportsFullScreen(){
  * @returns {boolean} fullBrowserSupported
  */ 
 function _supportsFullBrowser(){
-  
   if (!FULLBROWSER_ENABLED){
     return false;
   }
@@ -632,9 +638,24 @@ function toggleFullScreen(ele = null, forceState = null){
   }
   
 }
+
+/**
+ * Called by `storymode.destroy()`.
+ * @param {boolean} reset - If true then will be able to be used again after calling `scaler.init()`
+ * @private
+ */
+function destroy(reset){
+  fscreen.removeEventListener('fullscreenchange', onFullscreenChange);
+  removeAllListeners();
+  prev = null;
+  if (!reset){
+    emitter = null;
+  }
+}
+
 // export {pixiApp}
 export {toggleFullScreen, isFullScreen, supportsFullScreen}
 export {scale, scaleUI, prev, artboardScaleFactor}
-export {setup, proj, stageW, stageH, on, off, resizeThrottleDelay}
+export {init, proj, stageW, stageH, on, off, resizeThrottleDelay, destroy}
 
 

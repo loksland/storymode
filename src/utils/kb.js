@@ -56,6 +56,19 @@ class KB extends PIXI.utils.EventEmitter {
     
     super();
     
+    this.inited = false;
+    this.init();
+    
+  }
+  
+  init(){
+    
+    if (this.inited){
+      return;
+    }
+    
+    this.inited = true;
+    
     this.downKeys = {};
     
     this._keydown = this.keydown.bind(this);
@@ -261,7 +274,6 @@ kb.off(this); // Removes all keyboard event listeners for instance
       if (key != null && key != '*'){
         key = this.parseKey(key);      
         const evName = _evType + '|' + key;
-        console.log('BYe', evName)
         super.off(evName, listener, context);
       
       } else {
@@ -324,11 +336,12 @@ kb.off(this); // Removes all keyboard event listeners for instance
   }
   
   /**
-   * Disposal method.
-   * <br>-To be called manually
+   * Called by `storymode.destroy()`.
+   * @param {boolean} reset - If true then will be able to be used again after calling `fx.init()`
    * @private
-   */ 
-  dispose(){
+   */
+  destroy(reset){
+    this.inited = false;
     if (this._keydown){
       window.removeEventListener('keydown', this._keydown);
       this._keydown = null;
@@ -337,6 +350,9 @@ kb.off(this); // Removes all keyboard event listeners for instance
       window.removeEventListener('keyup', this._keyup);
       this._keyup = null;
     }
+    this.removeAllListeners();
+    this.downKeys = null;
+    
   }
   
   
