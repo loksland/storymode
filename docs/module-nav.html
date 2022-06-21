@@ -131,9 +131,6 @@
         <h3 class="subsection-title">Classes</h3>
 
         <dl>
-            <dt><a href="module-nav.FadeTrans.html">FadeTrans</a></dt>
-            <dd></dd>
-        
             <dt><a href="module-nav.MarioTrans.html">MarioTrans</a></dt>
             <dd></dd>
         
@@ -154,6 +151,80 @@
 
     
 
+    
+        <h3 class="subsection-title">Members</h3>
+
+        
+            
+<h4 class="name" id=".DEFAULT_DUR"><span class="type-signature">(static, constant) </span>DEFAULT_DUR<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Simple fade transition.
+<br>- Evoked with 'fade' transition ID.
+<br>- Uses `AlphaFilter` to fade contents as a whole rather than individually.
+<br>- Default and minimum duration is 0.4 secs. Set the fade duration using colon separator. Eg.`fade:1.0`.
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="src_trans_fade.js.html">src/trans/fade.js</a>, <a href="src_trans_fade.js.html#line18">line 18</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>nav.openScene(myScene, false, 'fade')</code></pre>
+
+
+
+        
     
 
     
@@ -217,7 +288,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_nav.js.html">src/core/nav.js</a>, <a href="src_core_nav.js.html#line414">line 414</a>
+        <a href="src_core_nav.js.html">src/core/nav.js</a>, <a href="src_core_nav.js.html#line418">line 418</a>
     </li></ul></dd>
     
 
@@ -374,7 +445,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_nav.js.html">src/core/nav.js</a>, <a href="src_core_nav.js.html#line269">line 269</a>
+        <a href="src_core_nav.js.html">src/core/nav.js</a>, <a href="src_core_nav.js.html#line273">line 273</a>
     </li></ul></dd>
     
 
@@ -599,7 +670,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_nav.js.html">src/core/nav.js</a>, <a href="src_core_nav.js.html#line252">line 252</a>
+        <a href="src_core_nav.js.html">src/core/nav.js</a>, <a href="src_core_nav.js.html#line256">line 256</a>
     </li></ul></dd>
     
 
@@ -1001,7 +1072,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_nav.js.html">src/core/nav.js</a>, <a href="src_core_nav.js.html#line174">line 174</a>
+        <a href="src_core_nav.js.html">src/core/nav.js</a>, <a href="src_core_nav.js.html#line178">line 178</a>
     </li></ul></dd>
     
 
@@ -1158,7 +1229,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_nav.js.html">src/core/nav.js</a>, <a href="src_core_nav.js.html#line383">line 383</a>
+        <a href="src_core_nav.js.html">src/core/nav.js</a>, <a href="src_core_nav.js.html#line387">line 387</a>
     </li></ul></dd>
     
 
@@ -1328,7 +1399,7 @@
     
     <pre class="prettyprint"><code>// app.js 
 const scenes = {
-  home: {class: Home, sceneData: {}, default:true}, 
+  home: {class: Home, sceneData: {}, default:true, defaultTransID:'pan:down'}, 
   play: {class: Play, sceneData: {}}
 }
 nav.setScenes(scenes);</code></pre>
@@ -1408,7 +1479,7 @@ nav.setScenes(scenes);</code></pre>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_nav.js.html">src/core/nav.js</a>, <a href="src_core_nav.js.html#line163">line 163</a>
+        <a href="src_core_nav.js.html">src/core/nav.js</a>, <a href="src_core_nav.js.html#line167">line 167</a>
     </li></ul></dd>
     
 
@@ -1438,13 +1509,13 @@ nav.setScenes(scenes);</code></pre>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-mutils.html">mutils</a></li><li><a href="module-nav.html">nav</a></li><li><a href="module-scaler.html">scaler</a></li><li><a href="module-store.html">store</a></li><li><a href="module-storymode.html">storymode</a></li><li><a href="module-ui.html">ui</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Namespaces</h3><ul><li><a href="physics.html">physics</a></li><li><a href="PIXI.html">PIXI</a></li></ul><h3>Classes</h3><ul><li><a href="-_PhysicsNotes.html">_PhysicsNotes</a></li><li><a href="-_PsdConfiguration.html">_PsdConfiguration</a></li><li><a href="-_Snippets.html">_Snippets</a></li><li><a href="-_Subclassing.html">_Subclassing</a></li><li><a href="-_WindowScope.html">_WindowScope</a></li><li><a href="kb.html">kb</a></li><li><a href="module-nav.FadeTrans.html">FadeTrans</a></li><li><a href="module-nav.MarioTrans.html">MarioTrans</a></li><li><a href="module-nav.OverTrans.html">OverTrans</a></li><li><a href="module-nav.PanTrans.html">PanTrans</a></li><li><a href="module-nav.PixelateTrans.html">PixelateTrans</a></li><li><a href="module-scaler-ArtboardProjection.html">ArtboardProjection</a></li><li><a href="physics.jgsap.html">jgsap</a></li><li><a href="physics.JRender.html">JRender</a></li><li><a href="physics.JRunner.html">JRunner</a></li><li><a href="physics.JSyncLink.html">JSyncLink</a></li><li><a href="physics.JWireframeRender.html">JWireframeRender</a></li><li><a href="PIXI.AnimatedSprite.html">AnimatedSprite</a></li><li><a href="PIXI.DisplayObject.html">DisplayObject</a></li><li><a href="PIXI.Graphics.html">Graphics</a></li><li><a href="PIXI.Texture.html">Texture</a></li><li><a href="Scene.html">Scene</a></li><li><a href="SFX.html">SFX</a></li></ul><h3>Events</h3><ul><li><a href="module-scaler.html#event:fullscreenchange">fullscreenchange</a></li><li><a href="module-scaler.html#event:resize">resize</a></li><li><a href="module-scaler.html#event:resize_immediate">resize_immediate</a></li><li><a href="SFX.html#event:bgloop_enabled_change">bgloop_enabled_change</a></li><li><a href="SFX.html#event:bgready">bgready</a></li><li><a href="SFX.html#event:sfx_enabled_change">sfx_enabled_change</a></li><li><a href="SFX.html#event:sfxready">sfxready</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-mutils.html">mutils</a></li><li><a href="module-nav.html">nav</a></li><li><a href="module-scaler.html">scaler</a></li><li><a href="module-store.html">store</a></li><li><a href="module-storymode.html">storymode</a></li><li><a href="module-ui.html">ui</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Namespaces</h3><ul><li><a href="physics.html">physics</a></li><li><a href="PIXI.html">PIXI</a></li></ul><h3>Classes</h3><ul><li><a href="-_PhysicsNotes.html">_PhysicsNotes</a></li><li><a href="-_PsdConfiguration.html">_PsdConfiguration</a></li><li><a href="-_Snippets.html">_Snippets</a></li><li><a href="-_Subclassing.html">_Subclassing</a></li><li><a href="-_WindowScope.html">_WindowScope</a></li><li><a href="kb.html">kb</a></li><li><a href="module-nav.MarioTrans.html">MarioTrans</a></li><li><a href="module-nav.OverTrans.html">OverTrans</a></li><li><a href="module-nav.PanTrans.html">PanTrans</a></li><li><a href="module-nav.PixelateTrans.html">PixelateTrans</a></li><li><a href="module-scaler-ArtboardProjection.html">ArtboardProjection</a></li><li><a href="physics.jgsap.html">jgsap</a></li><li><a href="physics.JRender.html">JRender</a></li><li><a href="physics.JRunner.html">JRunner</a></li><li><a href="physics.JSyncLink.html">JSyncLink</a></li><li><a href="physics.JWireframeRender.html">JWireframeRender</a></li><li><a href="PIXI.AnimatedSprite.html">AnimatedSprite</a></li><li><a href="PIXI.DisplayObject.html">DisplayObject</a></li><li><a href="PIXI.Graphics.html">Graphics</a></li><li><a href="PIXI.Texture.html">Texture</a></li><li><a href="Scene.html">Scene</a></li><li><a href="SFX.html">SFX</a></li></ul><h3>Events</h3><ul><li><a href="module-scaler.html#event:fullscreenchange">fullscreenchange</a></li><li><a href="module-scaler.html#event:resize">resize</a></li><li><a href="module-scaler.html#event:resize_immediate">resize_immediate</a></li><li><a href="SFX.html#event:bgloop_enabled_change">bgloop_enabled_change</a></li><li><a href="SFX.html#event:bgready">bgready</a></li><li><a href="SFX.html#event:sfx_enabled_change">sfx_enabled_change</a></li><li><a href="SFX.html#event:sfxready">sfxready</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.10</a> on Mon Jun 20 2022 15:32:02 GMT+1000 (Australian Eastern Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.10</a> on Tue Jun 21 2022 17:05:24 GMT+1000 (Australian Eastern Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>
