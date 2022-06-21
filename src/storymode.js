@@ -284,7 +284,7 @@ function destroy(reset = false, callback = null){
       console.log(PIXI.utils.TextureCache)
       console.log(PIXI.utils.BaseTextureCache)
     }, 1000);
-    */
+    */ 
     
     callback();
     

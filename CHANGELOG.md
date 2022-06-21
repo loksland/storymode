@@ -1,5 +1,6 @@
 # Changelog
 
+- v1.1.51 - (21-06-2022) 
 - v1.1.50 - (21-06-2022) Updated docs
 - v1.1.49 - (21-06-2022) Doc updates
 - v1.1.48 - (21-06-2022) Added callback to detachApp.
