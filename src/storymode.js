@@ -187,12 +187,12 @@ function getPixiApp(){
 }
 
 
-function detachApp(){
-  destroy(true);
+function detachApp(callback){
+  destroy(true, callback);
 }
 
 let destroyed = false;
-function destroy(reset = false){
+function destroy(reset = false, callback = null){
   
   if (!reset){
     if (destroyed){
@@ -284,6 +284,8 @@ function destroy(reset = false){
       console.log(PIXI.utils.BaseTextureCache)
     }, 1000);
     */
+    
+    callback();
     
   });
 }
