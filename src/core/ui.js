@@ -1177,11 +1177,10 @@ function getfontClassForPsdFont(psdFontName){
     fonts = {};
   }
   let className = '_auto_'+String(Math.round(100000 + Math.random()*99999))
-  fonts[className] = {psdFontNames: [psdFontName], googleFontName:psdFontName , fallbacks:['sans-serif']}; // fallbacks:['sans-serif']};
+  fonts[className] = {psdFontNames: [psdFontName], googleFontName:psdFontName , fallbacks:webfontFallbacks}; // fallbacks:['sans-serif']};
   return className;
     
 }
-
 
 
 
@@ -1208,6 +1207,17 @@ function psdFontStyleComponents(psdFontStyle){
   return {style:style, weight:weight};
   
 }
+
+let webfontFallbacks = ['sans-serif'];
+/**
+ * Set fallback fonts for when webfonts fails to load.
+ * @param {Array} _webfontFallbacks -  Defaults to ['sans-serif'].
+ */
+function setWebfontFallbacks(_webfontFallbacks){
+  webfontFallbacks = _webfontFallbacks
+}
+
+
 
 let _webfontSource = 'google';
 /**
@@ -1394,7 +1404,7 @@ function registerClassForTx(_class, txPath){
    
  }
 
-export { txInfo, psdInfo, registerPsdInfo, registerClassForTx, registerSpritesheetPath, setSpritesheetSuffix, setWebFontSource, destroy} // Temporary?
+export { txInfo, psdInfo, registerPsdInfo, registerClassForTx, registerSpritesheetPath, setSpritesheetSuffix, setWebFontSource, setWebfontFallbacks, destroy} // Temporary?
 
 
 

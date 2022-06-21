@@ -37,7 +37,7 @@ for (let transMod of _trans) {
  * @example 
 // app.js 
 const scenes = {
-  home: {class: Home, sceneData: {}, default:true}, 
+  home: {class: Home, sceneData: {}, default:true, defaultTransID:'pan:down'}, 
   play: {class: Play, sceneData: {}}
 }
 nav.setScenes(scenes);
@@ -153,12 +153,16 @@ function openDefaultScene(){
   
   for (const sceneID in scenes){
     if (scenes[sceneID].default){
-      openScene(sceneID);
+      openScene(sceneID, false, scenes[sceneID].defaultTransID ? scenes[sceneID].defaultTransID : 'fade');
       return true;
     }
   }
   return false;
 }
+
+
+
+
 
 /**
  * @typedef {'fade'|'over'|'pan:%direction%'|'parallax:%direction%'|'mario:%bgColor%'|'pixelate'} TransitionID

@@ -8,11 +8,15 @@ export const id = 'fade';
  * Simple fade transition.
  * <br>- Evoked with 'fade' transition ID.
  * <br>- Uses `AlphaFilter` to fade contents as a whole rather than individually.
+ * <br>- Default and minimum duration is 0.4 secs. Set the fade duration using colon separator. Eg.`fade:1.0`.
  * @memberof module:nav
  * @hideconstructor
  * @example
 nav.openScene(myScene, false, 'fade')
  */
+ 
+const DEFAULT_DUR = 0.4;
+const MIN_DUR = 0.4;
 class FadeTrans {
   
   constructor(scene, scenePrev = null, isModal = false, transConfigStr = null){
@@ -22,11 +26,16 @@ class FadeTrans {
     this.isModal = isModal;
     this.isTransparent = false;
     
+    this.dur = DEFAULT_DUR
+    if (transConfigStr && !isNaN(Number(transConfigStr)) && Number(transConfigStr) >= MIN_DUR){
+      this.dur = Number(transConfigStr);
+    }
+    
   }
   
   performIn(onInCallback, reverse = false){
     
-    const dur = 0.4;
+    const dur = this.dur;
     
     const sceneIn = reverse ? this.scenePrev : this.scene;
     const sceneOut = reverse ? this.scene : this.scenePrev;
