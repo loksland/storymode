@@ -1,5 +1,6 @@
 # Changelog
 
+- v1.1.49 - (21-06-2022) Doc updates
 - v1.1.48 - (21-06-2022) Added callback to detachApp.
 - v1.1.47 - (21-06-2022) Set fadae dur with param, set webfont fallbacks and local webfont support, default trans id support added.
 - v1.1.46 - (20-06-2022) Attach, detach, detroy added. Local webfont support added.

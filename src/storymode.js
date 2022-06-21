@@ -278,6 +278,7 @@ function destroy(reset = false, callback = null){
     }
     
     /*
+    // Check memory
     setTimeout(()=>{
       console.log(window.resources, PIXI.Loader.shared.resources);
       console.log(PIXI.utils.TextureCache)
@@ -289,7 +290,6 @@ function destroy(reset = false, callback = null){
     
   });
 }
-// window.unmountStorymode = unmount;
 
 export {pixiApp, getPixiApp, filters, htmlEle}; // Internal access to these properties.
 export {appEmitter, detachApp}; // Emitter events
