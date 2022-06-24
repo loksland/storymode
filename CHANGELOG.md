@@ -1,5 +1,6 @@
 # Changelog
 
+- v1.1.53 - (24-06-2022) Disable webfont adding classes to html element.
 - v1.1.52 - (24-06-2022) Page scroll utils, repeating offset calcs added, dettach debugging option added.
 - v1.1.51 - (21-06-2022)
 - v1.1.50 - (21-06-2022) Updated docs

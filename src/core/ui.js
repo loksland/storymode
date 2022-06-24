@@ -1302,6 +1302,7 @@ function queueWebFonts(){
     // See: https://github.com/typekit/webfontloader
     
     let params = {
+        classes: false,
         loading: function() { 
         },
         active: function() { 
