@@ -422,11 +422,25 @@ export function killWaitsFor(callback) {
 }
 
 /**
+ * Cancels a queued wait call.
+ * @param {gsap.delayedCall} delayedCall - The result of `utils.wait`.
+ * @example
+ * let delayedCall = utils.wait(this, 2.0, this.delayCall); 
+ * utils.killWait(delayedCall); // Cancels delay call
+ */
+export function killWait(delayedCall){
+  if (delayedCall){
+    delayedCall.kill();
+  }
+}
+
+/**
  * Calls function after set delay.
  * @param {Object} [thisScope=null] - Optionally supply a scope in which to call the function.
  * @param {number} delay - The delay in seconds.
  * @param {Function} callback - The function to call.
  * @param {Array} [callpackParams=null] - An array of parameters to supply to the callback function.
+ * @returns {gsap.delayedCall} delayedCall - The queued GSAP delayed call instance.
  * @example
  * utils.wait(this, 2.0, this.delayCall); 
  */
@@ -714,7 +728,6 @@ function _fallbackCopyTextToClipboard(text) {
   }
 
   document.body.removeChild(textArea);
-  
 }
 
 /**
@@ -733,6 +746,21 @@ export function copyTextToClipboard(text) {
   });
 }
 
+/**
+ * Detects if the page can scroll vertically.
+ * @returns {boolean} scrollsVertically
+ */
+export function canPageScrollVertically(){
+  let scrollHeight = Number(document.body.scrollHeight);
+  let containingHeight = Number(document.body.clientHeight);
+  if ((isNaN(containingHeight) || scrollHeight === containingHeight) && document.documentElement){
+    let _containingHeight = Number(document.documentElement.clientHeight);
+    if (!isNaN(_containingHeight) && _containingHeight > 0.0){
+      containingHeight = _containingHeight;
+    }
+  }
+  return scrollHeight > containingHeight;
+}
 
 
 

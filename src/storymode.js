@@ -186,13 +186,17 @@ function getPixiApp(){
   return pixiApp;
 }
 
-
-function detachApp(callback){
-  destroy(true, callback);
+function detachApp(callback, debugToConsole, consoleIdPrefix){
+  destroy(true, callback, debugToConsole, consoleIdPrefix);
 }
 
 let destroyed = false;
-function destroy(reset = false, callback = null){
+function destroy(reset = false, callback = null, debugToConsole = false, consoleIdPrefix = ''){
+  
+  if (consoleIdPrefix && !consoleIdPrefix.endsWith(' ')){
+    consoleIdPrefix += ' ';
+  }
+  let logToConsole = debugToConsole ? window['con' + 'sole']['log'] : ()=>{};
   
   if (!reset){
     if (destroyed){
@@ -200,22 +204,35 @@ function destroy(reset = false, callback = null){
     }
     destroyed = true;
   } 
+  
+  
 
+  logToConsole(consoleIdPrefix + 'nav.destroy()')
   nav.destroy(reset, ()=>{
     
+    logToConsole(consoleIdPrefix + 'nav.destroy() complete.')
+    
+    logToConsole(consoleIdPrefix + 'Killing gsap animations.')
     gsap.killTweensOf('*')
     PIXI.Ticker.shared.stop();
     
+    logToConsole(consoleIdPrefix + 'scaler.destroy()')
     scaler.destroy(reset);
+    
+    logToConsole(consoleIdPrefix + 'ui.destroy()')
     ui.destroy(reset);
+    
+    logToConsole(consoleIdPrefix + 'kb.destroy()')
     kb.destroy(reset);
     
+    logToConsole(consoleIdPrefix + 'sfx.destroy()')
     sfx.destroy(reset);
     if (!reset){
       kb = null;
       sfx = null;
     }
     
+    logToConsole(consoleIdPrefix + 'pixiApp.destroy()')
     pixiApp.destroy(true, {
       children: true, // All the children will have their destroy method called as well. 'stageOptions' will be passed on to those calls.
       texture: true, // Should it destroy the texture of the child sprite
@@ -229,6 +246,8 @@ function destroy(reset = false, callback = null){
       filters = null;
     }
     appEmitter.removeAllListeners();
+    
+    logToConsole(consoleIdPrefix + 'Removing textures...')
     
     // Remove base textures.
     for (let resourceID in PIXI.Loader.shared.resources){
@@ -245,6 +264,8 @@ function destroy(reset = false, callback = null){
       delete PIXI.Loader.shared.resources[resourceID];
     }
     
+    logToConsole(consoleIdPrefix + 'Reseting shared loader...')
+    
     // Reset the shared loader.
     PIXI.Loader.shared.onComplete.detachAll();  
     PIXI.Loader.shared.onLoad.detachAll();  
@@ -256,7 +277,9 @@ function destroy(reset = false, callback = null){
       window.resources = PIXI.Loader.shared.resources;
     }
     
-    // Remove any remaining textures from the cache.\
+    logToConsole(consoleIdPrefix + 'Removing any remaining tx...')
+    
+    // Remove any remaining textures from the cache.
     for (let key in PIXI.utils.TextureCache){
       let baseTex = PIXI.utils.TextureCache[key].baseTexture
       PIXI.Texture.removeFromCache(key);
@@ -277,19 +300,23 @@ function destroy(reset = false, callback = null){
       delete window.ticker
     }
     
-    /*
     // Check memory
-    setTimeout(()=>{
-      console.log(window.resources, PIXI.Loader.shared.resources);
-      console.log(PIXI.utils.TextureCache)
-      console.log(PIXI.utils.BaseTextureCache)
-    }, 1000);
-    */ 
-    
+    if (debugToConsole){
+      setTimeout(()=>{
+        logToConsole(consoleIdPrefix + 'resouces / shared.resources:', window.resources, PIXI.Loader.shared.resources);
+        logToConsole(consoleIdPrefix + 'TextureCache:', PIXI.utils.TextureCache)
+        logToConsole(consoleIdPrefix + 'BaseTextureCache:', PIXI.utils.BaseTextureCache)
+        logToConsole(consoleIdPrefix + 'Done.')
+      }, 1000);
+    }
+
     callback();
     
   });
 }
+
+
+
 
 export {pixiApp, getPixiApp, filters, htmlEle}; // Internal access to these properties.
 export {appEmitter, detachApp}; // Emitter events

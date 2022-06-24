@@ -478,3 +478,50 @@ export function containScale(srcW, srcH, boundsW, boundsH) {
 	}
 	
 };
+
+/**
+ * Given indexes that repeat from 0 to `totalCount`-1, return the offset from one to another in a set direction, negative or positive.
+ * @param {number} indexFrom - The starting index. Must be positive integer under `totalCount`.
+ * @param {number} indexTo - The target index. Must be positive integer under `totalCount`.
+ * @param {number} dir - A number over or under zero. If dir is over 0 the resulting offset will be over zero and visa-versa.
+ * @param {count} totalCount - The total number of indexes. Eg. The array length.
+ * @returns {int} indexOffset - The offset between indexes.
+ */
+export function indexOffsetInDirection(indexFrom, indexTo, dir, totalCount){
+  if (indexFrom === indexTo){
+    return 0.0;
+  }
+  let indexOffset = indexTo - indexFrom;
+  if (dir > 0.0 && indexOffset < 0.0){
+    indexOffset += totalCount
+  } else if (dir < 0.0 && indexOffset > 0.0){
+    indexOffset -= totalCount
+  }
+  return indexOffset;
+}
+
+/**
+ * Given indexes that repeat from 0 to `totalCount`-1, return the shortest offset from one to another in any direction.
+ * @param {number} indexFrom - The starting index. Must be positive integer under `totalCount`.
+ * @param {number} indexTo - The target index. Must be positive integer under `totalCount`.
+ * @param {count} totalCount - The total number of indexes. Eg. The array length.
+ * @returns {int} indexOffset - The offset between indexes. Result may be negative.
+ */
+export function shortestIndexOffset(indexFrom, indexTo, totalCount){
+  if (indexFrom === indexTo){
+    return 0.0;
+  }
+  let indexOffset = indexTo - (indexFrom + (indexTo > indexFrom ? totalCount : 0.0));
+  if (Math.abs(indexOffset) > totalCount*0.5){
+    indexOffset += totalCount;
+  }
+  return indexOffset;
+}
+  
+
+
+
+
+
+
+

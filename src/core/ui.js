@@ -1375,6 +1375,9 @@ function registerClassForTx(_class, txPath){
     return;
   } 
   txClassLookup[txPath] = _class;
+  
+
+  
 }
 
 

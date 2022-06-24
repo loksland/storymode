@@ -1,6 +1,7 @@
 # Changelog
 
-- v1.1.51 - (21-06-2022) 
+- v1.1.52 - (24-06-2022) Page scroll utils, repeating offset calcs added, dettach debugging option added.
+- v1.1.51 - (21-06-2022)
 - v1.1.50 - (21-06-2022) Updated docs
 - v1.1.49 - (21-06-2022) Doc updates
 - v1.1.48 - (21-06-2022) Added callback to detachApp.
