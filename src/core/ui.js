@@ -1218,7 +1218,6 @@ function setWebfontFallbacks(_webfontFallbacks){
 }
 
 
-
 let _webfontSource = 'google';
 /**
  * Set how webfonts are to be loaded.

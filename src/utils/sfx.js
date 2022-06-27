@@ -169,6 +169,15 @@ class SFX extends PIXI.utils.EventEmitter {
   }
   
   /**
+   * Sets the middleware to be used for loader intances created by the `sfx` class.
+   * @returns {PIXI.ILoaderMiddleware} loaderMiddleware 
+   * @private
+   */
+  setLoaderMiddleware(loaderMiddleware){
+    this._loaderMiddleware = loaderMiddleware;
+  }
+
+  /**
    * If `true` then will piggy back bg loop enabled to auto update to always follow sfx volume. 
    * @type {boolean}
    */
@@ -370,6 +379,18 @@ bg_loop_sprite: {path:'audio/my-music.mp3', sprites:{
   }
   
   /**
+   * Returns a new loader instance using middleware, if any.
+   * @private
+   */ 
+  createLoader(){
+    let _loader = new PIXI.Loader();
+    if (this._loaderMiddleware){
+      _loader.pre(this._loaderMiddleware);
+    }
+    return _loader;    
+  }
+  
+  /**
    * Commence resource loading, after pixi sound JS is loaded.
    * @private
    */  
@@ -382,7 +403,7 @@ bg_loop_sprite: {path:'audio/my-music.mp3', sprites:{
     
     // Load all resources registered with static scene method: `getSfxResources()`
     
-    this._loader = new PIXI.Loader();
+    this._loader = this.createLoader();
     this.spritesByParentSound = {};
     this.parentSoundBySprite = {};
     this.multis = {};
@@ -591,7 +612,7 @@ onSfxReady() {
       
       this.spritesByParentSound = {};
       
-      this._loader = new PIXI.Loader();
+      this._loader = this.createLoader();
       
       for (let _soundID in this._bgResources){
         const path = this._bgResources[_soundID].path ? this._bgResources[_soundID].path : this._bgResources[_soundID];           
