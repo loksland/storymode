@@ -37,7 +37,7 @@ for (let transMod of _trans) {
  * @example 
 // app.js 
 const scenes = {
-  home: {class: Home, sceneData: {}, default:true, defaultTransID:'pan:down'}, 
+  home: {class: Home, sceneData: {}, default:true, defaultTransID:'pan:down', defaultBgCol:0xff3300}, 
   play: {class: Play, sceneData: {}}
 }
 nav.setScenes(scenes);
@@ -58,11 +58,18 @@ function setupStage(stage, bgAlpha){
   //  gsap.set(pixiApp.view, {opacity:1.0});
   //});
   
+  let defaultBgCol = 0x000000;
+  for (const sceneID in scenes){
+    if (scenes[sceneID].default && scenes[sceneID].defaultBgCol){
+      defaultBgCol = scenes[sceneID].defaultBgCol;
+    }
+  }
+  
   // Add background 
   bg = new PIXI.Sprite(PIXI.Texture.WHITE);﻿
   bg.width = scaler.stageW;
   bg.height = scaler.stageH;
-  bg.tint = 0x000000; // Set in the index css
+  bg.tint = defaultBgCol; // Set in the index css
   stage.addChild(bg);
   gsap.fromTo(bg, 0.6, {pixi:{alpha:0.0}},{pixi:{alpha:bgAlpha}, ease:Linear.easeNone})
 
@@ -120,8 +127,6 @@ function enableInput(enable){
   inputScreen.visible = !enable;
 }
 
-
-
 /**
  * Will return if current scene has a transparent background.
  * @returns {boolean} sceneIsTransparent
@@ -159,10 +164,6 @@ function openDefaultScene(){
   }
   return false;
 }
-
-
-
-
 
 /**
  * @typedef {'fade'|'over'|'pan:%direction%'|'parallax:%direction%'|'mario:%bgColor%'|'pixelate'} TransitionID
