@@ -22,12 +22,24 @@ let scenes;
 let trans = {};
 const _trans = utils.requireAll(require.context('./../trans', false, /.js$/));
 for (let transMod of _trans) {
+  registerTrans(transMod);
+}
+
+/**
+ * Register a custom transition.
+ * @param {Module} transModule 
+ * @example
+// In app startup:
+import * as CustomTrans from './trans/mytrans.js';
+nav.registerTrans(CustomTrans);
+ */
+function registerTrans(transMod){
   if (transMod.id){
     let ids = Array.isArray(transMod.id) ? transMod.id : [transMod.id];
     for (var id of ids) {
       trans[id] = transMod.default;
     }
-  }
+  } 
 }
 
 
@@ -468,5 +480,5 @@ function destroy(reset = false, callback = null){
 }
 
 export { scenes }
-export { isPresentingModal, openDefaultScene,setupStage,isScenePresentedModally,isScenePresentedWithTransparentBg,openScene,dismissScene,bg,inputScreen,sceneHolder,setScenes,reloadSceneStack }
+export { isPresentingModal, openDefaultScene,setupStage,isScenePresentedModally,isScenePresentedWithTransparentBg,openScene,dismissScene,bg,inputScreen,sceneHolder,setScenes,reloadSceneStack,registerTrans }
 export { destroy }

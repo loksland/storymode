@@ -160,7 +160,7 @@ function setup(setupConfig){
     debugTf.alpha = 0.5;
     pixiApp.stage.addChild(debugTf);
     fpsAvg = -1;    
-    ticker.add(function(time){
+    ticker.add(function(time){      
         fpsAvg = fpsAvg < 0 ? PIXI.Ticker.shared.FPS : fpsAvg*0.8 + PIXI.Ticker.shared.FPS*0.2;
         debugTf.text = fpsAvg.toFixed(1);
     }); 
@@ -314,8 +314,6 @@ function destroy(reset = false, callback = null, debugToConsole = false, console
     
   });
 }
-
-
 
 
 export {pixiApp, getPixiApp, filters, htmlEle}; // Internal access to these properties.
