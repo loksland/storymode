@@ -828,6 +828,7 @@ PIXI.DisplayObject.prototype.addArt = function(txNameGlob){
             } else if (txs[i].type == 'div'){ // btn
               dispo = Container.fromTx(psdID + '/' + txs[i].name);      
             } else if (txs[i].type == 'img'){      
+            
               dispo = Sprite.fromTx(psdID + '/' + txs[i].name);      
             } else if (txs[i].type == 'tf'){      
               dispo = Text.fromTx(psdID + '/' + txs[i].name);   
@@ -846,6 +847,7 @@ PIXI.DisplayObject.prototype.addArt = function(txNameGlob){
                 dispo.y *= (1.0/this.scale.y);
                 dispo.scale.x *= (1.0/this.scale.x);
                 dispo.scale.y *= (1.0/this.scale.y);
+                
               }
             }
             

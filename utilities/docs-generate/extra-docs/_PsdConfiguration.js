@@ -10,7 +10,7 @@ The following layer naming conventions are supported:
 - *Sprite* - `layer` in PSD. (`.img` is assumed)
   - Use `layer.div(white)` for a Sprite with the built in *PIXI.Texture.White*
   - Use `layer.div(empty)` for a Sprite with the built in *PIXI.Texture.Empty*
-  - Use `layer.div(clone:other_layer)` for a Sprite with another Sprite texture  
+  - Use `layer.div(clone:other_layer)` for a Sprite with another Sprite texture. Note: Texture Packer will do this automatically when using spritesheets. 
 - *Container* - `layer.div` in PSD.
 - *Text* - `layer.tf` in PSD. 
 - *Btn* - `layer.btn` in PSD. 

@@ -45,11 +45,13 @@ let isProd = process.env.NODE_ENV != 'development';  // Set in package.json: eg.
 let htmlEle; // The element containing the game
 
 // Load all transitions
+/*
 let filters = {};
 const _filters = utils.requireAll(require.context('./utils/filters', false, /.js$/));
 for (let _filter of _filters) {
   filters[_filter.id] = _filter.default;
 }
+*/
 
 /**
  * Called after initial assets are loaded.
@@ -316,7 +318,7 @@ function destroy(reset = false, callback = null, debugToConsole = false, console
 }
 
 
-export {pixiApp, getPixiApp, filters, htmlEle}; // Internal access to these properties.
+export {pixiApp, getPixiApp, htmlEle}; // Internal access to these properties.
 export {appEmitter, detachApp}; // Emitter events
 export {kb, sfx, store, physics} // Helpers 
 export {utils, mutils,nav, ui, scaler, Scene}; // Core 
