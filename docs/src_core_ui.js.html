@@ -314,7 +314,7 @@ PIXI.Texture.fromTx = function(txPath, frame = null){
   if (!txInfo[txPath]){
     throw new Error('Texture info not found `'+txPath+'`')
   }
-  //console.log('resources[txPath]',resources,txPath,resources[txPath])
+
   if (resources[txPath] &amp;&amp; resources[txPath].texture){
     return new PIXI.Texture(resources[txPath].texture, frame);
   } else {
@@ -371,7 +371,14 @@ PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
     // https://pixijs.download/dev/docs/PIXI.TextStyle.html
       
     let fontStyle = psdFontStyleComponents(txInfo[txPath].tfParams.fontStyle);
-    
+
+    let webfontID = font.googleFontName + ':' + fontStyle.weight
+    let localFontFamily = webfontIDToLocalFontFamilyMapping[webfontID];
+    if (localFontFamily){
+      fontFamilyList[0] = localFontFamily;
+      //fontStyle.weight = '400';
+    }
+
     dispo = new Text(frame ? frame : txInfo[txPath].tfParams.text, {
       fontFamily: fontFamilyList,
       fontSize: txInfo[txPath].tfParams.fontSize * scaler.proj[txInfo[txPath].projID].scale, // Apply projection scale to font size. 
@@ -856,6 +863,7 @@ PIXI.DisplayObject.prototype.addArt = function(txNameGlob){
             } else if (txs[i].type == 'div'){ // btn
               dispo = Container.fromTx(psdID + '/' + txs[i].name);      
             } else if (txs[i].type == 'img'){      
+            
               dispo = Sprite.fromTx(psdID + '/' + txs[i].name);      
             } else if (txs[i].type == 'tf'){      
               dispo = Text.fromTx(psdID + '/' + txs[i].name);   
@@ -874,6 +882,7 @@ PIXI.DisplayObject.prototype.addArt = function(txNameGlob){
                 dispo.y *= (1.0/this.scale.y);
                 dispo.scale.x *= (1.0/this.scale.x);
                 dispo.scale.y *= (1.0/this.scale.y);
+                
               }
             }
             
@@ -1169,12 +1178,27 @@ let fontClassForPsdFont;
  * @param {Object.&lt;string, module:ui#WebFontProps>} webfonts - The fonts to preload, with top level key of a unique class name to reference the font, eg `heading`, `serif`, `button` etc.
  * @example 
  ui.registerFonts({
-   standard: {psdFontNames: ['Montserrat'], googleFontName: 'Montserrat', additionalStyles:['bold italic','thin','italic'], fallbacks:['sans-serif']}
+   standard: {psdFontNames: ['Montserrat'], googleFontName: 'Montserrat', additionalStyles:['bold italic','thin','italic'], fallbacks:['sans-serif']}   
  });
  */ 
 export function registerFonts(_fonts){
   fonts = _fonts;  
 }
+
+ let webfontIDToLocalFontFamilyMapping = {};
+/**
+ * Maps a web font identifier to a local CSS defined font family.
+ * &lt;br>- For `local` webfont sources only.
+ * &lt;br>- To be called before {@link storymode#createApp}
+ * &lt;br>- This method is for certain font and weight combinations to be directed to a local font family.
+ * @param {string} webfontID - The webfont identifier in the format `%webfontFontName%:%numericFontWeight%`. Eg. `Montserrat:400`
+ * @param {string} localFontFamily - The CSS font family. Eg. `MyCustomMontserrat`.
+ * @example 
+ ui.mapWebfontIDToLocalFontFamily('Montserrat:400','MyCustomMontserrat');
+ */ 
+ export function mapWebfontIDToLocalFontFamily(webfontID, localFontFamily){
+   webfontIDToLocalFontFamilyMapping[webfontID] = localFontFamily;
+ }
 
 /**
  * Given a font from Photoshop data, return the registered font class.
@@ -1269,11 +1293,12 @@ function queueWebFonts(){
   fontClassForPsdFont = {};
   let classAdditionalsQueued = {};
   
+
+  
   for (let txPath in txInfo){
     if (txInfo[txPath].type == 'tf'){ //  || txInfo[txPath].type == 'btn'
       
       let fontStyle = psdFontStyleComponents(txInfo[txPath].tfParams.fontStyle)
-      
       let psdFontName = txInfo[txPath].tfParams.fontName;
       let psdFont = txInfo[txPath].tfParams.font; // %name%-%weight%%style%
       
@@ -1281,12 +1306,16 @@ function queueWebFonts(){
       
       fontClassForPsdFont[psdFont] = fontClass; // Add this to a lookup for this specific font / style / weight combo
       
-      let googleFontName = fonts[fontClass].googleFontName;
-      
+    //  if (fonts[fontClass].localFontFamily){
+        
+        
+        
+    //  } else {     
+        
+      let googleFontName = fonts[fontClass].googleFontName;      
       if (!googleFonts[googleFontName]){
         googleFonts[googleFontName] = {weights:{normal:[],italic:[],oblique:[]}};
-      }
-      
+      }      
       if (!googleFonts[googleFontName].weights[fontStyle.style].includes(fontStyle.weight)){
         googleFonts[googleFontName].weights[fontStyle.style].push(fontStyle.weight);
       }
@@ -1302,6 +1331,8 @@ function queueWebFonts(){
         }       
         classAdditionalsQueued[fontClass] = true;
       }
+      
+    //  }
       
     }
   }
@@ -1323,6 +1354,8 @@ function queueWebFonts(){
     webfontIDs.push(googleFontName + ':' + webFontStyles.join(','));
     
   }
+  
+  
   
   if (window['WebFont'] &amp;&amp; webfontIDs.length > 0){
     
@@ -1348,16 +1381,28 @@ function queueWebFonts(){
         //, text: 'Q' // Optionally define text subset
       };
     } else if (_webfontSource === 'local'){
+      
       /*
       If your fonts are already included in another stylesheet you can also
        leave out the urls array and just specify font family names to start 
        font loading. As long as the names match those that are declared in the 
        families array, the proper loading classes will be applied to the html element.
       */
+      
+      // Map Google Font IDs to local font families.
+      for (let i = 0; i &lt; webfontIDs.length; i++){
+        let localFontFamily = webfontIDToLocalFontFamilyMapping[webfontIDs[i]]
+        if (localFontFamily){
+          webfontIDs[i] = localFontFamily;          
+        }
+      }
+      
       params.custom = {
         families: webfontIDs,
       };
     }
+    
+    params.timeout = 3000; // Default
     
     // https://github.com/typekit/webfontloader
     WebFont.load(params);
@@ -1402,10 +1447,7 @@ function registerClassForTx(_class, txPath){
     txClassSuffixes[_psdID][suffixLast3] = {class: _class, txPathEnd:suffix};
     return;
   } 
-  txClassLookup[txPath] = _class;
-  
-
-  
+  txClassLookup[txPath] = _class;  
 }
 
 
@@ -1449,13 +1491,13 @@ export { txInfo, psdInfo, registerPsdInfo, registerClassForTx, registerSpriteshe
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-mutils.html">mutils</a></li><li><a href="module-nav.html">nav</a></li><li><a href="module-scaler.html">scaler</a></li><li><a href="module-store.html">store</a></li><li><a href="module-storymode.html">storymode</a></li><li><a href="module-ui.html">ui</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Namespaces</h3><ul><li><a href="physics.html">physics</a></li><li><a href="PIXI.html">PIXI</a></li></ul><h3>Classes</h3><ul><li><a href="-_PhysicsNotes.html">_PhysicsNotes</a></li><li><a href="-_PsdConfiguration.html">_PsdConfiguration</a></li><li><a href="-_Snippets.html">_Snippets</a></li><li><a href="-_Subclassing.html">_Subclassing</a></li><li><a href="-_WindowScope.html">_WindowScope</a></li><li><a href="kb.html">kb</a></li><li><a href="module-nav.MarioTrans.html">MarioTrans</a></li><li><a href="module-nav.OverTrans.html">OverTrans</a></li><li><a href="module-nav.PanTrans.html">PanTrans</a></li><li><a href="module-nav.PixelateTrans.html">PixelateTrans</a></li><li><a href="module-scaler-ArtboardProjection.html">ArtboardProjection</a></li><li><a href="physics.jgsap.html">jgsap</a></li><li><a href="physics.JRender.html">JRender</a></li><li><a href="physics.JRunner.html">JRunner</a></li><li><a href="physics.JSyncLink.html">JSyncLink</a></li><li><a href="physics.JWireframeRender.html">JWireframeRender</a></li><li><a href="PIXI.AnimatedSprite.html">AnimatedSprite</a></li><li><a href="PIXI.DisplayObject.html">DisplayObject</a></li><li><a href="PIXI.Graphics.html">Graphics</a></li><li><a href="PIXI.Texture.html">Texture</a></li><li><a href="Scene.html">Scene</a></li><li><a href="SFX.html">SFX</a></li></ul><h3>Events</h3><ul><li><a href="module-scaler.html#event:fullscreenchange">fullscreenchange</a></li><li><a href="module-scaler.html#event:resize">resize</a></li><li><a href="module-scaler.html#event:resize_immediate">resize_immediate</a></li><li><a href="SFX.html#event:bgloop_enabled_change">bgloop_enabled_change</a></li><li><a href="SFX.html#event:bgready">bgready</a></li><li><a href="SFX.html#event:sfx_enabled_change">sfx_enabled_change</a></li><li><a href="SFX.html#event:sfxready">sfxready</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-mutils.html">mutils</a></li><li><a href="module-nav.html">nav</a></li><li><a href="module-scaler.html">scaler</a></li><li><a href="module-store.html">store</a></li><li><a href="module-storymode.html">storymode</a></li><li><a href="module-ui.html">ui</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Namespaces</h3><ul><li><a href="physics.html">physics</a></li><li><a href="PIXI.html">PIXI</a></li></ul><h3>Classes</h3><ul><li><a href="-_PhysicsNotes.html">_PhysicsNotes</a></li><li><a href="-_PsdConfiguration.html">_PsdConfiguration</a></li><li><a href="-_Snippets.html">_Snippets</a></li><li><a href="-_Subclassing.html">_Subclassing</a></li><li><a href="-_WindowScope.html">_WindowScope</a></li><li><a href="kb.html">kb</a></li><li><a href="module-nav.JumpTrans.html">JumpTrans</a></li><li><a href="module-nav.MarioTrans.html">MarioTrans</a></li><li><a href="module-nav.OverTrans.html">OverTrans</a></li><li><a href="module-nav.PanTrans.html">PanTrans</a></li><li><a href="module-nav.PixelateTrans.html">PixelateTrans</a></li><li><a href="module-scaler-ArtboardProjection.html">ArtboardProjection</a></li><li><a href="physics.jgsap.html">jgsap</a></li><li><a href="physics.JRender.html">JRender</a></li><li><a href="physics.JRunner.html">JRunner</a></li><li><a href="physics.JSyncLink.html">JSyncLink</a></li><li><a href="physics.JWireframeRender.html">JWireframeRender</a></li><li><a href="PIXI.AnimatedSprite.html">AnimatedSprite</a></li><li><a href="PIXI.DisplayObject.html">DisplayObject</a></li><li><a href="PIXI.Graphics.html">Graphics</a></li><li><a href="PIXI.Texture.html">Texture</a></li><li><a href="Scene.html">Scene</a></li><li><a href="SFX.html">SFX</a></li></ul><h3>Events</h3><ul><li><a href="module-scaler.html#event:fullscreenchange">fullscreenchange</a></li><li><a href="module-scaler.html#event:resize">resize</a></li><li><a href="module-scaler.html#event:resize_immediate">resize_immediate</a></li><li><a href="SFX.html#event:bgloop_enabled_change">bgloop_enabled_change</a></li><li><a href="SFX.html#event:bgready">bgready</a></li><li><a href="SFX.html#event:sfx_enabled_change">sfx_enabled_change</a></li><li><a href="SFX.html#event:sfxready">sfxready</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.10</a> on Tue Jun 28 2022 11:31:44 GMT+1000 (Australian Eastern Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.10</a> on Wed Jul 06 2022 11:15:53 GMT+1000 (Australian Eastern Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

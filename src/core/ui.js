@@ -286,7 +286,7 @@ PIXI.Texture.fromTx = function(txPath, frame = null){
   if (!txInfo[txPath]){
     throw new Error('Texture info not found `'+txPath+'`')
   }
-  //console.log('resources[txPath]',resources,txPath,resources[txPath])
+
   if (resources[txPath] && resources[txPath].texture){
     return new PIXI.Texture(resources[txPath].texture, frame);
   } else {
@@ -343,7 +343,14 @@ PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
     // https://pixijs.download/dev/docs/PIXI.TextStyle.html
       
     let fontStyle = psdFontStyleComponents(txInfo[txPath].tfParams.fontStyle);
-    
+
+    let webfontID = font.googleFontName + ':' + fontStyle.weight
+    let localFontFamily = webfontIDToLocalFontFamilyMapping[webfontID];
+    if (localFontFamily){
+      fontFamilyList[0] = localFontFamily;
+      //fontStyle.weight = '400';
+    }
+
     dispo = new Text(frame ? frame : txInfo[txPath].tfParams.text, {
       fontFamily: fontFamilyList,
       fontSize: txInfo[txPath].tfParams.fontSize * scaler.proj[txInfo[txPath].projID].scale, // Apply projection scale to font size. 
@@ -1143,12 +1150,27 @@ let fontClassForPsdFont;
  * @param {Object.<string, module:ui#WebFontProps>} webfonts - The fonts to preload, with top level key of a unique class name to reference the font, eg `heading`, `serif`, `button` etc.
  * @example 
  ui.registerFonts({
-   standard: {psdFontNames: ['Montserrat'], googleFontName: 'Montserrat', additionalStyles:['bold italic','thin','italic'], fallbacks:['sans-serif']}
+   standard: {psdFontNames: ['Montserrat'], googleFontName: 'Montserrat', additionalStyles:['bold italic','thin','italic'], fallbacks:['sans-serif']}   
  });
  */ 
 export function registerFonts(_fonts){
   fonts = _fonts;  
 }
+
+ let webfontIDToLocalFontFamilyMapping = {};
+/**
+ * Maps a web font identifier to a local CSS defined font family.
+ * <br>- For `local` webfont sources only.
+ * <br>- To be called before {@link storymode#createApp}
+ * <br>- This method is for certain font and weight combinations to be directed to a local font family.
+ * @param {string} webfontID - The webfont identifier in the format `%webfontFontName%:%numericFontWeight%`. Eg. `Montserrat:400`
+ * @param {string} localFontFamily - The CSS font family. Eg. `MyCustomMontserrat`.
+ * @example 
+ ui.mapWebfontIDToLocalFontFamily('Montserrat:400','MyCustomMontserrat');
+ */ 
+ export function mapWebfontIDToLocalFontFamily(webfontID, localFontFamily){
+   webfontIDToLocalFontFamilyMapping[webfontID] = localFontFamily;
+ }
 
 /**
  * Given a font from Photoshop data, return the registered font class.
@@ -1247,7 +1269,6 @@ function queueWebFonts(){
     if (txInfo[txPath].type == 'tf'){ //  || txInfo[txPath].type == 'btn'
       
       let fontStyle = psdFontStyleComponents(txInfo[txPath].tfParams.fontStyle)
-      
       let psdFontName = txInfo[txPath].tfParams.fontName;
       let psdFont = txInfo[txPath].tfParams.font; // %name%-%weight%%style%
       
@@ -1255,12 +1276,10 @@ function queueWebFonts(){
       
       fontClassForPsdFont[psdFont] = fontClass; // Add this to a lookup for this specific font / style / weight combo
       
-      let googleFontName = fonts[fontClass].googleFontName;
-      
+      let googleFontName = fonts[fontClass].googleFontName;      
       if (!googleFonts[googleFontName]){
         googleFonts[googleFontName] = {weights:{normal:[],italic:[],oblique:[]}};
-      }
-      
+      }      
       if (!googleFonts[googleFontName].weights[fontStyle.style].includes(fontStyle.weight)){
         googleFonts[googleFontName].weights[fontStyle.style].push(fontStyle.weight);
       }
@@ -1276,7 +1295,7 @@ function queueWebFonts(){
         }       
         classAdditionalsQueued[fontClass] = true;
       }
-      
+    
     }
   }
   
@@ -1284,7 +1303,6 @@ function queueWebFonts(){
   
   let webfontIDs = [];
   for (let googleFontName in googleFonts){
-   
     let webFontStyles = [];
     for (let style in googleFonts[googleFontName].weights){
        googleFonts[googleFontName].weights[style].sort();
@@ -1295,7 +1313,6 @@ function queueWebFonts(){
        }
     }
     webfontIDs.push(googleFontName + ':' + webFontStyles.join(','));
-    
   }
   
   if (window['WebFont'] && webfontIDs.length > 0){
@@ -1322,16 +1339,28 @@ function queueWebFonts(){
         //, text: 'Q' // Optionally define text subset
       };
     } else if (_webfontSource === 'local'){
+      
       /*
       If your fonts are already included in another stylesheet you can also
        leave out the urls array and just specify font family names to start 
        font loading. As long as the names match those that are declared in the 
        families array, the proper loading classes will be applied to the html element.
       */
+      
+      // Map Google Font IDs to local font families.
+      for (let i = 0; i < webfontIDs.length; i++){
+        let localFontFamily = webfontIDToLocalFontFamilyMapping[webfontIDs[i]]
+        if (localFontFamily){
+          webfontIDs[i] = localFontFamily;          
+        }
+      }
+      
       params.custom = {
         families: webfontIDs,
       };
     }
+    
+    params.timeout = 3000; // Default
     
     // https://github.com/typekit/webfontloader
     WebFont.load(params);
@@ -1376,10 +1405,7 @@ function registerClassForTx(_class, txPath){
     txClassSuffixes[_psdID][suffixLast3] = {class: _class, txPathEnd:suffix};
     return;
   } 
-  txClassLookup[txPath] = _class;
-  
-
-  
+  txClassLookup[txPath] = _class;  
 }
 
 

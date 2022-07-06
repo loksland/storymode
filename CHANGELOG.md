@@ -1,5 +1,6 @@
 # Changelog
 
+- v1.1.58 - (06-07-2022) Local font family mapping added to ui. Updated docs.
 - v1.1.57 - (04-07-2022) Removing alpha filter, adding jump transition.
 - v1.1.56 - (01-07-2022) Ability to add custom nav transitions.
 - v1.1.55 - (28-06-2022) Nav supports defaultBgCol scene prop. Updated docs.

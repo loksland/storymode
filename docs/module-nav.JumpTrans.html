@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: utilities/docs-generate/extra-docs/_PsdConfiguration.js</title>
+    <title>JSDoc: Class: JumpTrans</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,44 +17,134 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: utilities/docs-generate/extra-docs/_PsdConfiguration.js</h1>
+    <h1 class="page-title">Class: JumpTrans</h1>
 
     
 
 
 
+
+<section>
+
+<header>
     
-    <section>
-        <article>
-            <pre class="prettyprint source linenums"><code>
-/** @class _PsdConfiguration
-  * @hideconstructor
-  * @example
-  
-Textures are exported via Choppy ({@link https://www.npmjs.com/package/choppy}).
-  
-The following layer naming conventions are supported:
-  
-- *Sprite* - `layer` in PSD. (`.img` is assumed)
-  - Use `layer.div(white)` for a Sprite with the built in *PIXI.Texture.White*
-  - Use `layer.div(empty)` for a Sprite with the built in *PIXI.Texture.Empty*
-  - Use `layer.div(clone:other_layer)` for a Sprite with another Sprite texture. Note: Texture Packer will do this automatically when using spritesheets. 
-- *Container* - `layer.div` in PSD.
-- *Text* - `layer.tf` in PSD. 
-- *Btn* - `layer.btn` in PSD. 
-- *Graphics* - `layer.rect` in PSD. 
+        <h2><span class="attribs"><span class="type-signature"></span></span>
+            <span class="ancestors"><a href="module-nav.html">nav</a>.</span>JumpTrans</h2>
+        
+            <div class="class-description">Jumps from one scene to the next without any animation.
+<br>- Evoked with 'jump' transition ID.</div>
+        
+    
+</header>
 
-Defining a half resolution texture:
-- Layer name: `halfres_layer(outputValueFactor:1,scale:0.5)`
+<article>
+    <div class="container-overview">
+    
+        
 
-Example (PSD Layer names):
--mysprite.div(white,ui) // Will output as a white box
--mysprite.div(empty) // Will be a hidden sprite without any texture
 
-  */
-</code></pre>
-        </article>
-    </section>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="src_trans_jump.js.html">src/trans/jump.js</a>, <a href="src_trans_jump.js.html#line16">line 16</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>nav.openScene(myScene, false, 'jump')</code></pre>
+
+
+
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
 
 
 

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: utilities/docs-generate/extra-docs/_PsdConfiguration.js</title>
+    <title>JSDoc: Source: src/trans/jump.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: utilities/docs-generate/extra-docs/_PsdConfiguration.js</h1>
+    <h1 class="page-title">Source: src/trans/jump.js</h1>
 
     
 
@@ -27,32 +27,85 @@
     <section>
         <article>
             <pre class="prettyprint source linenums"><code>
-/** @class _PsdConfiguration
-  * @hideconstructor
-  * @example
-  
-Textures are exported via Choppy ({@link https://www.npmjs.com/package/choppy}).
-  
-The following layer naming conventions are supported:
-  
-- *Sprite* - `layer` in PSD. (`.img` is assumed)
-  - Use `layer.div(white)` for a Sprite with the built in *PIXI.Texture.White*
-  - Use `layer.div(empty)` for a Sprite with the built in *PIXI.Texture.Empty*
-  - Use `layer.div(clone:other_layer)` for a Sprite with another Sprite texture. Note: Texture Packer will do this automatically when using spritesheets. 
-- *Container* - `layer.div` in PSD.
-- *Text* - `layer.tf` in PSD. 
-- *Btn* - `layer.btn` in PSD. 
-- *Graphics* - `layer.rect` in PSD. 
+import { nav } from './../storymode.js';
 
-Defining a half resolution texture:
-- Layer name: `halfres_layer(outputValueFactor:1,scale:0.5)`
+export const id = 'jump';
 
-Example (PSD Layer names):
--mysprite.div(white,ui) // Will output as a white box
--mysprite.div(empty) // Will be a hidden sprite without any texture
 
-  */
-</code></pre>
+/**
+ * Jumps from one scene to the next without any animation.
+ * &lt;br>- Evoked with 'jump' transition ID.
+ * @memberof module:nav
+ * @hideconstructor
+ * @example
+nav.openScene(myScene, false, 'jump')
+ */
+ 
+class JumpTrans {
+  
+  constructor(scene, scenePrev = null, isModal = false, transConfigStr = null){
+    
+    this.scene = scene;
+    this.scenePrev = scenePrev;
+    this.isModal = isModal;
+    this.isTransparent = false;
+    
+  }
+  
+  performIn(onInCallback, reverse = false){
+    
+    const sceneIn = reverse ? this.scenePrev : this.scene;
+    const sceneOut = reverse ? this.scene : this.scenePrev;
+    
+    if (!nav.isScenePresentedWithTransparentBg()){
+      gsap.set(nav.bg, {pixi: {tint:sceneIn.bgColor}});
+    }
+    
+    if (sceneOut){
+      sceneOut.visible = false;
+    }
+    
+    sceneIn.visible = true;
+    
+    if (reverse){
+      this.onOut(onInCallback);
+    } else {
+      this.onIn(onInCallback);
+    }
+     
+  }
+  
+  onIn(onInCallback){
+    
+    // Remove all filters used in the transition
+    
+    if (this.scenePrev){
+      this.scenePrev.visible = false; // Hide incase is modal for performance
+    }
+    
+    onInCallback();    
+    
+  }
+  
+  performOut(onOutCallback){
+    
+    this.performIn(onOutCallback, true)
+    
+  }
+  
+  onOut(onOutCallback){
+    
+    // Remove all filters used in the transition
+    
+    this.scene.visible = false;
+
+    onOutCallback();    
+    
+  }
+  
+}
+
+export default JumpTrans</code></pre>
         </article>
     </section>
 
