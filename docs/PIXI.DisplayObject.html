@@ -338,7 +338,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_ui.js.html">src/core/ui.js</a>, <a href="src_core_ui.js.html#line319">line 319</a>
+        <a href="src_core_ui.js.html">src/core/ui.js</a>, <a href="src_core_ui.js.html#line333">line 333</a>
     </li></ul></dd>
     
 
@@ -414,6 +414,7 @@ this.addChild(mySpr); // Sprite will be at projected scale and position.</code><
 <br>- This method is usually called by a `scene` and will load textures found in the PSD associated with the scene via the `psdID` property.
 <br>- Nested display objects (display objects within display objects) are automatically added as well.
 <br>- If caller is a scene then all top level items are added otherwise will add chidren only.
+<br>- `textureNameGlob` array is also passed to any children.
 <br>- All display objects added will also be appended to a property called `art` of the calling instance, in a lookup object by texture name.
 </div>
 
@@ -529,7 +530,7 @@ this.addChild(mySpr); // Sprite will be at projected scale and position.</code><
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_ui.js.html">src/core/ui.js</a>, <a href="src_core_ui.js.html#line705">line 705</a>
+        <a href="src_core_ui.js.html">src/core/ui.js</a>, <a href="src_core_ui.js.html#line728">line 728</a>
     </li></ul></dd>
     
 
@@ -882,7 +883,7 @@ didLoad(ev){
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_ui.js.html">src/core/ui.js</a>, <a href="src_core_ui.js.html#line571">line 571</a>
+        <a href="src_core_ui.js.html">src/core/ui.js</a>, <a href="src_core_ui.js.html#line591">line 591</a>
     </li></ul></dd>
     
 
@@ -1226,7 +1227,7 @@ didLoad(ev){
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_utils_extensions.js.html">src/utils/extensions.js</a>, <a href="src_utils_extensions.js.html#line247">line 247</a>
+        <a href="src_utils_extensions.js.html">src/utils/extensions.js</a>, <a href="src_utils_extensions.js.html#line257">line 257</a>
     </li></ul></dd>
     
 
@@ -1541,7 +1542,7 @@ didLoad(ev){
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_utils_extensions.js.html">src/utils/extensions.js</a>, <a href="src_utils_extensions.js.html#line191">line 191</a>
+        <a href="src_utils_extensions.js.html">src/utils/extensions.js</a>, <a href="src_utils_extensions.js.html#line201">line 201</a>
     </li></ul></dd>
     
 
@@ -1701,7 +1702,7 @@ didLoad(ev){
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_ui.js.html">src/core/ui.js</a>, <a href="src_core_ui.js.html#line675">line 675</a>
+        <a href="src_core_ui.js.html">src/core/ui.js</a>, <a href="src_core_ui.js.html#line695">line 695</a>
     </li></ul></dd>
     
 
@@ -1966,7 +1967,7 @@ didLoad(ev){
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_ui.js.html">src/core/ui.js</a>, <a href="src_core_ui.js.html#line898">line 898</a>
+        <a href="src_core_ui.js.html">src/core/ui.js</a>, <a href="src_core_ui.js.html#line933">line 933</a>
     </li></ul></dd>
     
 
@@ -1998,6 +1999,117 @@ didLoad(ev){
     <h5>Example</h5>
     
     <pre class="prettyprint"><code>myDispo.hug('BR'); // Positions display object bottom right of screen.</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="isCached"><span class="type-signature"></span>isCached<span class="signature">()</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Returns true if display object has applied cache as bitmap.
+<br>- The cache will be applied at the next render after cacheAsBitmap is enabled.
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="src_utils_extensions.js.html">src/utils/extensions.js</a>, <a href="src_utils_extensions.js.html#line192">line 192</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    isCached
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
 
 
 
@@ -2059,7 +2171,7 @@ didLoad(ev){
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_utils_extensions.js.html">src/utils/extensions.js</a>, <a href="src_utils_extensions.js.html#line409">line 409</a>
+        <a href="src_utils_extensions.js.html">src/utils/extensions.js</a>, <a href="src_utils_extensions.js.html#line419">line 419</a>
     </li></ul></dd>
     
 
@@ -2147,7 +2259,7 @@ didLoad(ev){
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_utils_extensions.js.html">src/utils/extensions.js</a>, <a href="src_utils_extensions.js.html#line307">line 307</a>
+        <a href="src_utils_extensions.js.html">src/utils/extensions.js</a>, <a href="src_utils_extensions.js.html#line317">line 317</a>
     </li></ul></dd>
     
 
@@ -2343,7 +2455,7 @@ didLoad(ev){
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_utils_extensions.js.html">src/utils/extensions.js</a>, <a href="src_utils_extensions.js.html#line324">line 324</a>
+        <a href="src_utils_extensions.js.html">src/utils/extensions.js</a>, <a href="src_utils_extensions.js.html#line334">line 334</a>
     </li></ul></dd>
     
 
@@ -2911,7 +3023,7 @@ didLoad(ev){
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_ui.js.html">src/core/ui.js</a>, <a href="src_core_ui.js.html#line503">line 503</a>
+        <a href="src_core_ui.js.html">src/core/ui.js</a>, <a href="src_core_ui.js.html#line523">line 523</a>
     </li></ul></dd>
     
 
@@ -3117,7 +3229,7 @@ this.art.followerSprite.syncRelative(this.art.targetSprite)</code></pre>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_ui.js.html">src/core/ui.js</a>, <a href="src_core_ui.js.html#line527">line 527</a>
+        <a href="src_core_ui.js.html">src/core/ui.js</a>, <a href="src_core_ui.js.html#line547">line 547</a>
     </li></ul></dd>
     
 
@@ -3258,7 +3370,7 @@ this.art.followerSprite.syncRelative(this.art.targetSprite)</code></pre>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.10</a> on Wed Jul 06 2022 11:15:53 GMT+1000 (Australian Eastern Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.10</a> on Thu Jul 14 2022 16:47:14 GMT+1000 (Australian Eastern Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

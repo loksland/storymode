@@ -186,6 +186,20 @@ function onAutoLoadComplete(){
   }
 }
 
+
+let childTxNameGlobByTxPath = {};
+/**
+ * Set the `txNameGlobs` supplied to a specific texture when `addArt()` is called within a `fromTx()` call. 
+ * @param {Array} txNameGlobs - Array of texture names or wildcard pattern to include and/or exclude. Eg. `*_tx_suffix`, `!tf_match*`, `tx_prefix_*`
+ * @param {string} txPath - Texture path.
+ * @example 
+ui.registerChildTxNameGlobsForTx(['!_*'], 'mypsd.psd/my_btn'); 
+ */
+function registerChildTxNameGlobsForTx(txNameGlobs, txPath){
+  childTxNameGlobByTxPath[txPath] = txNameGlobs;  
+}
+
+
 // On demand sprite sheets
 // -----------------------
 
@@ -462,6 +476,7 @@ PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
     } else {
       dispo = new this(resources[txInfo[txPath].path].texture);
     }
+    
   } else if (this == Container || (this.prototype instanceof Container)){ // Custom container class
     dispo = new this();
   } else {
@@ -472,19 +487,24 @@ PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
   dispo.txInfo = utils.cloneObj(txInfo[txPath]); // Clone this prop as individual sprites may have custom x,y,scale
   
   dispo.name = dispo.txInfo.name; // Optional, for convenience
-  
   dispo.applyProj();
   
   if (addChildren){
     // Add children
-    dispo.addArt();
-  }
+    if (childTxNameGlobByTxPath[txPath]){
+      dispo.addArt.apply(dispo, childTxNameGlobByTxPath[txPath]);
+    } else {
+      dispo.addArt();
+    }
+    
+    
+  } 
   
   // If `setup` function exists then call now after applying projection and adding children
   if (typeof dispo.init === 'function'){
     dispo.init.bind(dispo)(); // Setup based on `txInfo`
   }
-  
+   
   return dispo;
   
 }
@@ -684,11 +704,14 @@ PIXI.DisplayObject.prototype.getArt = function(txNameGlob){
 // Display objects can optionally declare a method called `addArtTxNameGlobs` that returns an array of txNameGlobs.
 // This will be used if none are sent to this method.
 
+
+
 /**
  * Will add all matching textures to the calling instance according to nesting, scale and position settings in the PSD export data and `scaler` class.
  * <br>- This method is usually called by a `scene` and will load textures found in the PSD associated with the scene via the `psdID` property.
  * <br>- Nested display objects (display objects within display objects) are automatically added as well.
  * <br>- If caller is a scene then all top level items are added otherwise will add chidren only.
+ * <br>- `textureNameGlob` array is also passed to any children.
  * <br>- All display objects added will also be appended to a property called `art` of the calling instance, in a lookup object by texture name.
  * @param {...string} [textureNameGlob=null] - Optional texture names or wildcard pattern to include and/or exclude. Eg. `*_tx_suffix`, `!tf_match*`, `tx_prefix_*`
  * @returns {Array.<PIXI.DisplayObject>} added - An array of display objects added to the calling instance.
@@ -758,7 +781,16 @@ PIXI.DisplayObject.prototype.addArt = function(txNameGlob){
   if (txNameGlobs.length == 0 && typeof this.addArtTxNameGlobs === 'function'){
     // Use caller's custom txNameGlobs list
     txNameGlobs = this.addArtTxNameGlobs();
-  }
+  } 
+  
+  /*
+  if (txNameGlobs.length == 0){
+    let _txNameGlobs = getDefaultTxNameGlobs();
+    if (_txNameGlobs){
+      txNameGlobs = _txNameGlobs;
+    }
+  } 
+  */
   
   // Put ! criterea first to optimise pattern matching later
   txNameGlobs.sort(function(a, b) {
@@ -827,6 +859,7 @@ PIXI.DisplayObject.prototype.addArt = function(txNameGlob){
             }
           }
           
+          let isTf = false;
           if (!dispo){
             if (txClassLookup[psdID + '/' + txs[i].name]){
               dispo = txClassLookup[psdID + '/' + txs[i].name].fromTx(psdID + '/' + txs[i].name);
@@ -834,11 +867,11 @@ PIXI.DisplayObject.prototype.addArt = function(txNameGlob){
               dispo = txClassLookup['*/' + txs[i].name].fromTx(psdID + '/' + txs[i].name);
             } else if (txs[i].type == 'div'){ // btn
               dispo = Container.fromTx(psdID + '/' + txs[i].name);      
-            } else if (txs[i].type == 'img'){      
-            
+            } else if (txs[i].type == 'img'){    
               dispo = Sprite.fromTx(psdID + '/' + txs[i].name);      
             } else if (txs[i].type == 'tf'){      
               dispo = Text.fromTx(psdID + '/' + txs[i].name);   
+              isTf = true;
             //} else if (txs[i].type == 'btn'){
             //  dispo = Btn.fromTx(psdID + '/' + txs[i].name);
             } else if (txs[i].type == 'rect'){
@@ -847,15 +880,17 @@ PIXI.DisplayObject.prototype.addArt = function(txNameGlob){
           }
           
           if (dispo != null){
-            if (txs[i].parent){
+            
+            //if (txs[i].parent && this.isSprite && isTf){
+            //  txs[i].parent.scale.set(1.0)
+            //}
+            
+            if (txs[i].parent && this.isSprite){ // This includes text
               // If parent is a spite counter act the effect of its scale on children
-              if (this.isSprite){                
-                dispo.x *= (1.0/this.scale.x);
-                dispo.y *= (1.0/this.scale.y);
-                dispo.scale.x *= (1.0/this.scale.x);
-                dispo.scale.y *= (1.0/this.scale.y);
-                
-              }
+              dispo.x *= (1.0/this.scale.x);
+              dispo.y *= (1.0/this.scale.y);
+              dispo.scale.x *= (1.0/this.scale.x);
+              dispo.scale.y *= (1.0/this.scale.y);                
             }
             
             this.addChild(dispo);
@@ -1115,8 +1150,6 @@ function performValuePathMapping(mapping){
     
   }
 }
-
-
 
 // Webfonts
 // --------
@@ -1435,7 +1468,7 @@ function registerClassForTx(_class, txPath){
    
  }
 
-export { txInfo, psdInfo, registerPsdInfo, registerClassForTx, registerSpritesheetPath, setSpritesheetSuffix, setWebFontSource, setWebfontFallbacks, destroy} // Temporary?
+export { txInfo, psdInfo, registerPsdInfo, registerClassForTx, registerSpritesheetPath, setSpritesheetSuffix, setWebFontSource, setWebfontFallbacks, destroy, registerChildTxNameGlobsForTx}
 
 
 

@@ -19,7 +19,7 @@ export default class MySprite extends PIXI.Sprite {
   }
   
   // Optional. Called by addArt() after parent and siblings all present
-  onAdded(){ 
+  onArtAdded(){ 
     
   }
   
@@ -47,7 +47,7 @@ export default class MyContainer extends PIXI.Container {
   }
   
   // Optional. Called by addArt() after parent and siblings all present
-  onAdded(){ 
+  onArtAdded(){ 
     
   }
   

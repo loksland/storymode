@@ -168,6 +168,8 @@ function setup(setupConfig){
     }); 
   }
   
+  appEmitter.emit('onapp_predefaultscene', pixiApp)
+  
   // Get default scene and load it
   if (!nav.openDefaultScene()){
     throw new Error('Default scene not found.')

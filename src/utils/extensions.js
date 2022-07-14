@@ -183,6 +183,16 @@ PIXI.ObservablePoint.prototype.translateToCoordSpace = function(oldParent, newPa
   
 }
 
+
+/**
+ * Returns true if display object has applied cache as bitmap.
+ * <br>- The cache will be applied at the next render after cacheAsBitmap is enabled.
+ * @returns {boolean} isCached 
+ */
+PIXI.DisplayObject.prototype.isCached = function(){
+  return this._cacheData && this._cacheData.sprite;  
+}
+
 /**
  * Removes filters and masks to display object and all children recursively.
  * <br>- Called by scene on exit.
