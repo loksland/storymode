@@ -152,7 +152,7 @@ function setup(setupConfig){
   if (isProd){
     // Disable right click - this menu may be confusing to user
     htmlEle.setAttribute('oncontextmenu', 'return false');
-  } else {
+  } else if (setupConfig.pixiOptions._showFPS !== false){
     const debugTf = new PIXI.Text('X', {fontFamily : 'Arial', fontSize: 13, fill : 0xffffff, align : 'left', dropShadow: true,
     dropShadowColor: '#000000',
     dropShadowBlur: 0.0,
