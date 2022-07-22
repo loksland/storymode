@@ -22,12 +22,29 @@ if(!STORAGE_ENABLED){
 
 let sessionData = {}; // Fallback just for this session
 
+let _enabled = null;
+
 /**
  * Will be true if local storage is supported / enabled on the current device.
- * @type {boolean}
+ * @returns {boolean} enabled
  * @readonly
  */
-export const enabled = _localStorageAvailable();
+export function isEnabled(){
+  if (_enabled === true || _enabled === false){
+    return _enabled;
+  }
+  _enabled = _localStorageAvailable(); // Retrieve device capability and save.
+  return _enabled;
+}
+
+/**
+ * Disable using storage even if supported.
+ * <br>- To be called before `storymode.createApp()`.
+ */
+export function disable(){
+  _enabled = false;
+}
+
 
 /**
  * Override the default storage prefix.
@@ -46,7 +63,7 @@ export function setPrefix(_prefix){
  */
 export function save(key, val){  
   key = prefix + '.' + key;
-  if (!enabled){    
+  if (!isEnabled()){    
     sessionData[key] = val;
     return false;
   }
@@ -61,7 +78,7 @@ export function save(key, val){
  */
 export function load(key){
   key = prefix + '.' + key;
-  if (!enabled){    
+  if (!isEnabled()){    
     if (typeof sessionData[key] !== 'undefined'){
       return sessionData[key];
     }    
@@ -76,7 +93,7 @@ export function load(key){
  * @param {string} key - The storage key.
  */
 export function remove(key){
-  if (!enabled){
+  if (!isEnabled()){
     if (typeof sessionData[key] !== 'undefined'){
       sessionData[key] = null;
       delete sessionData[key];
@@ -91,7 +108,7 @@ export function remove(key){
  * Removes all storage data from the store instance.
  */
 export function removeAll(){
-  if (!enabled){
+  if (!isEnabled()){
     sessionData = {}
     return null;
   }
@@ -106,7 +123,7 @@ function _localStorageAvailable() {
     if (!STORAGE_ENABLED){
       return false;
     }
-    let storage;
+    let storage;    
     try {
         storage = window['localStorage'];
         let x = '__storage_test__';

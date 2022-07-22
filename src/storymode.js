@@ -67,9 +67,10 @@ for (let _filter of _filters) {
  * @param {string} htmlEleID - The DOM element ID in which to add the Pixi canvas. If not present yet will wait for it to arrive.
  * @param {boolean} [fullScreen=false] - If true will base the canvas dimensions on the window size rather than the containing element.
  * @param {Object} [pixiOptions=null] - Option object to override defaults sent to PIXI. See: {@link http://pixijs.download/release/docs/PIXI.Application.html#Application}
+ * @param {Object} [options=null] - Addtional storymode options.
  * @param {AppLoadCallback} [onLoadCallback=null] - Called after initial assets are loaded.
  */
-export function createApp(_htmlEleID, fullScreen = false, pixiOptions = null, onLoadCallback = null) {
+export function createApp(_htmlEleID, fullScreen = false, pixiOptions = null, options = null, onLoadCallback = null) {
     
   let setupConfig = {};
   setupConfig.htmlEleID = _htmlEleID;
@@ -77,8 +78,21 @@ export function createApp(_htmlEleID, fullScreen = false, pixiOptions = null, on
 
   kb.init();
   sfx.loadPrefs()
-          
+  
   let defaultOptions = {  
+      displayFPS: isProd ? false : true, 
+      waitForImagesToLoad: null, // Supply a single or array of images or image IDs 
+  }
+  options = utils.extend(defaultOptions, options);
+  
+  if (options.waitForImagesToLoad){
+    options.waitForImagesToLoad = Array.isArray(options.waitForImagesToLoad) ? options.waitForImagesToLoad : [options.waitForImagesToLoad]; // Ensure singles are arrays
+  }
+  
+  setupConfig.options = utils.cloneObj(options); // A copy is retained for setup.
+  
+  
+  let defaultPixiOptions = {  
       autoDensity: true, //  Adjusts the canvas using css pixels so it will scale properly (it was the default behavior in v4)
       antialias: window.devicePixelRatio == 1, // Only anti alias from non-retina displays
       backgroundAlpha: 1.0,
@@ -90,7 +104,7 @@ export function createApp(_htmlEleID, fullScreen = false, pixiOptions = null, on
   if (!pixiOptions){
     pixiOptions = {};
   }
-  pixiOptions = utils.extend(defaultOptions, pixiOptions);
+  pixiOptions = utils.extend(defaultPixiOptions, pixiOptions);
 
   // Is the html ele attached to the DOM at this point?
   if (utils.e(setupConfig.htmlEleID) && typeof utils.e(setupConfig.htmlEleID)['appendChild'] === 'function'){
@@ -118,17 +132,39 @@ export function createApp(_htmlEleID, fullScreen = false, pixiOptions = null, on
 }
 
 
+function areImagesLoaded(imageList){
+  if (!imageList){
+    return true;
+  }
+  for (let image of imageList){
+    if (!utils.isImgLoaded(image)){
+      return false;
+    }
+  }
+  return true;
+}
+
 let fpsAvg;
 // All assets are loaded by this point and the stage is empty
 function setup(setupConfig){ 
   
-  if (!utils.e(setupConfig.htmlEleID) || typeof utils.e(setupConfig.htmlEleID)['appendChild'] !== 'function'){
+  if (!utils.e(setupConfig.htmlEleID) || typeof utils.e(setupConfig.htmlEleID)['appendChild'] !== 'function' || !areImagesLoaded(setupConfig.options.waitForImagesToLoad)){    
 
     // The container element needs to be present and able to appendChild.
     utils.wait(1.0/5.0, setup, [setupConfig]);
-    return;
+    return;  
   
   }
+  
+  
+  if (setupConfig.options.setupDelay){
+    let _delay = setupConfig.options.setupDelay;
+    setupConfig.options.setupDelay = null;
+    delete setupConfig.options.setupDelay;
+    utils.wait(_delay, setup, [setupConfig]);    
+    return;
+  }
+  
 
   // DOM is attached by this point.
   
@@ -152,7 +188,7 @@ function setup(setupConfig){
   if (isProd){
     // Disable right click - this menu may be confusing to user
     htmlEle.setAttribute('oncontextmenu', 'return false');
-  } else if (setupConfig.pixiOptions._showFPS !== false){
+  } else if (setupConfig.options.displayFPS !== false){
     const debugTf = new PIXI.Text('X', {fontFamily : 'Arial', fontSize: 13, fill : 0xffffff, align : 'left', dropShadow: true,
     dropShadowColor: '#000000',
     dropShadowBlur: 0.0,

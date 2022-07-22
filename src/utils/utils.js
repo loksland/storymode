@@ -108,6 +108,20 @@ export function e(id){
 }
 
 /**
+ * Returns wheather the given image is loaded.
+ * @param {string|DOMElement} image - The id of the DOM element or the DOM element itself.
+ * @returns {boolean} loaded - The load state.
+ */
+export function isImgLoaded(image){
+    image = typeof image === 'string' ? e(image) : image;
+    if (!image){
+      return false;
+    }
+    return image.complete && image.naturalHeight !== 0;
+}
+
+
+/**
  * Performs a shallow clone of a given object. 
  * @param {Object} source - The object to clone.
  * @returns {Object} clone - The duplicate object.

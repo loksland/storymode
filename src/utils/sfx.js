@@ -60,7 +60,7 @@ export default class MyClass extends Scene {
     }
     // ...
     sfx.playSFX('ding');
-    sfx.playSFX('explosion'); // Play sprite
+    sfx.playSFX('explosion', {start:1, complete:myFunction}); // Play sprite
   }
 }
  */
@@ -210,6 +210,10 @@ class SFX extends PIXI.utils.EventEmitter {
      */
     this.emit('sfx_enabled_change');
     this.syncBgState();
+    
+    if (!this._sfxEnabled && !this._bgLoopEnabled){
+      this.stopAll();
+    } 
     
   }
   
@@ -689,11 +693,16 @@ onBgReady() {
   
   /**
    * Stop all sound playback.
+   * <br>- Reset concurrent sound tracking.
    */  
   stopAll(){
     
     if (!this._sfxready){
       return;
+    }
+    
+    for (let soundID in this.concurrentTracking){
+      this.concurrentTracking[soundID]._playcount = 0;
     }
     
     PIXI.sound.stopAll();
@@ -750,6 +759,9 @@ onBgReady() {
     // Defaults - Can be supplied as option params
     let delay = -1;
     let volume = 1.0;
+  
+    
+    let _optionBase = {}
     
     if (typeof options === 'number'){
       delay = options; // Assume number is delay;
@@ -762,6 +774,16 @@ onBgReady() {
         delay = options.delay;
         delete options.delay; // Remove delay as it will be applied now
       }
+      // See: https://pixijs.io/sound/docs/PlayOptions.html
+      if (typeof options.start === 'number'){
+        _optionBase.start = options.start
+      }
+      if (typeof options.complete === 'function'){
+        _optionBase.complete = options.complete
+      }
+      //if (typeof options.end === 'number'){
+      //  _optionBase.end = options.end
+      //}
     }
     
     if (delay > 0.0){
@@ -829,7 +851,8 @@ onBgReady() {
       
       // Sprite / Non-sprite
       
-      let options = {};
+      let options = _optionBase;
+      
       options.volume = Math.max(0.0, Math.min(1.0, this._sfxVolume*this._volume*volume)); 
     
       // Get sound object based on if sprite or not
@@ -861,12 +884,18 @@ onBgReady() {
           this.concurrentTracking[concurrentSoundID]._playcount++; 
           if (!options.loop){ // No callback needed for loop
             let self = this;
+            let cmp = options.complete;
             options.complete = ()=>{
               self.concurrentTracking[concurrentSoundID]._playcount = Math.max(0, self.concurrentTracking[concurrentSoundID]._playcount-1);
+              if (cmp){
+                cmp();
+              }
             }
           }
-        }        
+        }       
+        
         sound.play(options);
+        
       } else {
         window['con' + 'sole']['log']('SFX resource not found `'+soundID+'`')
       }
@@ -875,25 +904,29 @@ onBgReady() {
   }
   
   /**
-   * Stops playback of looping sfx audio.
+   * Stops playback of sfx audio.
    * @param {string} [soundID=null] - The sound identifier, set to null or '*' to stop all looping sfx audio.
    */  
   stopSFX(soundID = null){
     
     if (!soundID || soundID == '*'){
-      // Stop all looping SFX
-      for (let soundID in this.loopSfx){
-        this.stopSFX(soundID);
+        
+      for (let resourceID in this.resources){
+        if (this.resources[resourceID].sound){
+          if (this.concurrentTracking[soundID]){
+            this.concurrentTracking[soundID]._playcount = 0;
+          }
+          this.resources[resourceID].sound.stop();
+        }
       }
       return;
     }
-    if (!this.loopSfx[soundID] || !this.concurrentTracking[soundID]){
-      return
-    }
     
-    this.concurrentTracking[soundID]._playcount = 0;
     let result = this.getSoundForID(soundID);
     if (result.sound){
+      if (this.concurrentTracking[soundID]){
+        this.concurrentTracking[soundID]._playcount = 0;
+      }
       result.sound.stop();
     }
     

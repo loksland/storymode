@@ -43,7 +43,6 @@ function registerPsdInfo(_psdInfo){
       if (psdInfo[psdID].doc.txs[i].type == 'div'){
         if (psdInfo[psdID].doc.txs[i].clone){     
           psdInfo[psdID].doc.txs[i].type = 'img';
-        
         } else if (psdInfo[psdID].doc.txs[i].flags.split(',').indexOf('white') != -1){
           psdInfo[psdID].doc.txs[i].txOverride = 'white';
           psdInfo[psdID].doc.txs[i].type = 'img';
@@ -52,7 +51,11 @@ function registerPsdInfo(_psdInfo){
           psdInfo[psdID].doc.txs[i].type = 'img';
         }
       } 
-      
+                  
+      if (typeof psdInfo[psdID].doc.txs[i].tint === 'string' && psdInfo[psdID].doc.txs[i].tint.length > 0){
+        psdInfo[psdID].doc.txs[i].tint = PIXI.utils.string2hex(psdInfo[psdID].doc.txs[i].tint); // It can handle: hex strings starting with #: "#ffffff" hex strings starting with 0x: "0xffffff" hex strings without prefix: "ffffff" css colors: "black"
+      }
+                  
       psdInfo[psdID].doc.txs[i].psdID = psdID; // Create a ref back to the PSD
       psdInfo[psdID].doc.txs[i].path = psdID + '/' + (psdInfo[psdID].doc.txs[i].clone ? psdInfo[psdID].doc.txs[i].clone : psdInfo[psdID].doc.txs[i].name);
       
@@ -476,6 +479,11 @@ PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
     } else {
       dispo = new this(resources[txInfo[txPath].path].texture);
     }
+    
+    if (txInfo[txPath].tint){
+      dispo.tint = txInfo[txPath].tint; // Auto apply tint.
+    }
+    
     
   } else if (this == Container || (this.prototype instanceof Container)){ // Custom container class
     dispo = new this();
