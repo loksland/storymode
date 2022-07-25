@@ -95,6 +95,8 @@ class SFX extends PIXI.utils.EventEmitter {
     
     this._useSfxStateForBg = false;
     
+    this.fader = {volume:1.0};
+    
     /**
      * A path to the pixi sound library js file. 
      *<br>- Default is 'js/vendor/pixi-sound.js'
@@ -102,6 +104,8 @@ class SFX extends PIXI.utils.EventEmitter {
      * @type {string}
      */
     this.pixisoundJSPath = 'js/vendor/pixi-sound.js';
+    
+    
     
   }
   
@@ -394,6 +398,32 @@ bg_loop_sprite: {path:'audio/my-music.mp3', sprites:{
     return _loader;    
   }
   
+  
+  /**
+   * Optionally call this method gradually change the global volume by a set factor.
+   * <br>- Can be called anytime, before `storymode.createApp()`.
+   * <br>- Should be called before or during `storymode.createApp()` callback.
+   * @param {number} volume - Volume factor from 0.0 to 1.0. Not releated to sfx / bg volume values.
+   * @param {number} duration - The fade duration.   
+   */
+  fadeGlobalVolume(volume, dur = 5.0){
+    
+    gsap.killTweensOf(this.fader);
+    if (dur < 0.001){
+      this.fader.volume = volume
+      this.syncFader();   
+    } else {
+      gsap.to(this.fader, dur,  {volume:volume, ease:Linear.easeNone, onUpdate:this.syncFader.bind(this)});
+    }
+    
+  }
+  
+  syncFader(){
+    if (PIXI && PIXI.sound){
+      PIXI.sound.volumeAll = this.fader.volume;
+    }
+  }
+  
   /**
    * Commence resource loading, after pixi sound JS is loaded.
    * @private
@@ -404,6 +434,11 @@ bg_loop_sprite: {path:'audio/my-music.mp3', sprites:{
     
     // Set global volume
     // PIXI.sound.volumeAll = 0.1;
+    
+    // PIXI.sound.volumeAll = 0.1
+    //  PIXI.sound.volumeAll = 1.0;
+    
+    this.syncFader();   
     
     // Load all resources registered with static scene method: `getSfxResources()`
     
@@ -570,6 +605,8 @@ bg_loop_sprite: {path:'audio/my-music.mp3', sprites:{
     
     this.resources = resources;
     this._sfxready = true;
+    
+    
     
     // Add sprites to any loaded SFX sounds
     for (let _soundID in this.spritesByParentSound){

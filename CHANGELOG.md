@@ -1,5 +1,6 @@
 # Changelog
 
+- v1.1.62 - (25-07-2022) Sfx fader controls added.
 - v1.1.61 - (22-07-2022) Sprite tinting from PSD. Extra options for create app. SFX start, complete callback support.
 - v1.1.60 - (18-07-2022) Allow disable fps meter in non-prod.
 - v1.1.59 - (14-07-2022) ui.registerChildTxNameGlobsForTx added.
