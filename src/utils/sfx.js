@@ -121,6 +121,8 @@ class SFX extends PIXI.utils.EventEmitter {
   
     this.syncBgState();
     
+  
+    
   }
   
   /**
@@ -1041,6 +1043,7 @@ onBgReady() {
    * @private
    */  
   _resumeBgLoop(){
+  
     if (this._bgLoopEnabled && this.bgLoopSlug){
       let result = this.getSoundForID(this.bgLoopSlug);
       if (result.sound){
@@ -1104,6 +1107,7 @@ onBgReady() {
       this.resources = {}
       this._enableLoadCalled = false;
       this._waitForInteractionToLoad = false;
+      this.bgLoopSlug = null;   // Need to re-trigger     
     } else {
       this.spritesByParentSound = null
       this.parentSoundBySprite = null
