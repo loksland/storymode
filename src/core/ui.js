@@ -185,7 +185,8 @@ export function autoloadAssets(_loadAssetCallback){
 function onAutoLoadComplete(){
   
   totLoadsComplete++;
-  //console.log('ui', totLoadsComplete,'/',initialLoadItemCount)
+  
+  // console.log('ui', totLoadsComplete,'/',initialLoadItemCount)
   if (totLoadsComplete === initialLoadItemCount){
     if (loadAssetCallback){
       loadAssetCallback();

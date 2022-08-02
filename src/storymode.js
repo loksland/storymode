@@ -260,8 +260,11 @@ function destroy(reset = false, callback = null, debugToConsole = false, console
 
   logToConsole(consoleIdPrefix + 'nav.destroy()')
   nav.destroy(reset, ()=>{
-        
-    loader.reset(); // Required to halt ui lazy loads in progress.
+    
+    //loader.reset(); // Required to halt ui lazy loads in progress.
+    //if (reset){
+    //  window.resources = PIXI.Loader.shared.resources;
+    //}
     
     logToConsole(consoleIdPrefix + 'nav.destroy() complete.')
     
@@ -308,7 +311,6 @@ function destroy(reset = false, callback = null, debugToConsole = false, console
         if (PIXI.Loader.shared.resources[resourceID].texture){
           PIXI.Loader.shared.resources[resourceID].texture.destroy(true);
         }
-        delete PIXI.Loader.shared.resources[resourceID];
       }
     }
     
@@ -316,8 +318,16 @@ function destroy(reset = false, callback = null, debugToConsole = false, console
     for (let resourceID in PIXI.Loader.shared.resources){
       if (PIXI.Loader.shared.resources[resourceID].texture){
         PIXI.Loader.shared.resources[resourceID].texture.destroy(true);
+      } 
+      if (PIXI.Loader.shared.resources[resourceID].spritesheet){
+        PIXI.Loader.shared.resources[resourceID].spritesheet.destroy(true);
+        PIXI.Loader.shared.resources[resourceID].spritesheet = null;
       }
-      delete PIXI.Loader.shared.resources[resourceID];
+      if (PIXI.Loader.shared.resources[resourceID].textures){
+        for (let txName in PIXI.Loader.shared.resources[resourceID].textures){
+          PIXI.Loader.shared.resources[resourceID].textures[txName].destroy(true);
+        }
+      }
     }
     
     logToConsole(consoleIdPrefix + 'Reseting shared loader...')
@@ -332,6 +342,12 @@ function destroy(reset = false, callback = null, debugToConsole = false, console
     PIXI.Loader.shared.reset(); // This removes the ref to window.resources.
     if (reset){
       window.resources = PIXI.Loader.shared.resources;
+    }
+    
+    // Remove resource references.
+    for (let resourceID in PIXI.Loader.shared.resources){
+      PIXI.Loader.shared.resources[resourceID] = null;
+      delete PIXI.Loader.shared.resources[resourceID];
     }
     
     logToConsole(consoleIdPrefix + 'Removing any remaining tx...')
