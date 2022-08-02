@@ -260,6 +260,8 @@ function destroy(reset = false, callback = null, debugToConsole = false, console
 
   logToConsole(consoleIdPrefix + 'nav.destroy()')
   nav.destroy(reset, ()=>{
+        
+    loader.reset(); // Required to halt ui lazy loads in progress.
     
     logToConsole(consoleIdPrefix + 'nav.destroy() complete.')
     
@@ -326,6 +328,7 @@ function destroy(reset = false, callback = null, debugToConsole = false, console
     PIXI.Loader.shared.onError.detachAll();  
     PIXI.Loader.shared.onProgress.detachAll();  
     PIXI.Loader.shared.onStart.detachAll();  
+    
     PIXI.Loader.shared.reset(); // This removes the ref to window.resources.
     if (reset){
       window.resources = PIXI.Loader.shared.resources;

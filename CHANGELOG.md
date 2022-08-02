@@ -1,5 +1,6 @@
 # Changelog
 
+- v1.1.67 - (02-08-2022) Detach improvements.
 - v1.1.66 - (02-08-2022) Scaler destroy clean up.
 - v1.1.65 - (02-08-2022) Updated extensions.
 - v1.1.64 - (02-08-2022) Predestroy event added

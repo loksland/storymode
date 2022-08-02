@@ -447,7 +447,7 @@ function destroy(reset = false, callback = null){
   if (locked){
     transStack[transStack.length-1].destroyOnNextArrive = [reset,callback]; // Wait for trans to finish.
     return;
-  }
+  } 
   
   // Clear stack
   for (let i = 0; i < transStack.length; i++){    

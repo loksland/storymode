@@ -379,7 +379,7 @@ function initResizeListener(){
 function onResizeImmediate(){
   
   utils.killWaitsFor(onResizeThrottled)
-  if (!pixiApp.renderer){
+  if (!pixiApp || !pixiApp.renderer){
     return;
   }
   
@@ -404,6 +404,10 @@ function onResizeImmediate(){
  * @private
  */  
 function onResizeThrottled(force = false){
+  
+  if (!pixiApp || !pixiApp.renderer){
+    return;
+  }
   
   let _stageW = pixiApp.renderer.view.width/window.devicePixelRatio;
   let _stageH = pixiApp.renderer.view.height/window.devicePixelRatio;

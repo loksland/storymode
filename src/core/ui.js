@@ -150,6 +150,8 @@ export function autoloadAssets(_loadAssetCallback){
   }
   
   // 2) Load all images
+  
+  
 
   let queuedSpritesheets = {};
   for (let psdID in psdInfo){
@@ -171,7 +173,7 @@ export function autoloadAssets(_loadAssetCallback){
   if (onLoaderQueueCallback){
     onLoaderQueueCallback(loader);
   }
-  
+
   loader.load(onAutoLoadComplete);
   
 }
@@ -183,10 +185,11 @@ export function autoloadAssets(_loadAssetCallback){
 function onAutoLoadComplete(){
   
   totLoadsComplete++;
+  //console.log('ui', totLoadsComplete,'/',initialLoadItemCount)
   if (totLoadsComplete === initialLoadItemCount){
     if (loadAssetCallback){
       loadAssetCallback();
-    }
+    }   
   }
 }
 
@@ -288,11 +291,14 @@ export function queueOnDemandLoad(spritesheetBasenames, loadCallback){
  */
 export function purgeOnDemand(spritesheetBasenames){
   
+  //if (loader.loading){
+  //  loader.reset();
+  //}
+  
   /*
   console.log('1/2) resouces / shared.resources:', window.resources, PIXI.Loader.shared.resources);
   console.log('1/2) TextureCache:', PIXI.utils.TextureCache)
   console.log('1/2) BaseTextureCache:', PIXI.utils.BaseTextureCache)
-  
   setTimeout(()=>{
     console.log('2/2) resouces / shared.resources:', window.resources, PIXI.Loader.shared.resources);
     console.log('2/2) TextureCache:', PIXI.utils.TextureCache)
@@ -332,6 +338,7 @@ function _purgeSpritesheet(spritesheetBasename){
  * Remove all listeners to the shared loader.
  */
 export function removeOnDemandListeners(){
+  
   loader.onComplete.detachAll();  
 }
 
