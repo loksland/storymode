@@ -483,6 +483,9 @@ function off(eventName, listener, context){
  * @private
  */  
 function removeAllListeners(){
+  if (!emitter){
+    return true;
+  }
   return emitter.removeAllListeners();
 }
 

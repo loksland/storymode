@@ -207,6 +207,10 @@ PIXI.DisplayObject.prototype.destroyFiltersAndMasks = function(recursive = true)
     this.filters = null;
   }
   
+  if (this.cacheAsBitmap){
+    this.cacheAsBitmap = false;
+  }
+  
   if (!recursive){
     return;
   }

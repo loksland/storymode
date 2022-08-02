@@ -181,6 +181,7 @@ export function autoloadAssets(_loadAssetCallback){
  * @private
  */
 function onAutoLoadComplete(){
+  
   totLoadsComplete++;
   if (totLoadsComplete === initialLoadItemCount){
     if (loadAssetCallback){
@@ -279,6 +280,53 @@ export function queueOnDemandLoad(spritesheetBasenames, loadCallback){
   loader.onComplete.add(loadCallback)
   loader.load();
 }
+
+
+/**
+ * Removes spritesheet and associated textures and base textures from memory.
+ * @param {string|Array} spritesheetBasenames - Spritesheet name without extension, or array of spritesheet base names.
+ */
+export function purgeOnDemand(spritesheetBasenames){
+  
+  /*
+  console.log('1/2) resouces / shared.resources:', window.resources, PIXI.Loader.shared.resources);
+  console.log('1/2) TextureCache:', PIXI.utils.TextureCache)
+  console.log('1/2) BaseTextureCache:', PIXI.utils.BaseTextureCache)
+  
+  setTimeout(()=>{
+    console.log('2/2) resouces / shared.resources:', window.resources, PIXI.Loader.shared.resources);
+    console.log('2/2) TextureCache:', PIXI.utils.TextureCache)
+    console.log('2/2) BaseTextureCache:', PIXI.utils.BaseTextureCache)
+  }, 1000);
+  */
+  spritesheetBasenames = Array.isArray(spritesheetBasenames) ? spritesheetBasenames : [spritesheetBasenames]
+  for (let spritesheetBasename of spritesheetBasenames){
+      _purgeSpritesheet(spritesheetBasename)
+  }
+  
+  
+}
+
+function _purgeSpritesheet(spritesheetBasename){
+  // Remove base textures.
+  for (let resourceID in PIXI.Loader.shared.resources){
+    if (resourceID === spritesheetBasename + SPRITESHEET_RESOURCE_SUFFIX || resourceID.endsWith(spritesheetBasename + SPRITESHEET_RESOURCE_SUFFIX + '_image')){
+      if (PIXI.Loader.shared.resources[resourceID].spritesheet){
+        PIXI.Loader.shared.resources[resourceID].spritesheet.destroy(true);
+        PIXI.Loader.shared.resources[resourceID].spritesheet = null;
+      }
+      if (PIXI.Loader.shared.resources[resourceID].texture){
+        PIXI.Loader.shared.resources[resourceID].texture.destroy(true);
+      } else if (PIXI.Loader.shared.resources[resourceID].textures){
+        for (let txName in PIXI.Loader.shared.resources[resourceID].textures){
+          PIXI.Loader.shared.resources[resourceID].textures[txName].destroy(true);
+        }
+      }
+      delete PIXI.Loader.shared.resources[resourceID];
+    }
+  }
+}
+
 
 /**
  * Remove all listeners to the shared loader.

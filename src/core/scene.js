@@ -155,9 +155,7 @@ class Scene extends PIXI.Container {
    * To be called by the scene after `didLoad()` when the scene is ready to be presented.
    */
   ready(){
-    
     this.emit('ready', this);
-    
   }
   
   /**

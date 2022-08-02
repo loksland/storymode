@@ -1141,7 +1141,9 @@ onBgReady() {
     // Closes the sound library. 
     // This will release/destroy the AudioContext(s). 
     // Can be used safely if you want to initialize the sound library later. Use init method.
-    PIXI.sound.close();
+    if (PIXI.sound){
+      PIXI.sound.close();
+    }
       
   }
     

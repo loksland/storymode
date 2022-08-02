@@ -43,7 +43,8 @@ import * as store from './utils/store.js';
 let pixiApp; // PIXI app instance
 let isProd = process.env.NODE_ENV != 'development';  // Set in package.json: eg. "start:dev": "webpack serve --mode development"
 let htmlEle; // The element containing the game
-
+let setupComplete = false;
+let pendingDetach = null;
 // Load all transitions
 /*
 let filters = {};
@@ -71,6 +72,9 @@ for (let _filter of _filters) {
  * @param {AppLoadCallback} [onLoadCallback=null] - Called after initial assets are loaded.
  */
 export function createApp(_htmlEleID, fullScreen = false, pixiOptions = null, options = null, onLoadCallback = null) {
+  
+  setupComplete = false
+  pendingDetach = null;
     
   let setupConfig = {};
   setupConfig.htmlEleID = _htmlEleID;
@@ -90,7 +94,6 @@ export function createApp(_htmlEleID, fullScreen = false, pixiOptions = null, op
   }
   
   setupConfig.options = utils.cloneObj(options); // A copy is retained for setup.
-  
   
   let defaultPixiOptions = {  
       autoDensity: true, //  Adjusts the canvas using css pixels so it will scale properly (it was the default behavior in v4)
@@ -131,7 +134,6 @@ export function createApp(_htmlEleID, fullScreen = false, pixiOptions = null, op
     
 }
 
-
 function areImagesLoaded(imageList){
   if (!imageList){
     return true;
@@ -149,12 +151,11 @@ let fpsAvg;
 function setup(setupConfig){ 
   
   if (!utils.e(setupConfig.htmlEleID) || typeof utils.e(setupConfig.htmlEleID)['appendChild'] !== 'function' || !areImagesLoaded(setupConfig.options.waitForImagesToLoad)){    
-
     // The container element needs to be present and able to appendChild.
     utils.wait(1.0/5.0, setup, [setupConfig]);
     return;  
-  
   }
+  
   
   
   if (setupConfig.options.setupDelay){
@@ -165,7 +166,6 @@ function setup(setupConfig){
     return;
   }
   
-
   // DOM is attached by this point.
   
   if (!htmlEle){
@@ -216,9 +216,16 @@ function setup(setupConfig){
   if (setupConfig.onLoadCallback){
     setupConfig.onLoadCallback(pixiApp);
   }
+
   appEmitter.emit('ready', pixiApp.stage)
 
   sfx._enableLoad(); 
+  setupComplete = true;
+  
+  if (pendingDetach){
+    detachApp(pendingDetach[0],pendingDetach[1],pendingDetach[2])
+    pendingDetach = null;
+  }
   
 } 
 
@@ -227,16 +234,24 @@ function getPixiApp(){
 }
 
 function detachApp(callback, debugToConsole, consoleIdPrefix){
+  if (!setupComplete){
+    pendingDetach = [callback, debugToConsole, consoleIdPrefix];
+    return;
+  }
+  
   destroy(true, callback, debugToConsole, consoleIdPrefix);
+  
 }
 
 let destroyed = false;
 function destroy(reset = false, callback = null, debugToConsole = false, consoleIdPrefix = ''){
-  
+
   if (consoleIdPrefix && !consoleIdPrefix.endsWith(' ')){
     consoleIdPrefix += ' ';
   }
   let logToConsole = debugToConsole ? window['con' + 'sole']['log'] : ()=>{};
+  
+  appEmitter.emit('pre_destory', pixiApp.stage)
   
   if (!reset){
     if (destroyed){
@@ -244,8 +259,6 @@ function destroy(reset = false, callback = null, debugToConsole = false, console
     }
     destroyed = true;
   } 
-  
-  
 
   logToConsole(consoleIdPrefix + 'nav.destroy()')
   nav.destroy(reset, ()=>{
@@ -292,10 +305,13 @@ function destroy(reset = false, callback = null, debugToConsole = false, console
     // Remove base textures.
     for (let resourceID in PIXI.Loader.shared.resources){
       if (resourceID.endsWith('_image')){
-        PIXI.Loader.shared.resources[resourceID].texture.destroy(true);
+        if (PIXI.Loader.shared.resources[resourceID].texture){
+          PIXI.Loader.shared.resources[resourceID].texture.destroy(true);
+        }
         delete PIXI.Loader.shared.resources[resourceID];
       }
     }
+    
     // Remove resource references.
     for (let resourceID in PIXI.Loader.shared.resources){
       if (PIXI.Loader.shared.resources[resourceID].texture){
@@ -349,12 +365,11 @@ function destroy(reset = false, callback = null, debugToConsole = false, console
         logToConsole(consoleIdPrefix + 'Done.')
       }, 1000);
     }
-
+    
     callback();
     
   });
 }
-
 
 export {pixiApp, getPixiApp, htmlEle}; // Internal access to these properties.
 export {appEmitter, detachApp}; // Emitter events

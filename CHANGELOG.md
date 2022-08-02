@@ -1,5 +1,6 @@
 # Changelog
 
+- v1.1.64 - (02-08-2022) Predestroy event added
 - v1.1.63 - (26-07-2022) Fixing sfx reset state.
 - v1.1.62 - (25-07-2022) Sfx fader controls added.
 - v1.1.61 - (22-07-2022) Sprite tinting from PSD. Extra options for create app. SFX start, complete callback support.
