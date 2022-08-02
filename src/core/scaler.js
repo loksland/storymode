@@ -378,6 +378,11 @@ function initResizeListener(){
  */  
 function onResizeImmediate(){
   
+  utils.killWaitsFor(onResizeThrottled)
+  if (!pixiApp.renderer){
+    return;
+  }
+  
   let _stageW = pixiApp.renderer.view.width/window.devicePixelRatio;
   let _stageH = pixiApp.renderer.view.height/window.devicePixelRatio;
   
@@ -389,7 +394,6 @@ function onResizeImmediate(){
    */
   emitter.emit('resize_immediate', _stageW, _stageH);
   
-  utils.killWaitsFor(onResizeThrottled)
   utils.wait(resizeThrottleDelay, onResizeThrottled)
   
 }

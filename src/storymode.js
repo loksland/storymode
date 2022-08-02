@@ -156,8 +156,6 @@ function setup(setupConfig){
     return;  
   }
   
-  
-  
   if (setupConfig.options.setupDelay){
     let _delay = setupConfig.options.setupDelay;
     setupConfig.options.setupDelay = null;
