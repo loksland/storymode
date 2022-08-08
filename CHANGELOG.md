@@ -1,5 +1,6 @@
 # Changelog
 
+- v1.1.69 - (08-08-2022) Adding base tx purge.
 - v1.1.68 - (02-08-2022) Improving detach method.
 - v1.1.67 - (02-08-2022) Detach improvements.
 - v1.1.66 - (02-08-2022) Scaler destroy clean up.

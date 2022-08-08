@@ -355,8 +355,14 @@ function destroy(reset = false, callback = null, debugToConsole = false, console
     // Remove any remaining textures from the cache.
     for (let key in PIXI.utils.TextureCache){
       let baseTex = PIXI.utils.TextureCache[key].baseTexture
+      baseTex.destroy();
       PIXI.Texture.removeFromCache(key);
     }
+    
+    for (let key in PIXI.utils.BaseTextureCache){
+      PIXI.utils.BaseTextureCache[key].destroy();
+    }
+    
     
     // Remove window references
     if (!reset){
