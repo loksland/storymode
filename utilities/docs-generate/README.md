@@ -1,6 +1,6 @@
 `storymode` is a layout and transition helper for [PixiJS](https://www.pixijs.com/) featuring responsive layout, a scene class with lifecycle methods, a camera, and PSD exporting.
 
-Primary features include: 
+Primary features include:
 
 - Navigation class including 6 built in transitions
 - Scene controller class with display life-cycle methods

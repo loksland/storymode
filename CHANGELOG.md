@@ -1,5 +1,7 @@
 # Changelog
 
+- v1.1.71 - (06-09-2022) Docs publish.
+- v1.1.70 - (06-09-2022) Doc updates.
 - v1.1.69 - (08-08-2022) Adding base tx purge.
 - v1.1.68 - (02-08-2022) Improving detach method.
 - v1.1.67 - (02-08-2022) Detach improvements.
