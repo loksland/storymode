@@ -1,5 +1,6 @@
 # Changelog
 
+- v1.1.72 - (06-09-2022) SFX updates.
 - v1.1.71 - (06-09-2022) Docs publish.
 - v1.1.70 - (06-09-2022) Doc updates.
 - v1.1.69 - (08-08-2022) Adding base tx purge.
