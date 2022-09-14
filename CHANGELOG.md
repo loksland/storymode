@@ -1,5 +1,6 @@
 # Changelog
 
+- v1.1.73 - (14-09-2022) Added plaxmask transition. Added nav.currentSceneID method.
 - v1.1.72 - (06-09-2022) SFX updates.
 - v1.1.71 - (06-09-2022) Docs publish.
 - v1.1.70 - (06-09-2022) Doc updates.

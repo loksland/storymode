@@ -932,7 +932,7 @@ onBgReady() {
             }
           }
         }
-        
+  
         sound.play(options);
 
       } else {

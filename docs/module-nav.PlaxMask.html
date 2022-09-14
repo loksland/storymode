@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Class: PixelateTrans</title>
+    <title>JSDoc: Class: PlaxMask</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Class: PixelateTrans</h1>
+    <h1 class="page-title">Class: PlaxMask</h1>
 
     
 
@@ -29,10 +29,13 @@
 <header>
     
         <h2><span class="attribs"><span class="type-signature"></span></span>
-            <span class="ancestors"><a href="module-nav.html">nav</a>.</span>PixelateTrans</h2>
+            <span class="ancestors"><a href="module-nav.html">nav</a>.</span>PlaxMask</h2>
         
-            <div class="class-description">Will use a blocky pixel transition reminiscent of early Mario games.
-<br>- Evoked with 'pixelate' transition ID.</div>
+            <div class="class-description">Applies a parallax pan with a rect mask.
+<br>- The `z` property in PSD layers. Eg. `start.btn(reg:c,ui,z:50)`
+<br>- `z` is stage dimension percentage from (0-100) where 0 is stationary and 100 is locked to the mask the scene.
+<br>- `z` can be over 100 though it will need to extend beyond the artboard bounds.
+<br>- Common elements between scenes can remain still if each has a z of `0` or no z defined.</div>
         
     
 </header>
@@ -85,7 +88,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_trans_pixelate.js.html">src/trans/pixelate.js</a>, <a href="src_trans_pixelate.js.html#line13">line 13</a>
+        <a href="src_trans_plaxmask.js.html">src/trans/plaxmask.js</a>, <a href="src_trans_plaxmask.js.html#line19">line 19</a>
     </li></ul></dd>
     
 
@@ -116,7 +119,8 @@
 
     <h5>Example</h5>
     
-    <pre class="prettyprint"><code>nav.openScene(myScene, false, 'pixelate')</code></pre>
+    <pre class="prettyprint"><code>nav.openScene(myScene, false, 'plaxmask:left')
+nav.openScene(myScene, false, 'plaxmask:25'); // Degrees</code></pre>
 
 
 
