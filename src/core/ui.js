@@ -673,7 +673,6 @@ PIXI.DisplayObject.prototype.applyProj = function(syncProps = false){
   // Store a pure representation of the position and scale as it relates to the stage.
   this.txInfo._proj = {};
 
-
   this.txInfo._proj.x = scaler.proj[projID].transArtX(this.txInfo.x);
   this.txInfo._proj.y = scaler.proj[projID].transArtY(this.txInfo.y);
   this.txInfo._proj.width = scaler.proj[projID].scale * this.txInfo.width;
@@ -730,7 +729,7 @@ PIXI.DisplayObject.prototype.applyProj = function(syncProps = false){
   } else if (this instanceof PIXI.Mesh){
     this.scale.set(scaler.proj[projID].scale/scaler.artboardScaleFactor,scaler.proj[projID].scale/scaler.artboardScaleFactor);
   }
-
+  
   if (this instanceof Text){
     const calcFontSize = this.txInfo.tfParams.fontSize * scaler.proj[projID].scale;
     const diff = this.style.fontSize - calcFontSize;
@@ -859,7 +858,7 @@ PIXI.DisplayObject.prototype.addArt = function(txNameGlob){
   // Put ! criterea first to optimise pattern matching later
   txNameGlobs.sort(function(a, b) {
     const aIsNot = a.startsWith('!');
-    const bIsNot = b.startsWith('!')
+    const bIsNot = b.startsWith('!');
     if (aIsNot && !bIsNot) {
       return -1;
     }
