@@ -30,7 +30,7 @@
     
         <h2><span class="attribs"><span class="type-signature"></span></span>Scene<span class="signature">(sceneData<span class="signature-attributes">opt</span>, psdID<span class="signature-attributes">opt</span>, bgColor<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h2>
         
-            <div class="class-description">The scene class represents a distinct screen in the application. 
+            <div class="class-description">The scene class represents a distinct screen in the application.
 This class is designed to be subclassed.
 Scenes are created, loaded and displayed by the `nav`, and are closely coupled to this class.</div>
         
@@ -278,47 +278,47 @@ Scenes are created, loaded and displayed by the `nav`, and are closely coupled t
     <h5>Example</h5>
     
     <pre class="prettyprint"><code>export default class MyScene extends Scene {
- 
-  static getSfxResources(){    
+
+  static getSfxResources(){
     return  {
-      tap: {path: 'sfx/ui_tap.mp3'}, 
+      tap: {path: 'sfx/ui_tap.mp3'},
     }
   }
 
-  constructor(sceneData){    
-    super(sceneData, 'myscene.psd', 0xff3300); 
+  constructor(sceneData){
+    super(sceneData, 'myscene.psd', 0xff3300);
   }
 
-  didLoad(ev){ 
+  didLoad(ev){
 
     super.didLoad(ev);
 
     this.addArt('!_*');
 
     this.ready();
-   
+
   }
 
   shouldReloadOnStageResize(stageW, stageH){
-   
+
     for (let dispoName in this.art){
       this.art[dispoName].applyProj()
-    }    
+    }
 
     return false;
-   
+
   }
 
   onBtn(btn){
-   
+
   }
 
   onWillArrive(fromModal){
-   
+
     super.onWillArrive(fromModal);
 
     // Perform pre enter transition operations
-   
+
   }
 
   onDidArrive(fromModal){
@@ -326,7 +326,7 @@ Scenes are created, loaded and displayed by the `nav`, and are closely coupled t
     super.onDidArrive(fromModal);
 
     // Perform post enter transition operations
-       
+
   }
 
   onWillExit(fromModal){
@@ -342,13 +342,13 @@ Scenes are created, loaded and displayed by the `nav`, and are closely coupled t
     super.onDidExit(fromModal);
 
     // Perform post exit transition operations
-   
+
   }
 
   dispose(){
 
-    // Perform clean up before instance is destroyed  
-    // Call super method *after* clean up. 
+    // Perform clean up before instance is destroyed
+    // Call super method *after* clean up.
 
     super.dispose();
 
@@ -738,7 +738,7 @@ Scenes are created, loaded and displayed by the `nav`, and are closely coupled t
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line210">line 210</a>
+        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line211">line 211</a>
     </li></ul></dd>
     
 
@@ -964,7 +964,7 @@ When subclassing ensure `super.dispose()` is called after performing clean up.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line268">line 268</a>
+        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line269">line 269</a>
     </li></ul></dd>
     
 
@@ -1101,7 +1101,7 @@ When subclassing ensure `super.dispose()` is called after performing clean up.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line201">line 201</a>
+        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line202">line 202</a>
     </li></ul></dd>
     
 
@@ -1260,7 +1260,7 @@ When subclassing ensure `super.dispose()` is called after performing clean up.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line192">line 192</a>
+        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line193">line 193</a>
     </li></ul></dd>
     
 
@@ -1474,7 +1474,7 @@ When subclassing ensure `super.dispose()` is called after performing clean up.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_ui.js.html">src/core/ui.js</a>, <a href="src_core_ui.js.html#line1152">line 1152</a>
+        <a href="src_core_ui.js.html">src/core/ui.js</a>, <a href="src_core_ui.js.html#line1151">line 1151</a>
     </li></ul></dd>
     
 
@@ -1642,7 +1642,7 @@ When subclassing ensure `super.dispose()` is called after performing clean up.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line260">line 260</a>
+        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line261">line 261</a>
     </li></ul></dd>
     
 
@@ -1781,7 +1781,7 @@ Ensure to call `super.onDidArrive(fromModal)` method when subclassing.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line235">line 235</a>
+        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line236">line 236</a>
     </li></ul></dd>
     
 
@@ -1825,7 +1825,7 @@ Ensure to call `super.onDidArrive(fromModal)` method when subclassing.
 
 
 <div class="description">
-    Lifecycle method: scene exit transition is complete. 
+    Lifecycle method: scene exit transition is complete.
 The scene is no longer visible at this point and cleaning up can be performed.
 Ensure to call `super.onDidExit(fromModal)` method when subclassing.
 </div>
@@ -1920,7 +1920,7 @@ Ensure to call `super.onDidExit(fromModal)` method when subclassing.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line253">line 253</a>
+        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line254">line 254</a>
     </li></ul></dd>
     
 
@@ -2059,7 +2059,7 @@ Ensure to call `super.onWillArrive(fromModal)` method when subclassing.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line226">line 226</a>
+        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line227">line 227</a>
     </li></ul></dd>
     
 
@@ -2198,7 +2198,7 @@ Ensure to call `super.onWillExit(fromModal)` method when subclassing.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line244">line 244</a>
+        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line245">line 245</a>
     </li></ul></dd>
     
 
@@ -2286,7 +2286,7 @@ Ensure to call `super.onWillExit(fromModal)` method when subclassing.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line157">line 157</a>
+        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line158">line 158</a>
     </li></ul></dd>
     
 
@@ -2469,7 +2469,7 @@ Return `false` to prevent the `nav` from automatically reloading the scene when 
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line182">line 182</a>
+        <a href="src_core_scene.js.html">src/core/scene.js</a>, <a href="src_core_scene.js.html#line183">line 183</a>
     </li></ul></dd>
     
 
@@ -2543,7 +2543,7 @@ Return `false` to prevent the `nav` from automatically reloading the scene when 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.11</a> on Thu Sep 08 2022 09:32:05 GMT+1000 (Australian Eastern Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.11</a> on Fri Sep 16 2022 09:00:39 GMT+1000 (Australian Eastern Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

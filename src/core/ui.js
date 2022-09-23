@@ -317,7 +317,8 @@ export function purgeOnDemand(spritesheetBasenames){
 function _purgeSpritesheet(spritesheetBasename){
   // Remove base textures.
   for (let resourceID in PIXI.Loader.shared.resources){
-    if (resourceID === spritesheetBasename + SPRITESHEET_RESOURCE_SUFFIX || resourceID.endsWith(spritesheetBasename + SPRITESHEET_RESOURCE_SUFFIX + '_image')){
+    if (resourceID === spritesheetBasename + SPRITESHEET_RESOURCE_SUFFIX || resourceID === spritesheetBasename + SPRITESHEET_RESOURCE_SUFFIX + '_image'){
+
       if (PIXI.Loader.shared.resources[resourceID].spritesheet){
         PIXI.Loader.shared.resources[resourceID].spritesheet.destroy(true);
         PIXI.Loader.shared.resources[resourceID].spritesheet = null;
@@ -334,13 +335,14 @@ function _purgeSpritesheet(spritesheetBasename){
   }
 }
 
-
 /**
  * Remove all listeners to the shared loader.
  */
 export function removeOnDemandListeners(){
 
   loader.onComplete.detachAll();
+
+
 }
 
 /**
@@ -729,7 +731,7 @@ PIXI.DisplayObject.prototype.applyProj = function(syncProps = false){
   } else if (this instanceof PIXI.Mesh){
     this.scale.set(scaler.proj[projID].scale/scaler.artboardScaleFactor,scaler.proj[projID].scale/scaler.artboardScaleFactor);
   }
-  
+
   if (this instanceof Text){
     const calcFontSize = this.txInfo.tfParams.fontSize * scaler.proj[projID].scale;
     const diff = this.style.fontSize - calcFontSize;

@@ -491,6 +491,6 @@ function getCurrentSceneID(){
 
 
 
-export { scenes, getCurrentSceneID }
+export { scenes, getCurrentSceneID, transStack }
 export { isPresentingModal, openDefaultScene,setupStage,isScenePresentedModally,isScenePresentedWithTransparentBg,openScene,dismissScene,bg,inputScreen,sceneHolder,setScenes,reloadSceneStack,registerTrans }
 export { destroy }
