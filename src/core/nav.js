@@ -188,11 +188,12 @@ function openDefaultScene(){
  * @param {boolean} [isModal=false] - Whether scene should be loaded modally (over the top).
  * @param {TransitionID} [transID='fade'] - Transition identifier.
  * @param {Object} [sceneData=null] - Optional data to be passed to scene.
+ * @returns {boolean} success.
  */
 function openScene(sceneID, isModal = false, transID = 'fade', sceneData = null){
 
   if (locked){
-    return;
+    return false;
   }
 
   locked = true;
@@ -233,6 +234,8 @@ function openScene(sceneID, isModal = false, transID = 'fade', sceneData = null)
   transStack.push(transInstance);
 
   sceneHolder.addChild(scene); // Wait for on ready
+
+  return true;
 
 }
 

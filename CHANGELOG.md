@@ -1,5 +1,6 @@
 # Changelog
 
+- v1.1.76 - (27-09-2022) Nav.openScene returns success.
 - v1.1.75 - (23-09-2022) Docs update, ui purge fix.
 - v1.1.74 - (15-09-2022) Updated docs.
 - v1.1.73 - (14-09-2022) Added plaxmask transition. Added nav.currentSceneID method.

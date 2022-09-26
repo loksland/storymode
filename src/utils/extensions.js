@@ -1,12 +1,12 @@
 import { utils, mutils, Scene, scaler } from './../storymode.js';
- 
+
 // Extensions
 // ----------
 
 
 /**
  * Returns `true` if the display object is a `PIXI.AnimatedSprite`.
- * @returns {boolean} result 
+ * @returns {boolean} result
  */
 PIXI.AnimatedSprite.prototype.isAnimatedSprite = function(){
   return true;
@@ -17,11 +17,11 @@ PIXI.AnimatedSprite.prototype.isAnimatedSprite = function(){
  * Removes display object from parent.
  */
 PIXI.DisplayObject.prototype.removeFromParent = function(){
-  
+
   if (this.parent){
     this.parent.removeChild(this)
   }
-  
+
 }
 
 /**
@@ -29,9 +29,9 @@ PIXI.DisplayObject.prototype.removeFromParent = function(){
  * <br>- Will throw an error if display object doesn't have a parent.
  */
 PIXI.DisplayObject.prototype.bringToFront = function(){
-  
+
   this.parent.setChildIndex(this, this.parent.children.length - 1)
-  
+
 }
 
 /**
@@ -39,21 +39,25 @@ PIXI.DisplayObject.prototype.bringToFront = function(){
  * <br>- Will throw an error if display object doesn't have a parent.
  */
 PIXI.DisplayObject.prototype.sendToBack = function(){
-  
+
   this.parent.setChildIndex(this, 0)
-  
+
 }
 
 /**
  * Outputs to console a representation of children of the given display object.
  */
 PIXI.DisplayObject.prototype.debugStack = function(level = 0){
-  
+
   let output = [];
   let info = this.name;
   let type = (this.isSprite) ? 'sprite' : 'other'
-  info += ' ('+type+')';
-  
+  let dims = this.width + 'x' + this.height;
+  let pos = this.x + ',' + this.y;
+  let scale = String(Math.round(this.scale.x*100)/100) + ',' + String(Math.round(this.scale.y*100)/100)
+
+  info += ' (type:'+type+',scale:'+scale+')';
+
   if (level == 0){
     output.push(info);
     output.push('='.repeat(info.length));
@@ -64,7 +68,7 @@ PIXI.DisplayObject.prototype.debugStack = function(level = 0){
     let child = this.children[i];
     output = output.concat(child.debugStack(level+1));
   }
-  
+
   if (level == 0){
     window['c' + 'onsole']['l' + 'og'](output.join('\n'))
   } else {
@@ -74,26 +78,26 @@ PIXI.DisplayObject.prototype.debugStack = function(level = 0){
 
 /**
  * Applies the supplied pivot to the display object without moving the position, even if rotated.
- * @param {number} pivotX 
- * @param {number} pivotY 
+ * @param {number} pivotX
+ * @param {number} pivotY
  */
 PIXI.DisplayObject.prototype.setPivotWithoutMoving = function(pivotX, pivotY){
-  
+
   const pivotOffset = new Point(pivotX-this.pivot.x,pivotY-this.pivot.y);
   this.pivot.set(pivotX, pivotY);
-  
+
   const angOffset = 0.0;
   const pivotOffsetScaled = new Point(pivotOffset.x * this.scale.x, pivotOffset.y * this.scale.y)
   const zeroPt = new Point(0.0,0.0);
   const pivotOffsetDist = mutils.distanceBetweenPoints(zeroPt, pivotOffsetScaled);
   const pivotOffsetAng = mutils.angleDegsBetweenPoints(zeroPt, pivotOffsetScaled);
-  
+
   this.position = mutils.projectFromPointDeg(this.position, pivotOffsetAng+this.angle, pivotOffsetDist);
 
 }
 
 
-  
+
 /**
  * A drop in replacement for `Graphics.lineTo` that plots dashed lines.
  * @param {Vector} from - Starting point.
@@ -103,14 +107,14 @@ PIXI.DisplayObject.prototype.setPivotWithoutMoving = function(pivotX, pivotY){
  * @param {number} [offsetPerc=0.0] - Optional offset percentage (0.0-1.0) of dash pattern. Percentage is applied to the sum of `dash` + `gap`.
  */
 PIXI.Graphics.prototype.dashedLineTo = function(fromPt, toPt, dash = 16.0, gap = 8.0, offsetPerc = 0.0) {
-  
+
   let penDist = (gap + dash) * offsetPerc;
   if (penDist > gap){
     penDist -= gap + dash;
   }
   let penEnabled = false;
   let totalDist = mutils.distanceBetweenPoints(fromPt, toPt);
-  
+
   let penPt;
   if (penDist > 0.0){
     penPt = mutils.projectDistance(fromPt, toPt, penDist);
@@ -118,7 +122,7 @@ PIXI.Graphics.prototype.dashedLineTo = function(fromPt, toPt, dash = 16.0, gap =
   } else {
     this.moveTo(fromPt.x, fromPt.y);
   }
-  
+
   while(penDist < totalDist){
     penEnabled = !penEnabled;
     if (penEnabled){
@@ -139,15 +143,15 @@ PIXI.Graphics.prototype.dashedLineTo = function(fromPt, toPt, dash = 16.0, gap =
  * @param {boolean} [updatePosition=true] - If true will updated the child's position as well.
  */
 PIXI.DisplayObject.prototype.adjustForParentScale = function(updatePosition = false){
-  
+
   this.scale.x *= Math.abs(1.0/this.parent.scale.x);
   this.scale.y *= Math.abs(1.0/this.parent.scale.y);
-  
+
   if (updatePosition){
     this.x *= Math.abs(1.0/this.parent.scale.x);
     this.y *= Math.abs(1.0/this.parent.scale.y);
   }
-  
+
 }
 
 
@@ -158,9 +162,9 @@ PIXI.DisplayObject.prototype.adjustForParentScale = function(updatePosition = fa
  * <br>- See {@link https://pixijs.download/dev/docs/PIXI.AnimatedSprite.html#toGlobal}
  */
 PIXI.DisplayObject.prototype.translateToCoordSpace = function(oldParent, newParent){
-  
+
   return newParent.toLocal(this.position, oldParent, this.position);
-  
+
 }
 
 /**
@@ -168,9 +172,9 @@ PIXI.DisplayObject.prototype.translateToCoordSpace = function(oldParent, newPare
  * <br>- See {@link https://pixijs.download/dev/docs/PIXI.AnimatedSprite.html#toGlobal}
  */
 PIXI.Point.prototype.translateToCoordSpace = function(oldParent, newParent){
-  
+
   return newParent.toLocal(this, oldParent, this);
-  
+
 }
 
 /**
@@ -180,17 +184,17 @@ PIXI.Point.prototype.translateToCoordSpace = function(oldParent, newParent){
 PIXI.ObservablePoint.prototype.translateToCoordSpace = function(oldParent, newParent){
 
   return newParent.toLocal(this, oldParent, this);
-  
+
 }
 
 
 /**
  * Returns true if display object has applied cache as bitmap.
  * <br>- The cache will be applied at the next render after cacheAsBitmap is enabled.
- * @returns {boolean} isCached 
+ * @returns {boolean} isCached
  */
 PIXI.DisplayObject.prototype.isCached = function(){
-  return this._cacheData && this._cacheData.sprite;  
+  return this._cacheData && this._cacheData.sprite;
 }
 
 /**
@@ -199,26 +203,26 @@ PIXI.DisplayObject.prototype.isCached = function(){
  * @param {boolean} recursive - Whether to call on children and their children.
  */
 PIXI.DisplayObject.prototype.destroyFiltersAndMasks = function(recursive = true){
-  
+
   if (this.mask){
     this.mask = null;
   }
   if (this.filters){
     this.filters = null;
   }
-  
+
   //if (this.cacheAsBitmap){
   //  this.cacheAsBitmap = false;
   //}
-  
+
   if (!recursive){
     return;
   }
-  
+
   for (let i = 0; i < this.children.length; i++){
     this.children[i].destroyFiltersAndMasks();
   }
-  
+
 }
 
 /**
@@ -240,10 +244,10 @@ PIXI.AnimatedSprite.prototype.playUntil = function(targetFrame, animateAlways = 
   }
 }
 
-// Screen shake 
+// Screen shake
 // ------------
 
-// 
+//
 const MAX_SHAKE_ROT = 2.0;
 const MAX_SHAKE_OFFSET_ART = 15.0*0.5;
 
@@ -259,7 +263,7 @@ const MAX_SHAKE_OFFSET_ART = 15.0*0.5;
  * @param {Array|DisplayObject} [extraTargets=false] - Any additional display objects that will be affected by the animation.
  */
 PIXI.DisplayObject.prototype.applyShake = function(traumaPerc, maxFactor = 1.0, options = null, extraTargets = null){
-  
+
   let defaults = {
       rotateOnly: false,
   };
@@ -269,17 +273,17 @@ PIXI.DisplayObject.prototype.applyShake = function(traumaPerc, maxFactor = 1.0, 
   if (extraTargets){
     targets = targets.concat(Array.isArray(extraTargets) ? extraTargets : [extraTargets]);
   }
-  
+
   if (typeof this._shake === 'undefined'){
 
     this._shake = {};
     this._shake.targets = targets;
-    this._shake.trauma = 0.0;    
+    this._shake.trauma = 0.0;
     if (!options.rotateOnly){
       if (this instanceof Scene){
         this.setPivotWithoutMoving(scaler.stageW*0.5, scaler.stageH*0.5)
         this._shake.origin = this.position.clone()
-      } 
+      }
     }
     this._shake.kill = ()=>{
 
@@ -289,18 +293,18 @@ PIXI.DisplayObject.prototype.applyShake = function(traumaPerc, maxFactor = 1.0, 
         target.rotation = 0.0;
       }
       if (!options.rotateOnly){
-        targets[0].position.copyFrom(targets[0]._shake.origin)      
+        targets[0].position.copyFrom(targets[0]._shake.origin)
         if (targets[0] instanceof Scene){
           targets[0].setPivotWithoutMoving(0.0, 0.0); // Default
         }
       }
       targets[0]._shake = null;
       delete targets[0]._shake;
-      
+
     }
   }
 
-  this._shake.trauma = Math.min(1.0, this._shake.trauma + traumaPerc); // Linear ease down 
+  this._shake.trauma = Math.min(1.0, this._shake.trauma + traumaPerc); // Linear ease down
   gsap.killTweensOf(this._shake);
   gsap.to(this._shake, 1.0, {trauma:0.0, ease:Linear.easeNone, onUpdateParams:[targets], onUpdate:(targets)=>{
     const shakeAmt = Math.pow(targets[0]._shake.trauma, 3); // Or 3
@@ -312,7 +316,7 @@ PIXI.DisplayObject.prototype.applyShake = function(traumaPerc, maxFactor = 1.0, 
     }
     gsap.set(targets, tw);
   }, onComplete:this._shake.kill})
-  
+
 }
 
 /**
@@ -326,7 +330,7 @@ PIXI.DisplayObject.prototype.killShake = function(){
 }
 
 
-// Simple Button 
+// Simple Button
 // -------------
 
 /**
@@ -336,11 +340,11 @@ PIXI.DisplayObject.prototype.killShake = function(){
  */
 
 PIXI.DisplayObject.prototype.makeBtn = function(clickCallback = null, stateChangeCallback = null){
-  
+
   const tintOn = 0x000000;;
   this.interactive = true;
   this.buttonMode = true;
-  
+
   const isContainer = !this.isSprite && !(this instanceof Graphics) && !(this instanceof Btn);
   if (!stateChangeCallback){
     if (isContainer){
@@ -355,10 +359,10 @@ PIXI.DisplayObject.prototype.makeBtn = function(clickCallback = null, stateChang
       this.addChild(hit);
     }
   }
-  
-  this 
-  .on('pointerdown', function(){    
-    
+
+  this
+  .on('pointerdown', function(){
+
     if (stateChangeCallback){
       stateChangeCallback(true, this);
     } else {
@@ -371,7 +375,7 @@ PIXI.DisplayObject.prototype.makeBtn = function(clickCallback = null, stateChang
         }
       }
     }
-    
+
     this.on('pointerupoutside', function(){
       this.off('pointerup');
       this.off('pointerupoutside');
@@ -388,7 +392,7 @@ PIXI.DisplayObject.prototype.makeBtn = function(clickCallback = null, stateChang
         }
       }
     }, this)
-    
+
     this.on('pointerup', function(){
       this.off('pointerup');
       this.off('pointerupoutside');
@@ -412,7 +416,7 @@ PIXI.DisplayObject.prototype.makeBtn = function(clickCallback = null, stateChang
         this.parent.parent.onBtn.bind(this.parent.parent)(this);
       }
     }, this)
-    
+
   }, this)
 
 }
@@ -430,6 +434,5 @@ PIXI.DisplayObject.prototype.killBtn = function(){
   if (hit){
     this.removeChild(hit);
   }
-  
-}
 
+}
