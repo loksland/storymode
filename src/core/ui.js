@@ -426,6 +426,8 @@ PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
       //fontStyle.weight = '400';
     }
 
+    //txInfo[txPath].flags
+
     dispo = new Text(frame ? frame : txInfo[txPath].tfParams.text, {
       fontFamily: fontFamilyList,
       fontSize: txInfo[txPath].tfParams.fontSize * scaler.proj[txInfo[txPath].projID].scale, // Apply projection scale to font size.
@@ -434,6 +436,12 @@ PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
       align: txInfo[txPath].tfParams.align, // Only affects multi-line fields, use reg to control alignment
       fontStyle: fontStyle.style
     });
+
+    if (txInfo[txPath].flags.split(',').indexOf('alt') != -1){
+      dispo.interactive = true;
+      dispo.accessible = true;
+      dispo.accessibleTitle = dispo.text;
+    }
 
     if (_crispTextMode){
       dispo.texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
@@ -542,11 +550,40 @@ PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
       dispo.tint = txInfo[txPath].tint; // Auto apply tint.
     }
 
-
   } else if (this == Container || (this.prototype instanceof Container)){ // Custom container class
     dispo = new this();
   } else {
     throw new Error('Unable to initialize from texture `'+txPath+'`')
+  }
+
+  // Accessibility
+  if (txInfo[txPath].alt && txInfo[txPath].alt.length > 0){
+
+    // Look for referenced text fields or dispos with alt set.
+    let splitIn = txInfo[txPath].alt.split('{');
+    if (splitIn.length > 1){
+      for (let i = 1; i < splitIn.length; i++){
+        let splitOut = splitIn[i].split('}');
+        if (splitOut.length > 1){
+          let _txPath = txInfo[txPath].psdID + '/' + splitOut[0];
+          if (txInfo[_txPath]){
+            let alt = '';
+            if (txInfo[_txPath].alt && txInfo[_txPath].alt.length > 0){
+              alt = txInfo[_txPath].alt;
+            } else if (txInfo[_txPath].tfParams){
+              alt = txInfo[_txPath].tfParams.text;
+            }
+            if (alt){
+              txInfo[txPath].alt = txInfo[txPath].alt.split('{'+splitOut[0]+'}').join(alt)
+            }
+          }
+        }
+      }
+    }
+
+    dispo.interactive = true;
+    dispo.accessible = true;
+    dispo.accessibleTitle = txInfo[txPath].alt;
   }
 
   // Extra prop that art aware display objects posess.
@@ -562,9 +599,10 @@ PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
     } else {
       dispo.addArt();
     }
-
-
   }
+
+
+
 
   // If `setup` function exists then call now after applying projection and adding children
   if (typeof dispo.init === 'function'){
@@ -936,6 +974,11 @@ PIXI.DisplayObject.prototype.addArt = function(txNameGlob){
               dispo = Sprite.fromTx(psdID + '/' + txs[i].name);
             } else if (txs[i].type == 'tf'){
               dispo = Text.fromTx(psdID + '/' + txs[i].name);
+
+              //dispo.interactive = true;
+              //dispo.accessible = true;
+              //dispo.accessibleTitle = dispo.text
+
               isTf = true;
             //} else if (txs[i].type == 'btn'){
             //  dispo = Btn.fromTx(psdID + '/' + txs[i].name);
