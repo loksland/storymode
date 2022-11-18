@@ -428,14 +428,22 @@ PIXI.DisplayObject.fromTx = function(txPath, addChildren = true, frame = null){
 
     //txInfo[txPath].flags
 
-    dispo = new Text(frame ? frame : txInfo[txPath].tfParams.text, {
+    let txtOptions = {
       fontFamily: fontFamilyList,
       fontSize: txInfo[txPath].tfParams.fontSize * scaler.proj[txInfo[txPath].projID].scale, // Apply projection scale to font size.
       fill: txInfo[txPath].tfParams.color,
       fontWeight: fontStyle.weight,
       align: txInfo[txPath].tfParams.align, // Only affects multi-line fields, use reg to control alignment
       fontStyle: fontStyle.style
-    });
+    }
+
+    // If `wrap` flag is present then wrap text field based on boxW (text field bounding box width)
+    if ((',' + txInfo[txPath].flags + ',').split(',wrap,').length > 1){
+      txtOptions.wordWrap = true;
+      txtOptions.wordWrapWidth = txInfo[txPath].tfParams.boxW * scaler.proj[txInfo[txPath].projID].scale;
+    }
+
+    dispo = new Text(frame ? frame : txInfo[txPath].tfParams.text, txtOptions);
 
     if (txInfo[txPath].flags.split(',').indexOf('alt') != -1){
       dispo.interactive = true;
@@ -1382,6 +1390,15 @@ let webfontFallbacks = ['sans-serif'];
 function setWebfontFallbacks(_webfontFallbacks){
   webfontFallbacks = _webfontFallbacks
 }
+
+/*
+let _wrapTextToArtWidth = false;
+Set whether text fields will wrap to their width bounds as defined in art.
+@param {Bolean} enabled -  Defaults to false.
+function wrapTextToArtWidth(enabled){
+  _wrapTextToArtWidth = enabled
+}
+*/
 
 
 let _webfontSource = 'google';

@@ -14,6 +14,7 @@ The following layer naming conventions are supported:
   - Use `tint:#ff3300` to tint a white (or any) texture. It can handle: hex strings starting with #: "#ffffff" hex strings starting with 0x: "0xffffff" hex strings without prefix: "ffffff" css colors: "black")
 - *Container* - `layer.div` in PSD.
 - *Text* - `layer.tf` in PSD.
+  - Use `layer.tf(wrap)` for text to be limited to bounding box of the PSD text field.
 - *Btn* - `layer.btn` in PSD.
 - *Graphics* - `layer.rect` in PSD.
 
@@ -37,5 +38,8 @@ The `alt` property also accepts references to any texture in the same psd, withi
 - `accessibleZone.tf(alt:{heading}! {body})`
 - `heading.tf
 - `body(alt:Welcome)`
+
+
+
 
   */
