@@ -1,5 +1,6 @@
 # Changelog
 
+- v1.1.81 - (23-11-2022) Wrap adjust on stage resize.
 - v1.1.80 - (18-11-2022) If `wrap` flag is present then wrap text field based on tfParams.boxW.
 - v1.1.79 - (17-11-2022) Adjusting transition
 - v1.1.78 - (15-11-2022) Updates to docs

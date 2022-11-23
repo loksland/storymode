@@ -1,5 +1,5 @@
 
-import { nav } from './../storymode.js';
+import { nav , utils} from './../storymode.js';
 
 export const id = 'jump';
 
@@ -12,69 +12,78 @@ export const id = 'jump';
  * @example
 nav.openScene(myScene, false, 'jump')
  */
- 
+
+
 class JumpTrans {
-  
+
   constructor(scene, scenePrev = null, isModal = false, transConfigStr = null){
-    
+
     this.scene = scene;
     this.scenePrev = scenePrev;
     this.isModal = isModal;
     this.isTransparent = false;
-    
+    this.dur = 0.1
+
   }
-  
+
   performIn(onInCallback, reverse = false){
-    
+
+
     const sceneIn = reverse ? this.scenePrev : this.scene;
     const sceneOut = reverse ? this.scene : this.scenePrev;
-    
+
     if (!nav.isScenePresentedWithTransparentBg()){
-      gsap.set(nav.bg, {pixi: {tint:sceneIn.bgColor}});
+      nav.bg.tint = sceneIn.bgColor
     }
-    
+
+    if (reverse){
+      utils.wait(this, this.dur, this.onOut, [onInCallback, sceneIn, sceneOut]);
+    } else {
+      utils.wait(this, this.dur, this.onIn, [onInCallback, sceneIn, sceneOut]);
+    }
+
+  }
+
+  onIn(onInCallback, sceneIn, sceneOut){
+
+    // Remove all filters used in the transition
+
     if (sceneOut){
       sceneOut.visible = false;
     }
-    
-    sceneIn.visible = true;
-    
-    if (reverse){
-      this.onOut(onInCallback);
-    } else {
-      this.onIn(onInCallback);
-    }
-     
-  }
-  
-  onIn(onInCallback){
-    
-    // Remove all filters used in the transition
-    
+
+    sceneIn.visible = true
+
     if (this.scenePrev){
       this.scenePrev.visible = false; // Hide incase is modal for performance
     }
-    
-    onInCallback();    
-    
+
+    onInCallback();
+
   }
-  
+
   performOut(onOutCallback){
-    
+
     this.performIn(onOutCallback, true)
-    
+
   }
-  
-  onOut(onOutCallback){
-    
+
+  onOut(onOutCallback, sceneIn, sceneOut){
+
+    if (sceneOut){
+      sceneOut.visible = false;
+    }
+
+    sceneIn.visible = true
+
     // Remove all filters used in the transition
-    
+
     this.scene.visible = false;
 
-    onOutCallback();    
-    
+    onOutCallback();
+
   }
-  
+
 }
 
 export default JumpTrans

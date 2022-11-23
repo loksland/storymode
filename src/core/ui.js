@@ -779,11 +779,19 @@ PIXI.DisplayObject.prototype.applyProj = function(syncProps = false){
   }
 
   if (this instanceof Text){
+
     const calcFontSize = this.txInfo.tfParams.fontSize * scaler.proj[projID].scale;
     const diff = this.style.fontSize - calcFontSize;
     if (Math.abs(diff) > 0.001){ // Don't trigger font re-render if text field was just added
       this.style.fontSize = this.txInfo.tfParams.fontSize * scaler.proj[projID].scale;
     }
+
+    // Update wrapping
+    if ((',' + this.txInfo.flags + ',').split(',wrap,').length > 1){
+      this.style.wordWrap = true;
+      this.style.wordWrapWidth = this.txInfo.tfParams.boxW * scaler.proj[this.txInfo.projID].scale;
+    }
+
   }
 
   if (this.isAnimatedSprite){

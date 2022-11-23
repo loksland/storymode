@@ -77,14 +77,20 @@ function setupStage(stage, bgAlpha){
     }
   }
 
-
+  let defaultBgFadeInDur = 0.6;
+  for (const sceneID in scenes){
+    if (scenes[sceneID].default && scenes[sceneID].defaultBgFadeInDur){
+      defaultBgFadeInDur = scenes[sceneID].defaultBgFadeInDur;
+    }
+  }
+  
   // Add background
   bg = new PIXI.Sprite(PIXI.Texture.WHITE);﻿
   bg.width = scaler.stageW;
   bg.height = scaler.stageH;
   bg.tint = defaultBgCol; // Set in the index css
   stage.addChild(bg);
-  gsap.fromTo(bg, 0.6, {pixi:{alpha:0.0}},{pixi:{alpha:bgAlpha}, ease:Linear.easeNone})
+  gsap.fromTo(bg, defaultBgFadeInDur, {pixi:{alpha:0.0}},{pixi:{alpha:bgAlpha}, ease:Linear.easeNone})
 
   // Create a container for scenes
   sceneHolder = new Container();
