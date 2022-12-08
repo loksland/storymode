@@ -32,6 +32,9 @@ import * as ui from './core/ui.js';
 import KB from './utils/kb.js';
 let kb = new KB();
 
+import GP from './utils/gp.js';
+let gp = new GP();
+
 import SFX from './utils/sfx.js';
 let sfx = new SFX();;
 
@@ -406,5 +409,5 @@ function destroy(reset = false, callback = null, debugToConsole = false, console
 
 export {pixiApp, getPixiApp, htmlEle}; // Internal access to these properties.
 export {appEmitter, detachApp}; // Emitter events
-export {kb, sfx, store, physics} // Helpers
+export {gp, kb, sfx, store, physics} // Helpers
 export {utils, mutils,nav, ui, scaler, Scene}; // Core
