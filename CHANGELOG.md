@@ -1,5 +1,6 @@
 # Changelog
 
+- v1.1.83 - (18-12-2022) Gamepad class additions.
 - v1.1.82 - (08-12-2022) Basic gamepad lib added.
 - v1.1.81 - (23-11-2022) Wrap adjust on stage resize.
 - v1.1.80 - (18-11-2022) If `wrap` flag is present then wrap text field based on tfParams.boxW.

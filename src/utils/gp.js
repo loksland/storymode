@@ -14,8 +14,8 @@ BTN.SHOULDERBACK_RIGHT = 7;
 BTN.CENTERCLUSER_LEFT = 8;
 BTN.CENTERCLUSTER_RIGHT = 9;
 
-BTN.SELECT = 8;
-BTN.START = 9;
+// BTN.SELECT = 8;
+// BTN.START = 9;
 
 BTN.STICKLEFT_PRESS = 10;
 BTN.STICKRIGHT_PRESS = 11;
@@ -24,6 +24,13 @@ BTN.LEFTCLUSTER_UP = 12;
 BTN.LEFTCLUSTER_DOWN = 13;
 BTN.LEFTCLUSTER_LEFT = 14;
 BTN.LEFTCLUSTER_RIGHT = 15;
+
+/**
+ * A string constant representing a specific key.
+ * <br>-"META" is the command key on Mac.
+ * @typedef {"RIGHTCLUSTER_DOWN" | "RIGHTCLUSTER_RIGHT" | "RIGHTCLUSTER_LEFT" | "RIGHTCLUSTER_UP"} gp.BtnConstant
+ * @memberOf gp
+ */
 
 BTN.VENDOR_1 = 16;
 BTN.VENDOR_2 = 17;
@@ -39,11 +46,18 @@ AXIS.LEFT_Y = 1;
 AXIS.RIGHT_X = 2;
 AXIS.RIGHT_Y = 3;
 
+const BTNDOWN = 'btndown';
+const BTNUP = 'btnup';
+
+// Emitter method types
+
+const EMIT_ON = 'on'
+const EMIT_ONCE = 'once'
+
 const axisLookup = [];
 for (let id in AXIS){
   axisLookup[AXIS[id]] = id
 }
-
 
 function createUID(){
   return 1000000 + Math.round(Math.random()*8999999); // 7 char integer
@@ -73,9 +87,12 @@ class GP extends PIXI.utils.EventEmitter {
 
     this.inited = true;
     this.gamepadInfo = {};
-    this.anyDupeChecks = false;
     this.lookupGamepadUIDByIndex = {};
+    this.claimedGamepadIndex = -1;
 
+    //this.claimedGamepadUIDs = [];
+
+    this.btnsDown = {};
 
   }
 
@@ -103,30 +120,12 @@ class GP extends PIXI.utils.EventEmitter {
 
   onGpConnect(ev){
 
-    /*
-    for (let i = 0; i < this.gamepads.length; i++){
-      if (ev.gamepad.timestamp === this.gamepads[i].timestamp){
-        // Duplicate connection
-        return;
-      }
-    }
-    */
-
     let gamepadInfo = {};
-    gamepadInfo.gamepad = ev.gamepad
+    gamepadInfo.gamepad = ev.gamepad; // Store the gamepad
     gamepadInfo._prevBtns = null;
-    gamepadInfo.checkForDupe = false;
-    if (Object.keys(this.gamepadInfo).length > 0){
-      // If other gamepads present then need to double check this is not a double entry.
-      gamepadInfo.checkForDupe = true;
-      this.anyDupeChecks = true;
-    }
 
-    //gamepadInfo.anyInput = false;
-    gamepadInfo.anyNullInput = false; // Check that there has been some no input frames before checking for dupes.
-    gamepadInfo.checkForNullInput = false;
+    gamepadInfo.claimed = false;
 
-    gamepadInfo.inputIndex = -1;
     let uid = createUID();
     this.gamepadInfo[uid] = gamepadInfo
     this.lookupGamepadUIDByIndex[ev.gamepad.index] = uid;
@@ -136,6 +135,7 @@ class GP extends PIXI.utils.EventEmitter {
   }
 
   onGpDisconnect(ev){
+
     let uid = this.lookupGamepadUIDByIndex[ev.gamepad.index]
     this.purgeGamepadInfo(uid);
 
@@ -143,47 +143,14 @@ class GP extends PIXI.utils.EventEmitter {
 
   purgeGamepadInfo(uid){
 
-
     if (uid){
-      const index = this.gamepadInfo[uid].gamepad.index
+      const index = this.gamepadInfo[uid].gamepad.index; // gampad.index is always unique
       delete this.lookupGamepadUIDByIndex[index]
       delete this.gamepadInfo[uid]
     }
-    if (Object.keys(this.gamepadInfo).length < 0){
+    if (Object.keys(this.gamepadInfo).length < 1){
       this.listen(false);
     }
-
-    // Reindex
-    // - So that indexes are contiguous
-
-    this.reindexInputs();
-
-  }
-
-  reindexInputs(){
-
-    let indexes = [];
-    for (let uid in this.gamepadInfo){
-      if (this.gamepadInfo[uid].inputIndex > -1){
-        indexes.push(this.gamepadInfo[uid].inputIndex);
-      }
-    }
-
-    indexes.sort();
-
-    let _i = -1;
-    for (let uid in this.gamepadInfo){
-      if (this.gamepadInfo[uid].inputIndex > -1){
-        for (let i = 0; i < indexes.length; i++){
-          if (this.gamepadInfo[uid].inputIndex === indexes[i]){
-            _i++;
-            this.gamepadInfo[uid].inputIndex = _i;
-          }
-        }
-      }
-    }
-
-    return _i; // Max input
 
   }
 
@@ -197,90 +164,245 @@ class GP extends PIXI.utils.EventEmitter {
   tick(dt){
 
     let gamepads = navigator.getGamepads();
-    //let btnState = []
 
-    let btnSigCount = {}
-    let dupeCount = 0;
+    let anyClaimed = false;
 
     for (let i = 0; i < gamepads.length; i++){
       if (gamepads[i]){
         let uid = this.lookupGamepadUIDByIndex[gamepads[i].index];
         if (uid){
 
-          let btnsDown = [];
-          if (this.anyDupeChecks && this.gamepadInfo[uid].checkForDupe){
-            dupeCount++;
-          }
-
           for (let j = 0; j < gamepads[i].buttons.length; j++){
-            if (gamepads[i].buttons[j].value){
-              console.log(this.gamepadInfo[uid].inputIndex, btnLookup[j]);
-              if (!this.gamepadInfo[uid]._prevBtns || !this.gamepadInfo[uid]._prevBtns[j].value){
-                btnsDown.push('b'+String(j)+'in')
-              } else {
-                btnsDown.push('b'+String(j))
-              }
-            } else if (this.gamepadInfo[uid]._prevBtns && this.gamepadInfo[uid]._prevBtns[j].value){
-              btnsDown.push('b'+String(j)+'x')
-              this.gamepadInfo[uid].checkForNullInput = true;
-            }
-          }
 
-          if (this.anyDupeChecks){
-            let _sig = btnsDown.join('|')
-            this.gamepadInfo[uid]._sig = _sig
-            if (!btnSigCount[_sig]){
-              btnSigCount[_sig] = 0;
+            if (this.gamepadInfo[uid].inputIndex > -1){
+              this.btnsDown[String(this.gamepadInfo[uid].inputIndex) + ':' + btnLookup[j]] = gamepads[i].buttons[j].value ? true : false;
             }
-            btnSigCount[_sig]++;
+
+            if (gamepads[i].buttons[j].value){
+
+              if (!this.gamepadInfo[uid]._prevBtns || !this.gamepadInfo[uid]._prevBtns[j].value){
+                // Btn down begin
+                this._emitBtnEvent(BTNDOWN, this.gamepadInfo[uid].inputIndex, btnLookup[j])
+              } else {
+                // Btn held down
+              }
+
+            } else if (this.gamepadInfo[uid]._prevBtns && this.gamepadInfo[uid]._prevBtns[j].value){
+              // Btn up
+              this._emitBtnEvent(BTNUP, this.gamepadInfo[uid].inputIndex, btnLookup[j]);
+              if (!anyClaimed && btnLookup[j] === 'CENTERCLUSTER_RIGHT' && !this.gamepadInfo[uid].claimed){
+                this.gamepadInfo[uid].claimed = true;
+                this.claimedGamepadIndex++;
+                this.gamepadInfo[uid].inputIndex = this.claimedGamepadIndex;
+                anyClaimed = true;
+              }
+            }
           }
 
           for (let j = 0; j < gamepads[i].axes.length; j++){
             if (Math.abs(gamepads[i].axes[j]) >= this.axisThreshold){
-              btnsDown.push('a'+String(j))
-              console.log(this.gamepadInfo[uid].inputIndex, axisLookup[j], gamepads[i].axes[j])
+              // btnsDown.push('a'+String(j))
+              // console.log(this.gamepadInfo[uid].inputIndex, axisLookup[j], gamepads[i].axes[j])
             }
-          }
-
-          if (btnsDown.length > 0 && this.gamepadInfo[uid].inputIndex < 0 && !this.gamepadInfo[uid].checkForDupe){
-            this.gamepadInfo[uid].inputIndex = this.reindexInputs() + 1;
           }
 
           this.gamepadInfo[uid]._prevBtns =  gamepads[i].buttons
           this.gamepadInfo[uid]._prevAxes =  gamepads[i].axes
 
-          if (this.gamepadInfo[uid].checkForNullInput && !this.gamepadInfo[uid].anyNullInput && btnsDown.length === 0){
-            this.gamepadInfo[uid].anyNullInput = true; // Record 1+ frames of no-input. To detect devices with button locked down.
-          }
         }
       }
+    }
+  }
 
+
+  _emitBtnEvent(evType, inputIndex, btnStrID){
+
+    if (inputIndex < 0){
+      return;
     }
 
-    if (this.anyDupeChecks && dupeCount === 0){
-      this.anyDupeChecks = false;
-    }
+    const evName = evType + '|' + inputIndex + ':' + btnStrID
+    this.emit(evName, btnStrID, inputIndex);
 
-    if (this.anyDupeChecks){
-      // Check for dupes
-      for (let i = gamepads.length-1; i >= 0; i--){
-        if (gamepads[i]){
-          let uid = this.lookupGamepadUIDByIndex[gamepads[i].index];
-          if (uid){
-            if (this.gamepadInfo[uid].checkForDupe && this.gamepadInfo[uid].anyNullInput){
-              if (this.gamepadInfo[uid]._sig.length > 0){ //  && this.gamepadInfo[uid]._sig.split('|').length === 1 Only check if a single button is involved.
-                if (btnSigCount[this.gamepadInfo[uid]._sig] === 1){ // Unless 2+ identical sigs then stop checking
-                  this.gamepadInfo[uid].checkForDupe = false;
-                } else if (this.gamepadInfo[uid]._sig.split('x').length > 1){
-                  this.purgeGamepadInfo(uid);
-                  break;
-                }
-              }
+    // Fire wildcard button
+    this.emit(evType + '|' + inputIndex + ':' + '*', btnStrID, inputIndex);
+
+    // Fire wildcard input index
+    this.emit(evType + '|' + '*' + ':' + btnStrID, btnStrID, inputIndex);
+
+    // Fire wildcard both
+    this.emit(evType + '|' + '*' + ':' + '*', btnStrID, inputIndex);
+
+  }
+
+  /**
+   * Registers callback on key down event for provided kebtny/s.
+   * @param {*} [context=null] - Optional context for callback.
+   * @param {gp.BtnEventCallback} listener - Callback function.
+   * @param {integer|"*")} inputIndex - Input index.
+   * @param {...(integer|string|"*")} btn - An integer button index, a btn constant identifier. Can be an asterix for all (`*`).
+   */
+  onBtnDown(context, listener, inputIndex, ...btns){
+    for (let btn of btns){
+      this._registerKeyEvent(EMIT_ON, BTNDOWN, inputIndex, btn, listener, context);
+    }
+  }
+
+  /**
+   * Registers callback on key up event for provided btn/s.
+   * @param {*} [context=null] - Optional context for callback.
+   * @param {gp.BtnEventCallback} listener - Callback function.
+   * @param {integer|"*")} inputIndex - Input index.
+   * @param {...(integer|string|"*")} btn - An integer button index, a btn constant identifier. Can be an asterix for all (`*`).
+   */
+  onBtnUp(context, listener, inputIndex, ...btns){
+    for (let btn of btns){
+      this._registerKeyEvent(EMIT_ON, BTNUP, inputIndex, btn, listener, context);
+    }
+  }
+
+  /**
+   * Central method for handling all listener registrations.
+   * @private
+   */
+  _registerKeyEvent(emitterMethod, evType, inputIndex, btn, listener, context){
+
+    btn = this.parseBtn(btn);
+    const evName = evType + '|' + inputIndex + ':' + btn
+    // console.log('Registering listener:`'+evName+'`');
+    this[emitterMethod](evName, listener, context); // Key code
+
+  }
+
+  /**
+   * Unregisters btn down callback with matching criteria.
+   * <br>- Same as `off()` though only targets up events.
+   * @param {*} [context=null] - Optional context for callback.
+   * @param {gp.BtnEventCallback} [listener=null] - Callback function.
+   * @param {integer|"*")} inputIndex - Input index.
+   * @param {...(integer|string|"*")} btn - An integer button index, a btn constant identifier. Can be an asterix for all (`*`).
+   */
+  offBtnDown(context, listener, inputIndex, ...btns){
+    if (btn && btns.length > 0){
+      for (let btn of btns){
+        this._off(BTNDOWN, inputIndex, btn, listener, context);
+      }
+    } else {
+      this._off(BTNDOWN, inputIndex, null, listener, context);
+    }
+  }
+
+  /**
+  * Unregisters key up callback with matching criteria.
+  * <br>- Same as `off()` though only targets up events.
+  * @param {*} [context=null] - Optional context for callback.
+  * @param {gp.BtnEventCallback} [listener=null] - Callback function.
+  * @param {integer|"*")} inputIndex - Input index.
+  * @param {...(integer|string|"*")} btn - An integer button index, a btn constant identifier. Can be an asterix for all (`*`).
+  */
+  offBtnUp(context, listener, inputIndex, ...btns){
+    if (btns && btns.length > 0){
+      for (let btn of btns){
+        this._off(BTNUP, inputIndex, btn, listener, context);
+      }
+    } else {
+      this._off(BTNUP, inputIndex, null, listener, context);
+    }
+  }
+
+  /**
+   * A callback fired after a registered keyboard event fires.
+   * @callback gp.BtnEventCallback
+   * @param {string} btn - Button represented as a string.
+   * @param {integer} inputIndex - The input index that fired the event.
+   * @memberOf gp
+   */
+  off(context, listener, inputIndex, ...btns){
+    if (btns && btns.length > 0){
+      for (let btn of btns){
+        this._off(null, inputIndex, btn, listener, context);
+      }
+    } else {
+      this._off(null, inputIndex, null, listener, context);
+    }
+  }
+
+  _off(evType, inputIndex, btn, listener, context){
+
+    let evTypes = evType == null ? [BTNDOWN,BTNUP] : [evType];
+
+    for (let _evType of evTypes){
+
+      if (btn != null && btn != '*'){
+
+        btn = this.parseBtn(btn);
+
+        if (inputIndex != null && inputIndex !== '*'){
+          // Specific inputIndex and btn
+          const evName =  _evType + '|' + inputIndex + ':' + btn
+          super.off(evName, listener, context);
+
+        } else {
+
+          // Specific btn, wildcard input index
+          let evNames = [];
+          for (let evName in this._events){ // https://github.com/primus/eventemitter3/blob/master/index.js
+            let tmpEvName = evName;
+            tmpEvName = tmpEvName.split(':').join('|')
+            const parts = tmpEvName.split('|')
+            if (parts[0] == _evType && parts[2] == btn){
+              evNames.push(evName);
             }
           }
+          for (let _evName of evNames){
+            super.off(_evName, listener, context);
+          }
+
         }
+
+      } else {
+
+        // Specific event type and wildcard or specific inputIndex
+        //this.off(null, listener, context);
+        let evNames = [];
+        for (let evName in this._events){ // https://github.com/primus/eventemitter3/blob/master/index.js
+          const parts = (inputIndex != null && inputIndex !== '*') ?  evName.split('|' + inputIndex + ':') : evName.split('|');
+          if (parts[0] == _evType){
+            evNames.push(evName);
+          }
+        }
+        for (let _evName of evNames){
+          super.off(_evName, listener, context);
+        }
+
       }
     }
+
+
+  }
+
+  // Ensure btn ref is a string identifer and not a key
+  parseBtn(btn){
+
+    // If btn is number then lookitup and return string
+    if (typeof btn === 'number'){
+      return btnLookup(btn)
+    }
+
+    return btn; // btn is string identifier
+
+  }
+
+
+  isBtnDown(inputIndex, btnID){
+    //if ((!inputIndex && inputIndex !==0) || inputIndex === '*'){
+//
+//      for (let i = 0 ; i < this.claimedGamepadIndex; i++){
+//
+//      }
+//
+//    }
+    return this.btnsDown[String(inputIndex) + ':' + btnID]
 
   }
 
